@@ -11,7 +11,7 @@
  Target Server Version : 80042 (8.0.42)
  File Encoding         : 65001
 
- Date: 04/01/2026 14:48:36
+ Date: 04/01/2026 16:26:01
 */
 
 SET NAMES utf8mb4;
@@ -61,7 +61,7 @@ CREATE TABLE `aitestrebort_api_key`  (
   UNIQUE INDEX `uid_wharttest_a_project_7aaea1`(`project_id` ASC, `name` ASC) USING BTREE,
   UNIQUE INDEX `unique_user_api_key_name`(`user_id` ASC, `name` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_25d3f333` FOREIGN KEY (`project_id`) REFERENCES `aitestrebort_project` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 32 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest API 密钥表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 32 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'API 密钥表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_api_key
@@ -100,7 +100,7 @@ CREATE TABLE `aitestrebort_automation_script`  (
   INDEX `fk_wharttes_wharttes_828a2110`(`test_case_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_828a2110` FOREIGN KEY (`test_case_id`) REFERENCES `aitestrebort_testcase` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `fk_wharttes_wharttes_f09cf73b` FOREIGN KEY (`project_id`) REFERENCES `aitestrebort_project` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest 自动化脚本表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '自动化脚本表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_automation_script
@@ -134,7 +134,7 @@ CREATE TABLE `aitestrebort_conversation`  (
   CONSTRAINT `fk_wharttes_conv_llm` FOREIGN KEY (`llm_config_id`) REFERENCES `aitestrebort_llm_config` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT,
   CONSTRAINT `fk_wharttes_conv_proj` FOREIGN KEY (`project_id`) REFERENCES `aitestrebort_project` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `fk_wharttes_wharttes_6f508d78` FOREIGN KEY (`prompt_id`) REFERENCES `aitestrebort_prompt` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 48 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest 对话记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 48 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '对话记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_conversation
@@ -351,7 +351,7 @@ CREATE TABLE `aitestrebort_llm_config`  (
   INDEX `idx_llm_config_name`(`config_name` ASC) USING BTREE,
   INDEX `idx_llm_config_context_limit`(`context_limit` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_llm_config` FOREIGN KEY (`project_id`) REFERENCES `aitestrebort_project` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 34 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest LLM 配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 34 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'LLM 配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_llm_config
@@ -391,7 +391,7 @@ CREATE TABLE `aitestrebort_mcp_config`  (
   UNIQUE INDEX `uid_wharttest_m_project_name`(`project_id` ASC, `name` ASC) USING BTREE,
   UNIQUE INDEX `unique_user_mcp_name`(`user_id` ASC, `name` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_mcp_config` FOREIGN KEY (`project_id`) REFERENCES `aitestrebort_project` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 29 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest MCP 配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 29 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'MCP 配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_mcp_config
@@ -418,7 +418,7 @@ CREATE TABLE `aitestrebort_message`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `fk_wharttes_message`(`conversation_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_message` FOREIGN KEY (`conversation_id`) REFERENCES `aitestrebort_conversation` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 119 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest 消息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 119 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '消息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_message
@@ -514,7 +514,7 @@ CREATE TABLE `aitestrebort_project`  (
   `creator_id` int NOT NULL COMMENT '创建人ID',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `name`(`name` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 23 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest 项目表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 23 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '项目表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_project
@@ -540,7 +540,7 @@ CREATE TABLE `aitestrebort_project_credential`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `fk_wharttes_wharttes_ce6b00a5`(`project_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_ce6b00a5` FOREIGN KEY (`project_id`) REFERENCES `aitestrebort_project` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest 项目凭据表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '项目凭据表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_project_credential
@@ -562,7 +562,7 @@ CREATE TABLE `aitestrebort_project_member`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uid_wharttest_p_project_5ac8ff`(`project_id` ASC, `user_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_a69a366a` FOREIGN KEY (`project_id`) REFERENCES `aitestrebort_project` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest 项目成员表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '项目成员表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_project_member
@@ -592,7 +592,7 @@ CREATE TABLE `aitestrebort_prompt`  (
   UNIQUE INDEX `uid_wharttest_p_user_id_fce3d7`(`user_id` ASC, `name` ASC, `project_id` ASC) USING BTREE,
   INDEX `fk_wharttes_wharttes_f93c4653`(`project_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_f93c4653` FOREIGN KEY (`project_id`) REFERENCES `aitestrebort_project` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 42 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest 提示词表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 42 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '提示词表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_prompt
@@ -645,7 +645,7 @@ CREATE TABLE `aitestrebort_script_execution`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `fk_wharttes_wharttes_f3549ee6`(`script_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_f3549ee6` FOREIGN KEY (`script_id`) REFERENCES `aitestrebort_automation_script` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest 脚本执行记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '脚本执行记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_script_execution
@@ -675,7 +675,7 @@ CREATE TABLE `aitestrebort_test_execution`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `fk_wharttes_wharttes_3ec73eaf`(`suite_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_3ec73eaf` FOREIGN KEY (`suite_id`) REFERENCES `aitestrebort_testsuite` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest 测试执行记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '测试执行记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_test_execution
@@ -699,7 +699,7 @@ CREATE TABLE `aitestrebort_test_suite`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uid_wharttest_ts_proj_name`(`project_id` ASC, `name` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_ts_proj` FOREIGN KEY (`project_id`) REFERENCES `aitestrebort_project` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest 测试套件表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = ' 测试套件表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_test_suite
@@ -716,7 +716,7 @@ CREATE TABLE `aitestrebort_test_suite_testcase`  (
   INDEX `fk_wharttes_suite_tc_case`(`testcase_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_suite_tc_case` FOREIGN KEY (`testcase_id`) REFERENCES `aitestrebort_testcase` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `fk_wharttes_suite_tc_suite` FOREIGN KEY (`test_suite_id`) REFERENCES `aitestrebort_test_suite` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest 测试套件用例关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = ' 测试套件用例关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_test_suite_testcase
@@ -745,7 +745,7 @@ CREATE TABLE `aitestrebort_testcase`  (
   INDEX `fk_wharttes_wharttes_1c2a8b0c`(`project_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_1c2a8b0c` FOREIGN KEY (`project_id`) REFERENCES `aitestrebort_project` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `fk_wharttes_wharttes_5c5b0228` FOREIGN KEY (`module_id`) REFERENCES `aitestrebort_testcase_module` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 129 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest 测试用例表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 129 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '测试用例表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_testcase
@@ -782,7 +782,7 @@ CREATE TABLE `aitestrebort_testcase_module`  (
   INDEX `fk_wharttes_wharttes_d12a9793`(`parent_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_c1cbd259` FOREIGN KEY (`project_id`) REFERENCES `aitestrebort_project` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `fk_wharttes_wharttes_d12a9793` FOREIGN KEY (`parent_id`) REFERENCES `aitestrebort_testcase_module` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest 测试用例模块表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '测试用例模块表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_testcase_module
@@ -818,7 +818,7 @@ CREATE TABLE `aitestrebort_testcase_result`  (
   INDEX `fk_wharttes_wharttes_f015f2a8`(`testcase_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_3ccc3d76` FOREIGN KEY (`execution_id`) REFERENCES `aitestrebort_test_execution` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `fk_wharttes_wharttes_f015f2a8` FOREIGN KEY (`testcase_id`) REFERENCES `aitestrebort_testcase` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest 测试用例执行结果表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = ' 测试用例执行结果表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_testcase_result
@@ -845,7 +845,7 @@ CREATE TABLE `aitestrebort_testcase_screenshot`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `fk_wharttes_wharttes_94e50689`(`test_case_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_94e50689` FOREIGN KEY (`test_case_id`) REFERENCES `aitestrebort_testcase` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest 测试用例截图表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '测试用例截图表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_testcase_screenshot
@@ -869,7 +869,7 @@ CREATE TABLE `aitestrebort_testcase_step`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uid_wharttest_t_test_ca_00a505`(`test_case_id` ASC, `step_number` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_d9acd9dd` FOREIGN KEY (`test_case_id`) REFERENCES `aitestrebort_testcase` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 363 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest 测试用例步骤表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 363 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '测试用例步骤表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_testcase_step
@@ -926,7 +926,7 @@ CREATE TABLE `aitestrebort_testsuite`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uid_wharttest_t_project_da2079`(`project_id` ASC, `name` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_32490379` FOREIGN KEY (`project_id`) REFERENCES `aitestrebort_project` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest 测试套件表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '测试套件表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_testsuite
@@ -949,7 +949,7 @@ CREATE TABLE `aitestrebort_testsuite_case`  (
   INDEX `fk_wharttes_wharttes_a4029897`(`testcase_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_a4029897` FOREIGN KEY (`testcase_id`) REFERENCES `aitestrebort_testcase` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `fk_wharttes_wharttes_bc4124ce` FOREIGN KEY (`suite_id`) REFERENCES `aitestrebort_testsuite` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'WHartTest 测试套件用例关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '测试套件用例关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of aitestrebort_testsuite_case
