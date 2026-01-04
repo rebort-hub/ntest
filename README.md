@@ -1,16 +1,9 @@
-<<<<<<< HEAD
-﻿# 快速启动指南
 
-##项目介绍
-N-Tester平台，该项目采用 前后端分离架构，融合 Python 后端框架 FastAPI 和前端主流框架 Vue3 实现统一开发，提供了一站式开箱即用的体验
-打造AI结合，支持AI生成用例生成，接口自动化，APP自动化，UI自动化，智能排版，LLM厂商自定义配置的一体化测试管理平台。
-=======
-# 快速启动指南
+快速启动指南
 
 项目介绍
 该项目采用 前后端分离架构，融合 Python 后端框架 FastAPI 和前端主流框架 Vue3 实现统一开发，提供了一站式开箱即用的体验
 打造AI结合，支持AI生成用例生成，接口自动化，APP自动化，UI自动化，智能排版，LLM厂商自定义配置的一体化管理平台。
->>>>>>> e00bb57ca4edc8a95b122a3ece447356153c2efb
 
 ## 技术架构
 
@@ -25,15 +18,12 @@ Vue3 / Vite / TypeScript/ElementPlus
 - MySQL 8.0+
 - Node.js 18+ (前端)
 
-<<<<<<< HEAD
 ## Docker一键部署
 
 查看对于的docker详细配置文件
 
 ## 常规部署如下
 
-=======
->>>>>>> e00bb57ca4edc8a95b122a3ece447356153c2efb
 ### 2.创建MySQL数据库
 
     数据库名test_platform，编码选择utf8mb4，对应config.py下db配置为当前数据库信息即可
@@ -137,11 +127,13 @@ uvicorn main:app --host 0.0.0.0 --port 8018 --reload
 ### 1. 安装依赖
 
 ```bash
-<<<<<<< HEAD
+
 cd frontend
+
+pip3 install -r requirements.txt
 =======
-cd test-platform-fastapi-front
->>>>>>> e00bb57ca4edc8a95b122a3ece447356153c2efb
+cd frontend
+
 npm install
 ```
 
@@ -151,23 +143,20 @@ npm install
 npm run dev
 ```
 
-前端将在 http://localhost:5173 启动
+前端dev将在 http://localhost:8016 启动
 
 ## 验证安装
 
 ### 运行集成测试
 
 ```bash
-<<<<<<< HEAD
 cd backend
 python test_mcp_integration.py
 ```
 这个步骤可以忽略
-=======
-cd test-platform-fastapi-api
+cd backend
 python test_mcp_integration.py
 ```
->>>>>>> e00bb57ca4edc8a95b122a3ece447356153c2efb
 
 预期输出：
 ```
@@ -376,15 +365,12 @@ server {
 
 ## 获取帮助
 
-<<<<<<< HEAD
 ### 交流群 
-=======
 ### 交流群 1074327520
->>>>>>> e00bb57ca4edc8a95b122a3ece447356153c2efb
 ![交流群](backend/img/weixin/qq.png)
 
 ### 作者微信
-![未来来源-备注N-Test](backend/img/weixin/weixin.png)
+![来源-备注N-Tester](backend/img/weixin/weixin.png)
 
 如遇到问题，请：
 1. 查看日志文件 `logs/`
@@ -394,5 +380,5 @@ server {
 
 ---
 
-**最后更新**: 2025-12-31
+**最后更新**: 2026-01-04
 **版本**: 1.0.0
