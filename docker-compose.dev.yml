@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # MySQL数据库 - 开发环境
+  mysql:
+    image: mysql:8.0
+    container_name: test-platform-mysql-dev
+    environment:
+      MYSQL_ROOT_PASSWORD: Rebort
+      MYSQL_DATABASE: test_platform
+      MYSQL_USER: test_user
+      MYSQL_PASSWORD: test_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_dev_data:/var/lib/mysql
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password --max-connections=16384
+    networks:
+      - test-platform-network
+
+  # 后端服务 - 开发模式（热重载）
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: test-platform-backend-dev
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=Rebort
+      - DB_NAME=test_platform
+    ports:
+      - "8018:8018"
+      - "8019:8019"
+    volumes:
+      - ./backend:/app
+      - ./backend/logs:/app/logs
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      - mysql
+    networks:
+      - test-platform-network
+    command: ["python", "main.py", "--reload"]
+
+volumes:
+  mysql_dev_data:
+
+networks:
+  test-platform-network:
+    driver: bridge

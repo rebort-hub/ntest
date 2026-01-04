@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: test-platform-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: Rebort
+      MYSQL_DATABASE: test_platform
+      MYSQL_USER: test_user
+      MYSQL_PASSWORD: test_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password --max-connections=16384
+    networks:
+      - test-platform-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # 后端服务
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: test-platform-backend
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=Rebort
+      - DB_NAME=test_platform
+    ports:
+      - "8018:8018"
+      - "8019:8019"
+    volumes:
+      - ./backend/logs:/app/logs
+      - ./backend/uploads:/app/uploads
+      - ./backend/browser_drivers:/app/browser_drivers
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - test-platform-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8018/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 前端服务
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: test-platform-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - test-platform-network
+
+volumes:
+  mysql_data:
+
+networks:
+  test-platform-network:
+    driver: bridge

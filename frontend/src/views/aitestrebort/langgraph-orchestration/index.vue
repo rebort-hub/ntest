@@ -1,0 +1,451 @@
+﻿<template>
+  <div class="langgraph-orchestration">
+    <el-card class="page-header">
+      <h2>LangGraph智能编排</h2>
+      <p>基于LangGraph的智能对话和RAG查询系统</p>
+    </el-card>
+
+    <el-row :gutter="20">
+      <!-- RAG查询区域 -->
+      <el-col :span="12">
+        <el-card class="rag-query-card">
+          <template #header>
+            <div class="card-header">
+              <span>RAG智能查询</span>
+              <el-button 
+                type="primary" 
+                size="small" 
+                @click="executeRAGQuery"
+                :loading="ragLoading"
+              >
+                执行查询
+              </el-button>
+            </div>
+          </template>
+
+          <el-form :model="ragForm" label-width="120px">
+            <el-form-item label="查询问题">
+              <el-input
+                v-model="ragForm.question"
+                type="textarea"
+                :rows="3"
+                placeholder="请输入您的问题..."
+              />
+            </el-form-item>
+
+            <el-form-item label="知识库">
+              <el-select 
+                v-model="ragForm.knowledge_base_id" 
+                placeholder="选择知识库"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="kb in knowledgeBases"
+                  :key="kb.id"
+                  :label="kb.name"
+                  :value="kb.id"
+                />
+              </el-select>
+            </el-form-item>
+
+            <el-form-item label="高级设置">
+              <el-row :gutter="10">
+                <el-col :span="8">
+                  <el-input-number
+                    v-model="ragForm.top_k"
+                    :min="1"
+                    :max="20"
+                    placeholder="返回数量"
+                  />
+                </el-col>
+                <el-col :span="8">
+                  <el-input-number
+                    v-model="ragForm.similarity_threshold"
+                    :min="0"
+                    :max="1"
+                    :step="0.1"
+                    placeholder="相似度阈值"
+                  />
+                </el-col>
+                <el-col :span="8">
+                  <el-switch
+                    v-model="ragForm.use_knowledge_base"
+                    active-text="使用知识库"
+                  />
+                </el-col>
+              </el-row>
+            </el-form-item>
+          </el-form>
+
+          <!-- RAG查询结果 -->
+          <div v-if="ragResult" class="rag-result">
+            <el-divider content-position="left">查询结果</el-divider>
+            
+            <div class="answer-section">
+              <h4>回答</h4>
+              <div class="answer-content">{{ ragResult.answer }}</div>
+            </div>
+
+            <div class="context-section">
+              <h4>相关上下文 ({{ ragResult.context.length }}条)</h4>
+              <el-collapse>
+                <el-collapse-item
+                  v-for="(ctx, index) in ragResult.context"
+                  :key="index"
+                  :title="`上下文 ${index + 1} (相似度: ${(ctx.similarity_score * 100).toFixed(1)}%)`"
+                >
+                  <div class="context-content">{{ ctx.content }}</div>
+                  <div class="context-metadata">
+                    <el-tag size="small">{{ ctx.metadata.source || '未知来源' }}</el-tag>
+                  </div>
+                </el-collapse-item>
+              </el-collapse>
+            </div>
+
+            <div class="timing-info">
+              <el-tag type="info" size="small">检索时间: {{ ragResult.retrieval_time }}ms</el-tag>
+              <el-tag type="success" size="small">生成时间: {{ ragResult.generation_time }}ms</el-tag>
+              <el-tag type="warning" size="small">总时间: {{ ragResult.total_time }}ms</el-tag>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+
+      <!-- 对话历史区域 -->
+      <el-col :span="12">
+        <el-card class="conversation-card">
+          <template #header>
+            <div class="card-header">
+              <span>对话历史</span>
+              <el-button 
+                type="danger" 
+                size="small" 
+                @click="clearConversation"
+              >
+                清空历史
+              </el-button>
+            </div>
+          </template>
+
+          <div class="conversation-history">
+            <div
+              v-for="(msg, index) in conversationHistory"
+              :key="index"
+              :class="['message', msg.type]"
+            >
+              <div class="message-header">
+                <span class="message-type">{{ msg.type === 'user' ? '用户' : 'AI' }}</span>
+                <span class="message-time">{{ formatTime(msg.timestamp) }}</span>
+              </div>
+              <div class="message-content">{{ msg.content }}</div>
+            </div>
+          </div>
+
+          <div class="conversation-input">
+            <el-input
+              v-model="conversationInput"
+              placeholder="继续对话..."
+              @keyup.enter="sendMessage"
+            >
+              <template #append>
+                <el-button @click="sendMessage" :loading="conversationLoading">
+                  发送
+                </el-button>
+              </template>
+            </el-input>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 系统状态区域 -->
+    <el-row :gutter="20" style="margin-top: 20px">
+      <el-col :span="24">
+        <el-card>
+          <template #header>
+            <span>系统状态</span>
+          </template>
+
+          <el-row :gutter="20">
+            <el-col :span="6">
+              <el-statistic title="知识库数量" :value="knowledgeBases.length" />
+            </el-col>
+            <el-col :span="6">
+              <el-statistic title="今日查询" :value="todayQueries" />
+            </el-col>
+            <el-col :span="6">
+              <el-statistic title="平均响应时间" :value="avgResponseTime" suffix="ms" />
+            </el-col>
+            <el-col :span="6">
+              <el-statistic title="成功率" :value="successRate" suffix="%" />
+            </el-col>
+          </el-row>
+        </el-card>
+      </el-col>
+    </el-row>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { useRoute } from 'vue-router'
+import { advancedFeaturesApi } from '@/api/aitestrebort/advanced-features'
+import type { 
+  RAGQueryRequest, 
+  RAGQueryResponse 
+} from '@/api/aitestrebort/advanced-features'
+
+const route = useRoute()
+const projectId = Number(route.params.projectId)
+
+// 响应式数据
+const ragLoading = ref(false)
+const conversationLoading = ref(false)
+const knowledgeBases = ref<Array<{
+  id: string
+  name: string
+  description: string
+  document_count: number
+  created_at: string
+}>>([])
+
+const ragForm = reactive<RAGQueryRequest>({
+  question: '',
+  knowledge_base_id: '',
+  use_knowledge_base: true,
+  similarity_threshold: 0.7,
+  top_k: 5,
+  thread_id: undefined
+})
+
+const ragResult = ref<RAGQueryResponse | null>(null)
+const conversationHistory = ref<Array<{
+  type: 'user' | 'assistant'
+  content: string
+  timestamp: Date
+}>>([])
+
+const conversationInput = ref('')
+
+// 统计数据
+const todayQueries = ref(0)
+const avgResponseTime = ref(0)
+const successRate = ref(0)
+
+// 方法
+const loadKnowledgeBases = async () => {
+  try {
+    const response = await advancedFeaturesApi.langGraph.getProjectKnowledgeBases(projectId)
+    if (response.data) {
+      knowledgeBases.value = response.data
+      if (knowledgeBases.value.length > 0) {
+        ragForm.knowledge_base_id = knowledgeBases.value[0].id
+      }
+    }
+  } catch (error) {
+    console.error('加载知识库失败:', error)
+    ElMessage.error('加载知识库失败')
+  }
+}
+
+const executeRAGQuery = async () => {
+  if (!ragForm.question.trim()) {
+    ElMessage.warning('请输入查询问题')
+    return
+  }
+
+  if (!ragForm.knowledge_base_id) {
+    ElMessage.warning('请选择知识库')
+    return
+  }
+
+  ragLoading.value = true
+  try {
+    const response = await advancedFeaturesApi.langGraph.ragQuery(projectId, ragForm)
+    if (response.data) {
+      ragResult.value = response.data
+      
+      // 添加到对话历史
+      conversationHistory.value.push({
+        type: 'user',
+        content: ragForm.question,
+        timestamp: new Date()
+      })
+      
+      if (response.data.answer) {
+        conversationHistory.value.push({
+          type: 'assistant',
+          content: response.data.answer,
+          timestamp: new Date()
+        })
+      }
+
+      ElMessage.success('查询完成')
+    }
+  } catch (error) {
+    console.error('RAG查询失败:', error)
+    ElMessage.error('查询失败，请重试')
+  } finally {
+    ragLoading.value = false
+  }
+}
+
+const sendMessage = async () => {
+  if (!conversationInput.value.trim()) {
+    return
+  }
+
+  const message = conversationInput.value
+  conversationInput.value = ''
+
+  // 使用当前输入作为新的查询
+  ragForm.question = message
+  await executeRAGQuery()
+}
+
+const clearConversation = () => {
+  conversationHistory.value = []
+  ragResult.value = null
+  ElMessage.success('对话历史已清空')
+}
+
+const formatTime = (date: Date) => {
+  return date.toLocaleTimeString()
+}
+
+// 生命周期
+onMounted(() => {
+  loadKnowledgeBases()
+  
+  // 模拟统计数据
+  todayQueries.value = Math.floor(Math.random() * 100) + 50
+  avgResponseTime.value = Math.floor(Math.random() * 1000) + 500
+  successRate.value = Math.floor(Math.random() * 20) + 80
+})
+</script>
+
+<style scoped>
+.langgraph-orchestration {
+  padding: 20px;
+}
+
+.page-header {
+  margin-bottom: 20px;
+}
+
+.page-header h2 {
+  margin: 0 0 10px 0;
+  color: #303133;
+}
+
+.page-header p {
+  margin: 0;
+  color: #606266;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rag-query-card,
+.conversation-card {
+  height: 600px;
+  overflow: hidden;
+}
+
+.rag-result {
+  margin-top: 20px;
+}
+
+.answer-section {
+  margin-bottom: 20px;
+}
+
+.answer-section h4 {
+  margin: 0 0 10px 0;
+  color: #409EFF;
+}
+
+.answer-content {
+  padding: 15px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  line-height: 1.6;
+}
+
+.context-section {
+  margin-bottom: 20px;
+}
+
+.context-section h4 {
+  margin: 0 0 10px 0;
+  color: #67C23A;
+}
+
+.context-content {
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+.context-metadata {
+  margin-top: 10px;
+}
+
+.timing-info {
+  display: flex;
+  gap: 10px;
+}
+
+.conversation-history {
+  height: 450px;
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+.message {
+  margin-bottom: 15px;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.message.user {
+  background-color: #e3f2fd;
+  margin-left: 20px;
+}
+
+.message.assistant {
+  background-color: #f3e5f5;
+  margin-right: 20px;
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 12px;
+  color: #909399;
+}
+
+.message-type {
+  font-weight: bold;
+}
+
+.message-content {
+  line-height: 1.5;
+}
+
+.conversation-input {
+  position: sticky;
+  bottom: 0;
+  background: white;
+}
+</style>

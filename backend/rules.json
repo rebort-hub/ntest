@@ -1,0 +1,297 @@
+{
+  "api": {
+    "管理员": [
+      {
+        "name": "管理员-后端",
+        "source_addr": "admin"
+      }
+    ],
+    "系统管理菜单": [
+      {
+        "name": "用户管理",
+        "source_addr": "/api/system/user"
+      },
+      {
+        "name": "用户管理-用户的权限",
+        "source_addr": "/api/system/user/role"
+      },
+      {
+        "name": "用户管理-用户列表",
+        "source_addr": "/api/system/user/list"
+      },
+      {
+        "name": "用户管理-修改状态",
+        "source_addr": "/api/system/user/status"
+      },
+      {
+        "name": "权限列表",
+        "source_addr": "/api/system/role/list"
+      }
+    ]
+  },
+  "front": {
+    "管理员": [
+      {
+        "name": "管理员-前端",
+        "source_addr": "admin"
+      }
+    ],
+    "首页菜单": [
+      {
+        "name": "首页",
+        "source_addr": "/"
+      },
+      {
+        "name": "首页-统计",
+        "source_addr": "/dashboard"
+      }
+    ],
+    "接口自动化菜单": [
+      {
+        "name": "接口自动化菜单",
+        "source_addr": "/api-test"
+      },
+      {
+        "name": "接口自动化-服务管理菜单",
+        "source_addr": "/api-test/project"
+      },
+      {
+        "name": "接口自动化-接口管理菜单",
+        "source_addr": "/api-test/api"
+      },
+      {
+        "name": "接口自动化-用例管理菜单",
+        "source_addr": "/api-test/case"
+      },
+      {
+        "name": "接口自动化-任务管理菜单",
+        "source_addr": "/api-test/task"
+      },
+      {
+        "name": "接口自动化-测试报告菜单",
+        "source_addr": "/api-test/report"
+      }
+    ],
+    "ui自动化菜单": [
+      {
+        "name": "ui自动化菜单",
+        "source_addr": "/ui-test"
+      },
+      {
+        "name": "ui自动化-项目管理菜单",
+        "source_addr": "/ui-test/project"
+      },
+      {
+        "name": "ui自动化-页面管理菜单",
+        "source_addr": "/ui-test/page"
+      },
+      {
+        "name": "ui自动化-用例管理菜单",
+        "source_addr": "/ui-test/case"
+      },
+      {
+        "name": "ui自动化-任务管理菜单",
+        "source_addr": "/ui-test/task"
+      },
+      {
+        "name": "ui自动化-测试报告菜单",
+        "source_addr": "/ui-test/report"
+      }
+    ],
+    "app自动化菜单": [
+      {
+        "name": "app自动化菜单",
+        "source_addr": "/app-test"
+      },
+      {
+        "name": "app自动化-设备管理菜单",
+        "source_addr": "/app-test/device"
+      },
+      {
+        "name": "app自动化-app管理菜单",
+        "source_addr": "/app-test/project"
+      },
+      {
+        "name": "app自动化-页面管理菜单",
+        "source_addr": "/app-test/page"
+      },
+      {
+        "name": "app自动化-用例管理菜单",
+        "source_addr": "/app-test/case"
+      },
+      {
+        "name": "app自动化-任务管理菜单",
+        "source_addr": "/app-test/task"
+      },
+      {
+        "name": "app自动化-测试报告菜单",
+        "source_addr": "/app-test/report"
+      }
+    ],
+    "脚本管理菜单": [
+      {
+        "name": "脚本管理菜单",
+        "source_addr": "/script"
+      },
+      {
+        "name": "脚本管理菜单-Python脚本菜单",
+        "source_addr": "/script/python"
+      }
+    ],
+    "工具菜单": [
+      {
+        "name": "工具菜单",
+        "source_addr": "/tools"
+      },
+      {
+        "name": "工具-征信考试菜单",
+        "source_addr": "/tools/examination"
+      },
+      {
+        "name": "工具-数据池菜单",
+        "source_addr": "/tools/data-pool"
+      },
+      {
+        "name": "工具-造数据菜单",
+        "source_addr": "/tools/make-data"
+      },
+      {
+        "name": "工具-生成用户信息菜单",
+        "source_addr": "/tools/make-user-info"
+      },
+      {
+        "name": "工具-消息队列",
+        "source_addr": "/tools/queue"
+      },
+      {
+        "name": "工具-解析token",
+        "source_addr": "/tools/token"
+      },
+      {
+        "name": "工具-代码对比",
+        "source_addr": "/tools/code-diff"
+      },
+      {
+        "name": "工具-shell造数据",
+        "source_addr": "/tools/shell-mock"
+      }
+    ],
+    "配置管理菜单": [
+      {
+        "name": "配置管理菜单",
+        "source_addr": "/config"
+      },
+      {
+        "name": "配置管理-配置类型管理菜单",
+        "source_addr": "/config/type"
+      },
+      {
+        "name": "配置管理-配置参数管理菜单",
+        "source_addr": "/config/value"
+      },
+      {
+        "name": "配置管理-配置运行环境菜单",
+        "source_addr": "/config/run-env"
+      },
+      {
+        "name": "配置管理-业务线管理菜单",
+        "source_addr": "/config/business"
+      },
+      {
+        "name": "配置管理-通知管理菜单",
+        "source_addr": "/config/notify"
+      }
+    ],
+    "系统管理菜单": [
+      {
+        "name": "系统管理菜单",
+        "source_addr": "/system"
+      },
+      {
+        "name": "系统管理-权限管理菜单",
+        "source_addr": "/system/permission"
+      },
+      {
+        "name": "系统管理-角色管理菜单",
+        "source_addr": "/system/role"
+      },
+      {
+        "name": "系统管理-用户管理菜单",
+        "source_addr": "/system/user"
+      },
+      {
+        "name": "系统管理-系统错误记录菜单",
+        "source_addr": "/system/permission"
+      },
+      {
+        "name": "系统管理-平台使用分析",
+        "source_addr": "/system/platform"
+      },
+      {
+        "name": "系统管理-平台使用分析-数据总览",
+        "source_addr": "/system/platform/overview"
+      },
+      {
+        "name": "系统管理-平台使用分析-业务线分析",
+        "source_addr": "/system/platform/analyse"
+      }
+    ],
+    "测试管理菜单": [
+      {
+        "name": "测试管理菜单",
+        "source_addr": "/manage"
+      },
+      {
+        "name": "测试管理-周报菜单",
+        "source_addr": "/manage/weekly"
+      },
+      {
+        "name": "测试管理-KYM分析菜单",
+        "source_addr": "/manage/kym"
+      },
+      {
+        "name": "测试管理-用例编写菜单",
+        "source_addr": "/manage/make-test-case"
+      },
+      {
+        "name": "测试管理-测试账号菜单",
+        "source_addr": "/manage/account"
+      },
+      {
+        "name": "测试管理-生产bug跟踪菜单",
+        "source_addr": "/manage/bug-track"
+      },
+      {
+        "name": "测试管理-待办管理",
+        "source_addr": "/manage/todo"
+      }
+    ],
+    "自动化辅助菜单": [
+      {
+        "name": "自动化辅助菜单",
+        "source_addr": "/assist"
+      },
+      {
+        "name": "自动化辅助-回调记录菜单",
+        "source_addr": "/assist/call-back"
+      },
+      {
+        "name": "自动化辅助-文件管理菜单",
+        "source_addr": "/assist/file"
+      },
+      {
+        "name": "自动化辅助-执行错误记录菜单",
+        "source_addr": "/assist/error-record"
+      },
+      {
+        "name": "自动化辅助-自动化用户数据菜单",
+        "source_addr": "/assist/auto-test-user"
+      },
+      {
+        "name": "自动化辅助-自动化问题记录菜单",
+        "source_addr": "/assist/hit"
+      }
+    ]
+  }
+}
+
