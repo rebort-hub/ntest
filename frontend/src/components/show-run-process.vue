@@ -231,6 +231,7 @@
 
 
 import {computed, onBeforeUnmount, onMounted, ref, watch} from "vue";
+import {useRouter} from "vue-router";
 import {
   ChangeReportStepStatus,
   GetReportCaseList,
@@ -249,6 +250,8 @@ const props = defineProps({
     type: String
   }
 })
+
+const router = useRouter()
 
 const showTimeOutMessage = ref(false)
 const processIsShow = ref(false)
@@ -364,7 +367,9 @@ const clickCase = (row: { id: undefined; }, column: any, event: any) => {
 }
 
 const openReportById = (reportId: any) => {
-  window.open(`/${props.testType}-test/report-show?id=${reportId}`, '_blank')
+  // 使用路由跳转替代新窗口打开
+  const router = useRouter()
+  router.push(`/${props.testType}-test/report-show?id=${reportId}`)
 }
 
 async function getReport (batch_id) {

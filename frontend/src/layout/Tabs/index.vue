@@ -28,14 +28,17 @@
           <el-dropdown-menu>
             <el-dropdown-item class="tab-ddropdown-item" :icon="RefreshLeft" @click="pageReload">重新加载</el-dropdown-item>
             <el-dropdown-item class="tab-ddropdown-item" :icon="CircleClose" :disabled="currentDisabled" @click="closeCurrentRoute">关闭当前标签</el-dropdown-item>
+            <el-dropdown-item class="tab-ddropdown-item" :icon="CircleClose" @click="closeLeftRoute">关闭左侧标签</el-dropdown-item>
+            <el-dropdown-item class="tab-ddropdown-item" :icon="CircleClose" @click="closeRightRoute">关闭右侧标签</el-dropdown-item>
             <el-dropdown-item class="tab-ddropdown-item" :icon="CircleClose" :disabled="menuList.length < 3" @click="closeOtherRoute">关闭其他标签</el-dropdown-item>
             <el-dropdown-item class="tab-ddropdown-item" :icon="CircleClose" :disabled="menuList.length <= 1" @click="closeAllRoute">关闭所有标签</el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
-      <el-tooltip class="item" effect="dark" :content="contentFullScreen ? '退出全屏' : '全屏'" placement="bottom">
+      <!-- 隐藏全屏图标，因为Header中已经有了 -->
+      <!-- <el-tooltip class="item" effect="dark" :content="contentFullScreen ? '退出全屏' : '全屏'" placement="bottom">
         <el-icon @click="onFullscreen"><FullScreen /></el-icon>
-      </el-tooltip>
+      </el-tooltip> -->
     </div>
   </div>
 </template>
@@ -115,6 +118,27 @@ export default defineComponent({
         addMenu(route)
       }
       setKeepAliveData()
+    }
+
+    // 关闭左侧标签
+    function closeLeftRoute() {
+      const currentIndex = menuList.value.findIndex((item: any) => item.path === route.path)
+      if (currentIndex > 0) {
+        // 保留首页和当前标签右侧的所有标签
+        const rightTabs = menuList.value.slice(currentIndex)
+        menuList.value = [defaultMenu, ...rightTabs]
+        setKeepAliveData()
+      }
+    }
+
+    // 关闭右侧标签
+    function closeRightRoute() {
+      const currentIndex = menuList.value.findIndex((item: any) => item.path === route.path)
+      if (currentIndex >= 0 && currentIndex < menuList.value.length - 1) {
+        // 保留当前标签左侧的所有标签（包括当前标签）
+        menuList.value = menuList.value.slice(0, currentIndex + 1)
+        setKeepAliveData()
+      }
     }
 
     // 关闭所有的标签，除了首页
@@ -240,6 +264,8 @@ export default defineComponent({
       pageReload,
       delMenu,
       closeCurrentRoute,
+      closeLeftRoute,
+      closeRightRoute,
       closeOtherRoute,
       closeAllRoute,
       handleScroll,

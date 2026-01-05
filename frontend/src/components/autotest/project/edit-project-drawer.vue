@@ -347,7 +347,14 @@ const addData = () => {
   ruleFormRef.value.validate((valid) => {
     if (valid) {
       submitButtonIsLoading.value = true
-      PostProject(props.testType, formData.value).then(response => {
+      
+      // 创建提交数据的副本，确保template_device是字符串类型
+      const submitData = { ...formData.value }
+      if (submitData.template_device !== undefined && submitData.template_device !== null) {
+        submitData.template_device = String(submitData.template_device)
+      }
+      
+      PostProject(props.testType, submitData).then(response => {
         submitButtonIsLoading.value = false
         if (response) {
           responseMessage.value = response.message
@@ -363,7 +370,14 @@ const changeData = () => {
   ruleFormRef.value.validate((valid) => {
     if (valid) {
       submitButtonIsLoading.value = true
-      PutProject(props.testType, formData.value).then(response => {
+      
+      // 创建提交数据的副本，确保template_device是字符串类型
+      const submitData = { ...formData.value }
+      if (submitData.template_device !== undefined && submitData.template_device !== null) {
+        submitData.template_device = String(submitData.template_device)
+      }
+      
+      PutProject(props.testType, submitData).then(response => {
         submitButtonIsLoading.value = false
         if (response) {
           responseMessage.value = response.message

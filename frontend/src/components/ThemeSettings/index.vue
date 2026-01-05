@@ -135,6 +135,16 @@
             />
           </div>
         </div>
+        <div class="setting-item">
+          <div class="setting-label">标签页导航</div>
+          <div class="setting-value">
+            <el-switch
+              v-model="themeConfig.showTabs"
+              size="small"
+              @change="onShowTabsChange"
+            />
+          </div>
+        </div>
 
         <!-- 特殊效果 -->
         <el-divider content-position="left">特殊效果</el-divider>
@@ -238,6 +248,7 @@ const themeConfig = reactive({
   isShowLogo: true,
   logoText: 'N-Tester平台',
   isBreadcrumb: true,
+  showTabs: false, // 标签页显示状态，默认关闭
   isGrayscale: false,
   isInvert: false,
   isWartermark: false,
@@ -534,6 +545,14 @@ const onIsBreadcrumbChange = () => {
   saveConfig();
 };
 
+// 标签页显示变化
+const onShowTabsChange = () => {
+  saveConfig();
+  // 触发自定义事件，通知布局组件更新
+  const event = new CustomEvent('themeConfigChanged');
+  window.dispatchEvent(event);
+};
+
 // 灰色模式变化
 const onGrayscaleChange = () => {
   if (themeConfig.isGrayscale) {
@@ -608,6 +627,7 @@ const onResetConfigClick = () => {
     isShowLogo: true,
     logoText: 'N-Tester平台',
     isBreadcrumb: true,
+    showTabs: false, // 默认关闭标签页
     isGrayscale: false,
     isInvert: false,
     isWartermark: false,
@@ -621,6 +641,10 @@ const onResetConfigClick = () => {
   // 应用默认样式
   applyCSSVariables();
   saveConfig();
+  
+  // 触发自定义事件，通知布局组件更新
+  const event = new CustomEvent('themeConfigChanged');
+  window.dispatchEvent(event);
   
   ElMessage.success('已恢复默认配置');
 };

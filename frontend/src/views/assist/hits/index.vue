@@ -179,6 +179,7 @@
 
 <script setup lang="ts">
 import {onMounted, ref, onBeforeUnmount, computed} from "vue";
+import {useRouter} from "vue-router";
 import Pagination from '@/components/pagination.vue'
 import EditDrawer from './drawer.vue'
 
@@ -190,6 +191,7 @@ import {GetProjectList} from "@/api/autotest/project";
 import {GetUserList} from "@/api/system/user";
 import {paramsISOTime} from "@/utils/parse-data";
 
+const router = useRouter()
 const tableIsLoading = ref(false)
 const tableDataList = ref([])
 const tableDataTotal = ref(0)
@@ -258,7 +260,9 @@ const showEditDrawer = (row: object | undefined) => {
 }
 
 const showReport = (row: { test_type: string, report_id: any; }) => {
-  window.open(`/${row.test_type}-test/report-show?id=${row.report_id}`, '_blank')
+  // 使用路由跳转替代新窗口打开
+  const router = useRouter()
+  router.push(`/${row.test_type}-test/report-show?id=${row.report_id}`)
 }
 
 const deleteData = (row: any) => {

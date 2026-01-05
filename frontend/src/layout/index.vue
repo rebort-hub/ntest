@@ -19,8 +19,8 @@
       <el-header v-show="!contentFullScreen">
         <Header/>
       </el-header>
-      <!-- 打开页面的tabs, 打开注释即可-->
-      <!-- <Tabs v-show="showTabs"/>-->
+      <!-- 打开页面的tabs -->
+      <Tabs v-show="showTabs && !contentFullScreen"/>
 
       <el-main>
         <router-view v-slot="{ Component, route }">
@@ -37,7 +37,7 @@
 </template>
 
 <script lang="ts">
-import {defineComponent, computed, onBeforeMount} from "vue";
+import {defineComponent, computed, onBeforeMount, ref, watch} from "vue";
 import {useStore} from "vuex";
 import {useRouter} from "vue-router";
 import {useEventListener} from "@vueuse/core";
@@ -55,6 +55,8 @@ export default defineComponent({
   },
   setup() {
     const store = useStore();
+    const showTabsRef = ref(false);
+    
     // computed
     const isCollapse = computed(() => store.state.app.isCollapse);
     const contentFullScreen = computed(() => store.state.app.contentFullScreen);
@@ -73,8 +75,37 @@ export default defineComponent({
       return true;
     });
     
-    const showTabs = computed(() => store.state.app.showTabs);
+    // 标签页显示状态 - 响应式更新
+    const updateShowTabs = () => {
+      const savedConfig = localStorage.getItem('simpleThemeConfig');
+      if (savedConfig) {
+        try {
+          const config = JSON.parse(savedConfig);
+          showTabsRef.value = config.showTabs === true;
+        } catch (error) {
+          showTabsRef.value = false;
+        }
+      } else {
+        showTabsRef.value = false;
+      }
+    };
+    
+    const showTabs = computed(() => showTabsRef.value);
+    
+    // 监听localStorage变化
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'simpleThemeConfig') {
+        updateShowTabs();
+      }
+    };
+    
+    // 监听自定义事件（主题设置组件触发）
+    const handleThemeChange = () => {
+      updateShowTabs();
+    };
+    
     const keepAliveComponentsName = computed(() => store.getters['keepAlive/keepAliveComponentsName']);
+    
     // 页面宽度变化监听后执行的方法
     const resizeHandler = () => {
       if (document.body.clientWidth <= 1000 && !isCollapse.value) {
@@ -83,18 +114,27 @@ export default defineComponent({
         store.commit("app/isCollapseChange", false);
       }
     };
+    
     // 初始化调用
     resizeHandler();
+    updateShowTabs();
+    
     // beforeMount
     onBeforeMount(() => {
       // 监听页面变化
       useEventListener("resize", resizeHandler);
+      // 监听localStorage变化
+      useEventListener("storage", handleStorageChange);
+      // 监听主题变化事件
+      useEventListener("themeConfigChanged", handleThemeChange);
     });
+    
     // methods
     // 隐藏菜单
     const hideMenu = () => {
       store.commit("app/isCollapseChange", true);
     };
+    
     return {
       isCollapse,
       showLogo,

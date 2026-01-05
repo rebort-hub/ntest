@@ -11,23 +11,26 @@
       <!-- 快捷功能按钮 -->
       <div class="function-list">
         <div class="function-list-item hidden-sm-and-down">
+          <el-tooltip content="全屏显示" placement="bottom">
+            <el-icon class="function-icon" @click="toggleFullscreen">
+              <FullScreen />
+            </el-icon>
+          </el-tooltip>
+        </div>
+        <div class="function-list-item hidden-sm-and-down">
+          <el-tooltip content="系统公告" placement="bottom">
+            <el-icon class="function-icon" @click="showAnnouncement">
+              <Bell />
+            </el-icon>
+          </el-tooltip>
+        </div>
+        <div class="function-list-item hidden-sm-and-down">
           <el-tooltip content="主题设置" placement="bottom">
             <el-icon class="theme-settings-icon" @click="openThemeSettings">
               <Setting />
             </el-icon>
           </el-tooltip>
         </div>
-      <!--        <div class="function-list-item hidden-sm-and-down">-->
-      <!--          <Full-screen/>-->
-      <!--        </div>-->
-
-      <!--        <div class="function-list-item">-->
-      <!--          <SizeChange/>-->
-      <!--        </div>-->
-
-      <!--        <div class="function-list-item hidden-sm-and-down">-->
-      <!--          <Theme/>-->
-      <!--        </div>-->
       </div>
       <!-- 用户信息 -->
       <div class="user-info">
@@ -57,8 +60,8 @@
 import {defineComponent, computed, reactive, ref} from 'vue'
 import {useStore} from 'vuex'
 import {useRouter, useRoute} from 'vue-router'
-import { Setting } from '@element-plus/icons-vue'
-import FullScreen from './functionList/fullscreen.vue'
+import { Setting, FullScreen, Bell } from '@element-plus/icons-vue'
+import FullScreenComponent from './functionList/fullscreen.vue'
 // import SizeChange from './functionList/sizeChange.vue'
 import Theme from './functionList/theme.vue'
 import Breadcrumb from './Breadcrumb.vue'
@@ -116,6 +119,23 @@ const resetPassword = () => {
 // 打开主题设置
 const openThemeSettings = () => {
   themeSettingsRef.value?.openDrawer()
+}
+
+// 切换全屏
+const toggleFullscreen = () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen()
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen()
+    }
+  }
+}
+
+// 显示公告
+const showAnnouncement = () => {
+  // 这里可以后续添加公告功能
+  console.log('显示系统公告')
 }
 
 </script>
@@ -183,6 +203,16 @@ header {
 
       :deep(i) {
         color: var(--system-header-text-color);
+      }
+
+      .function-icon {
+        font-size: 18px;
+        color: var(--system-header-text-color);
+        transition: color 0.3s;
+
+        &:hover {
+          color: var(--el-color-primary);
+        }
       }
 
       .theme-settings-icon {

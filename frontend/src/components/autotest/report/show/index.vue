@@ -1,15 +1,56 @@
 <template>
   <div class="layout-container">
+    <!-- 面包屑导航 -->
+    <div class="breadcrumb-container">
+      <el-breadcrumb separator="/">
+        <el-breadcrumb-item>
+          <el-button 
+            type="text" 
+            @click="goBack"
+            style="padding: 0; font-size: 14px;"
+          >
+            {{ testType === 'api' ? '接口自动化' : testType === 'ui' ? 'UI自动化' : 'App自动化' }}
+          </el-button>
+        </el-breadcrumb-item>
+        <el-breadcrumb-item>
+          <el-button 
+            type="text" 
+            @click="goBack"
+            style="padding: 0; font-size: 14px;"
+          >
+            测试报告
+          </el-button>
+        </el-breadcrumb-item>
+        <el-breadcrumb-item>报告详情</el-breadcrumb-item>
+      </el-breadcrumb>
+    </div>
+
     <!-- 无测试报告数据，或者测试报告中没有运行数据 -->
     <!--    <div v-show="!reportSummary || reportSummary.stat.test_case.total === 0" class="str">-->
     <!--      无运行数据或所有运行数据均已跳过-->
     <!--    </div>-->
 
     <!-- 有数据 -->
-    <div v-show="reportSummary && reportSummary.stat.count.step > 0">
+    <div v-show="reportSummary && reportSummary.stat">
+      <!-- 调试信息 - 可以在开发时查看数据状态 -->
+      <!-- <div style="font-size: 12px; color: #999; margin: 5px 10px;">
+        Debug: testType={{ testType }}, run_type={{ report.run_type }}, status={{ report.status }}, result={{ reportSummary.result }}
+      </div> -->
+      
       <!-- 第一行，头部信息 -->
       <div class="report-header">
-        <span style="float: left;font-size: 13px;color: #3a8ee6;margin-left: 10px">
+        <div class="header-left">
+          <!-- 返回按钮 -->
+          <el-button 
+            type="primary" 
+            size="small" 
+            @click="goBack"
+            style="margin-right: 20px;"
+          >
+            <el-icon><ArrowLeft /></el-icon>
+            返回报告列表
+          </el-button>
+          
           <span v-if="testType !== 'app'" style="margin-right: 20px"
           >运行环境: {{runEnvDict[reportSummary.env.code] }}</span>
           <span style="margin-right: 20px">执行模式: {{ report.is_async === 1 ? '并行运行' : '串行运行' }}</span>
@@ -18,57 +59,58 @@
           <span style="margin-right: 20px">总共耗时: {{
               reportSummary.time.all_duration ? reportSummary.time.all_duration.toString().slice(0, 5) : '-'
             }} 秒</span>
+        </div>
+        
+        <div class="header-right">
+          <span v-if="report.run_type == 'api'">
+            <el-button type="primary" size="small" @click.native="saveAsCase">存为用例</el-button>
+            <el-tooltip class="item" effect="dark" placement="top-start">
+              <template #content>
+                <div>1、把当前报告对应的接口转为用例</div>
+                <div>2、保存成功后，新增后的用例归属在当前报告所属服务的【接口用例集】类型的用例集下</div>
+              </template>
+              <span style="margin-right: 20px;color: #409EFF"><Help></Help></span>
+            </el-tooltip>
+          </span>
 
-        </span>
-        <span style="float: right;font-size: 13px;color: #3a8ee6">
-              <span v-if="report.run_type == 'api'">
-                <el-button type="primary" size="small" @click.native="saveAsCase">存为用例</el-button>
-                <el-tooltip class="item" effect="dark" placement="top-start">
-                  <template #content>
-                    <div>1、把当前报告对应的接口转为用例</div>
-                    <div>2、保存成功后，新增后的用例归属在当前报告所属服务的【接口用例集】类型的用例集下</div>
-                  </template>
-                  <span style="margin-right: 20px;color: #409EFF"><Help></Help></span>
-                </el-tooltip>
-              </span>
+          <el-button v-show="report.status === 1" type="danger" size="small" @click="changeReportStepStatus()">中断测试执行</el-button>
 
-              <el-button v-show="report.status === 1" type="danger" size="small" @click="changeReportStepStatus()">中断测试执行</el-button>
+          <el-button
+              v-if="reportSummary.result !== 'success'"
+              type="primary"
+              size="small"
+              @click.native="showHitDrawer"
+          >记录问题</el-button>
 
-              <el-button
-                  v-if="reportSummary.result !== 'success'"
-                  type="primary"
-                  size="small"
-                  @click.native="showHitDrawer"
-              >记录问题</el-button>
+          <!-- 这些按钮对所有测试类型都显示 -->
+          <el-button type="primary" size="small" @click="showPythonScript = true">Python脚本</el-button>
 
-              <el-button type="primary" size="small" @click="showPythonScript = true">Python脚本</el-button>
-
-              <el-button type="primary" size="small" @click="showReRunDialog">重跑</el-button>
+          <el-button type="primary" size="small" @click="showReRunDialog">重跑</el-button>
 
           <!-- 删除报告 -->
-            <el-popover :visible="checkDeleteIsShow" placement="top" popper-class="down-popover" width="450px">
-              确定删除所选中的测试报告?
-              <div style="color: red">
-                1、关联了问题记录的测试报告不会被删除 <br>
-                2、触发方式为【定时任务】或者【流水线】的，只有管理员能删除
-              </div>
-              <div style="text-align: right; margin-right: 10px">
-                <el-button size="small" type="text" @click="checkDeleteIsShow = false">取消</el-button>
-                <el-button type="primary" size="small" @click="deleteReport">确定</el-button>
-              </div>
-              <template #reference>
-                <el-button
-                    type="danger"
-                    size="small"
-                    style="margin-right: 5px"
-                    @click="checkDeleteIsShow = true"
-                >删除
-                </el-button>
-              </template>
-            </el-popover>
+          <el-popover :visible="checkDeleteIsShow" placement="top" popper-class="down-popover" width="450px">
+            确定删除所选中的测试报告?
+            <div style="color: red">
+              1、关联了问题记录的测试报告不会被删除 <br>
+              2、触发方式为【定时任务】或者【流水线】的，只有管理员能删除
+            </div>
+            <div style="text-align: right; margin-right: 10px">
+              <el-button size="small" type="text" @click="checkDeleteIsShow = false">取消</el-button>
+              <el-button type="primary" size="small" @click="deleteReport">确定</el-button>
+            </div>
+            <template #reference>
+              <el-button
+                  type="danger"
+                  size="small"
+                  style="margin-right: 5px"
+                  @click="checkDeleteIsShow = true"
+              >删除
+              </el-button>
+            </template>
+          </el-popover>
 
-          <el-button style="text-align: right; margin-right: 10px" type="primary" size="small" @click="showReportStat = true">查看统计</el-button>
-          </span>
+          <el-button type="primary" size="small" @click="showReportStat = true">查看统计</el-button>
+        </div>
       </div>
 
     </div>
@@ -215,7 +257,8 @@
 <script setup lang="ts">
 import {onMounted, ref, onBeforeUnmount} from "vue";
 import {Help} from "@icon-park/vue-next";
-import {useRoute} from "vue-router"
+import {useRoute, useRouter} from "vue-router"
+import {ArrowLeft} from "@element-plus/icons-vue";
 import {
   GetReport,
   DeleteReport,
@@ -249,6 +292,7 @@ const props = defineProps({
 })
 
 const route = useRoute()
+const router = useRouter()
 const reportId = route.query.id
 const report = ref({
   name: '',
@@ -327,11 +371,15 @@ const getReport = (reportId: any) => {
 const deleteReport = () => {
   DeleteReport(props.testType, {id_list: [reportId]}).then(response => {
     if (response) {
-      // window.opener = null;
-      // window.open('about:blank', '_self')
-      window.close();
+      // 删除成功后返回报告列表
+      goBack()
     }
   })
+}
+
+const goBack = () => {
+  // 返回到对应的报告列表页面
+  router.push(`/${props.testType}-test/report`)
 }
 
 const changeReportStepStatus = () => {
@@ -525,8 +573,68 @@ const showCaseEditor = (message: any) => {
   margin-top: 10%;
 }
 
+.breadcrumb-container {
+  margin: 10px 0 20px 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e4e7ed;
+}
+
 .report-header {
   margin-top: 10px;
+  overflow: hidden; /* 确保浮动元素不会溢出 */
+  min-height: 40px; /* 确保有足够的高度显示按钮 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  
+  /* 左侧信息 */
+  .header-left {
+    flex: 1;
+    font-size: 13px;
+    color: #3a8ee6;
+    margin-left: 10px;
+  }
+  
+  /* 右侧按钮组 */
+  .header-right {
+    flex-shrink: 0;
+    font-size: 13px;
+    color: #3a8ee6;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-right: 10px;
+  }
+  
+  /* 响应式设计 */
+  @media (max-width: 1200px) {
+    flex-direction: column;
+    align-items: flex-start;
+    
+    .header-left {
+      margin-bottom: 10px;
+      margin-left: 0;
+    }
+    
+    .header-right {
+      margin-right: 0;
+      width: 100%;
+      justify-content: flex-start;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .header-right {
+      gap: 4px;
+      
+      .el-button {
+        font-size: 12px;
+        padding: 4px 8px;
+      }
+    }
+  }
 }
 
 .el-collapse-item-title {

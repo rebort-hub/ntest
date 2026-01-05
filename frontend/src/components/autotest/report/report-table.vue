@@ -319,6 +319,7 @@
 
 <script setup lang="ts">
 import {onMounted, ref, onBeforeUnmount, watch, nextTick, computed} from "vue";
+import {useRouter} from "vue-router";
 import Pagination from '@/components/pagination.vue'
 
 import {GetProject, GetProjectList} from "@/api/autotest/project";
@@ -359,6 +360,8 @@ const props = defineProps({
     type: Object
   }
 })
+
+const router = useRouter()
 
 const tableIsLoading = ref(false)
 const checkDeleteIsShow = ref(false)
@@ -561,7 +564,8 @@ const reRun = (runConf) => {
 
 
 const openReportById = (reportId: any) => {
-  window.open(`/${props.testType}-test/report-show?id=${reportId}`, '_blank')
+  // 使用路由跳转替代新窗口打开
+  router.push(`/${props.testType}-test/report-show?id=${reportId}`)
 }
 
 const clickSelectAll = (val: never[]) => {
