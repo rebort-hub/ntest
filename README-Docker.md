@@ -9,7 +9,7 @@
 ### 2. 一键启动
 ```bash
 # 克隆项目
-git clone <your-repo-url>
+git clone <https://github.com/rebort-hub/ntest>
 cd <project-directory>
 
 # 启动所有服务
