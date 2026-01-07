@@ -8,7 +8,7 @@ const route: Route[] = [
     component: Layout,
     redirect: '/config/value',
     hideMenu: false,
-    meta: { title: '配置管理', icon: 'setting' },
+    meta: { title: '配置管理', icon: 'CreditCard' },
     children: [
       {
         path: 'type',

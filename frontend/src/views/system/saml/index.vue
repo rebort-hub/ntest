@@ -130,7 +130,15 @@
     <EditDrawer />
     
     <!-- 元数据查看对话框 -->
-    <el-dialog v-model="metadataDialogVisible" title="SAML元数据" width="80%" :close-on-click-modal="false">
+    <el-dialog 
+      v-model="metadataDialogVisible" 
+      title="SAML元数据" 
+      width="60%" 
+      :close-on-click-modal="false"
+      :modal="true"
+      :append-to-body="true"
+      class="metadata-dialog"
+    >
       <el-input
         v-model="metadataContent"
         type="textarea"

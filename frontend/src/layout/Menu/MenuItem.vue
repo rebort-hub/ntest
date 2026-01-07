@@ -2,52 +2,28 @@
   <template v-if="!menu.hideMenu">
     <el-sub-menu v-if="showMenuType === 2" :index="pathResolve" :show-timeout="0" :hide-timeout="0">
       <template #title>
-        <!-- 混合图标系统：优先使用SVG，回退到字体图标 -->
-        <SvgIcon 
-          v-if="useSvgIcon(menu.meta.icon)"
-          class="el-menu-item-icon" 
-          :name="getSvgIconName(menu.meta.icon)"
-          size="18px"
-        />
-        <i 
-          v-else
-          class="el-menu-item-icon sfont" 
-          :class="getFontIcon(menu.meta.icon)" 
-        ></i>
+        <!-- 使用 Element Plus 图标 -->
+        <el-icon class="el-menu-item-icon">
+          <component :is="getElementIcon(menu.meta.icon)" />
+        </el-icon>
         <span>{{ menu.meta.title }}</span>
       </template>
       <menu-item v-for="(item, key) in menu.children" :key="key" :menu="item" :basePath="pathResolve" />
     </el-sub-menu>
     <app-link v-else-if="showMenuType === 1" :to="pathResolve">
       <el-menu-item :index="pathResolve" v-if="!menu.children[0].children || menu.children[0].children.length === 0">
-        <!-- 混合图标系统 -->
-        <SvgIcon 
-          v-if="useSvgIcon(menu.children[0].meta.icon || menu.meta.icon)"
-          class="el-menu-item-icon" 
-          :name="getSvgIconName(menu.children[0].meta.icon || menu.meta.icon)"
-          size="18px"
-        />
-        <i 
-          v-else
-          class="el-menu-item-icon sfont" 
-          :class="getFontIcon(menu.children[0].meta.icon || menu.meta.icon)" 
-        ></i>
+        <!-- 使用 Element Plus 图标 -->
+        <el-icon class="el-menu-item-icon">
+          <component :is="getElementIcon(menu.children[0].meta.icon || menu.meta.icon)" />
+        </el-icon>
         <template #title>{{ menu.children[0].meta.title }}</template>
       </el-menu-item>
       <el-sub-menu v-else :index="pathResolve" :show-timeout="0" :hide-timeout="0">
         <template #title>
-          <!-- 混合图标系统 -->
-          <SvgIcon 
-            v-if="useSvgIcon(menu.children[0].meta.icon || menu.meta.icon)"
-            class="el-menu-item-icon" 
-            :name="getSvgIconName(menu.children[0].meta.icon || menu.meta.icon)"
-            size="18px"
-          />
-          <i 
-            v-else
-            class="el-menu-item-icon sfont" 
-            :class="getFontIcon(menu.children[0].meta.icon || menu.meta.icon)" 
-          ></i>
+          <!-- 使用 Element Plus 图标 -->
+          <el-icon class="el-menu-item-icon">
+            <component :is="getElementIcon(menu.children[0].meta.icon || menu.meta.icon)" />
+          </el-icon>
           <span>{{ menu.children[0].meta.title }}</span>
         </template>
         <menu-item v-for="(item, key) in menu.children[0].children" :key="key" :menu="item" :basePath="pathResolve" />
@@ -55,18 +31,10 @@
     </app-link>
     <app-link v-else :to="pathResolve">
       <el-menu-item :index="pathResolve">
-        <!-- 混合图标系统 -->
-        <SvgIcon 
-          v-if="useSvgIcon(menu.meta.icon)"
-          class="el-menu-item-icon" 
-          :name="getSvgIconName(menu.meta.icon)"
-          size="18px"
-        />
-        <i 
-          v-else
-          class="el-menu-item-icon sfont" 
-          :class="getFontIcon(menu.meta.icon)" 
-        ></i>
+        <!-- 使用 Element Plus 图标 -->
+        <el-icon class="el-menu-item-icon">
+          <component :is="getElementIcon(menu.meta.icon)" />
+        </el-icon>
         <template #title>{{ menu.meta.title }}</template>
       </el-menu-item>
     </app-link>
@@ -76,7 +44,13 @@
 <script lang="ts">
 import { defineComponent, computed } from 'vue'
 import appLink from './Link.vue'
-import SvgIcon from '@/components/SvgIcon/index.vue'
+// 导入 Element Plus 图标 - 使用确定存在的图标
+import {
+  Setting, HomeFilled, User, UserFilled, DataAnalysis, 
+  Document, Folder, Calendar, Warning, Key,CreditCard,
+  Tools, Connection, Bell, Menu as MenuIcon,FolderOpened,Refrigerator,
+  Operation, Monitor, List, Grid, Microphone
+} from '@element-plus/icons-vue'
 import { isBackMenu } from '@/config'
 
 export default defineComponent({
@@ -93,7 +67,10 @@ export default defineComponent({
   },
   components: {
     appLink,
-    SvgIcon
+    Setting, HomeFilled, User, UserFilled, DataAnalysis, 
+    Document, Folder, Calendar, Warning, Key, 
+    Tools, Connection, Bell, MenuIcon,
+    Operation, Monitor, List, Grid, Microphone
   },
   setup(props) {
     const menu = props.menu
@@ -129,87 +106,80 @@ export default defineComponent({
       return path
     })
 
-    // 🎯 SVG图标优先列表 - 这些图标使用SVG，其他使用字体图标
-    const svgIconList = [
-      'api',           // 🔌 API接口
-      'android',       // 📱 安卓
-      'devices',       // 📱 设备
-      'permissions',   // 🔐 权限
-      'calendar',      // 📅 日历
-      'alarm',         // ⚠️ 警告
-      'branchTwo',     // 🌳 分支
-      'bookOpen',      // 📚 书本
-      'folderOpen',    // 📁 文件夹
-      'tool',          // 🔧 工具
-      'comment',       // 💬 评论
-      'mindmapMap'     // 🗺️ 地图
-    ]
-
-    // 判断是否使用SVG图标
-    const useSvgIcon = (iconName: string): boolean => {
-      return iconName && svgIconList.includes(iconName)
-    }
-
-    // SVG图标名称映射
-    const getSvgIconName = (iconName: string): string => {
-      const svgMapping: { [key: string]: string } = {
-        'api': 'api',
-        'android': 'mobile',
-        'devices': 'device',
-        'permissions': 'permission',
-        'calendar': 'calendar',
-        'alarm': 'warning',
-        'branchTwo': 'branch',
-        'bookOpen': 'book',
-        'folderOpen': 'folder',
-        'tool': 'tool',
-        'comment': 'comment',
-        'mindmapMap': 'map'
-      }
-      return svgMapping[iconName] || 'tool'
-    }
-
-    // 字体图标映射 - 保留现有的完美匹配图标
-    const getFontIcon = (iconName: string) => {
-      if (!iconName) return 'system-shezhi'
-      
-      const fontIconMap: { [key: string]: string } = {
-        // === 完美匹配的字体图标（保留） ===
-        'home': 'system-home',           // ✅ 首页图标
-        'system': 'system-shezhi',       // ✅ 系统设置图标
-        'user': 'system-yonghu',         // ✅ 用户图标
-        'people': 'system-yonghu',       // ✅ 人员图标
-        'chartHistogram': 'system-chart',     // ✅ 图表图标
-        'chartHistogramOne': 'system-chart',  // ✅ 图表图标
-        'chartProportion': 'system-chart',    // ✅ 图表图标
+    // Element Plus 图标映射 - 使用确定存在的图标
+    const getElementIcon = (iconName: string): string => {
+      const iconMapping: { [key: string]: string } = {
+        // 配置管理相关
+        'CreditCard': 'CreditCard',
+        'settingTwo': 'Setting', 
+        'settingThree': 'Setting',
+        'mindmapMap': 'Grid',
+        'hamburgerButton': 'MenuIcon',
+        'comment': 'Bell',
+        'key': 'Key',
         
-        // === 设置相关 - 统一使用设置图标 ===
-        'setting': 'system-shezhi',
-        'settingTwo': 'system-shezhi',
-        'settingThree': 'system-shezhi',
+        // 脚本和开发
+        'code': 'Document',
         
-        // === 组件相关 - 统一使用组件图标 ===
-        'cubeFive': 'system-component',
-        'figmaComponent': 'system-component',
+        // 基础图标
+        'home': 'HomeFilled',
+        'user': 'User',
+        'people': 'UserFilled',
+        'system': 'Setting',
         
-        // === 菜单相关 - 统一使用菜单图标 ===
-        'hamburgerButton': 'system-menu',
+        // 图表相关
+        'chartHistogram': 'DataAnalysis',
+        'chartHistogramOne': 'DataAnalysis',
+        'chartProportion': 'DataAnalysis',
         
-        // === 其他保留的字体图标 ===
-        // 注意：api, android, devices, permissions, calendar, alarm, branchTwo, 
-        // bookOpen, folderOpen, tool, comment, mindmapMap 现在使用SVG图标
+        // UI测试相关
+        'bookOpen': 'Document',
+        'folderOpen': 'Folder',
+        'cubeFive': 'Grid',
+        'calendar': 'Calendar',
+        
+        // 工具相关
+        'tool': 'Tools',
+        'followUpDateSort': 'Calendar',
+        'dataThree': 'DataAnalysis',
+        'idCardH': 'User',
+        'databaseEnter': 'Connection',
+        'userPositioning': 'User',
+        'fourArrows': 'Operation',
+        
+        // 系统管理相关
+        'figmaComponent': 'Grid',
+        'permissions': 'Key',
+        'experiment': 'Tools',
+        'alarm': 'Warning',
+        
+        // 测试管理相关
+        'layers': 'Document',
+        'leftAndRightBranch': 'Operation',
+        'everyUser': 'UserFilled',
+        'bug': 'Warning',
+        'list': 'List',
+        
+        // AI驱动生成管理相关
+        'Microphone': 'Microphone',
+        'FolderOpened':'FolderOpened',
+        'Refrigerator':'Refrigerator',
+        
+        // 其他
+        'api': 'Connection',
+        'android': 'Monitor',
+        'devices': 'Monitor',
+        'branchTwo': 'Operation'
       }
       
-      return fontIconMap[iconName] || 'system-shezhi'
+      return iconMapping[iconName] || 'Setting'
     }
 
     return {
       showMenuType,
       pathResolve,
       isBackMenu,
-      useSvgIcon,
-      getSvgIconName,
-      getFontIcon
+      getElementIcon
     }
   }
 })
@@ -223,36 +193,12 @@ export default defineComponent({
   text-align: left;
 }
 
-/* 通用图标样式 - 适用于字体图标和SVG图标 */
-.el-menu-item .el-menu-item-icon,
-.el-sub-menu__title .el-menu-item-icon {
-  padding-right: 8px;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 20px !important;
-  height: 20px !important;
-  font-size: 18px !important;
-  flex-shrink: 0 !important;
-  
-  /* 字体图标样式 */
-  &.sfont {
-    font-family: "sfont" !important;
-    font-style: normal;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  
-  /* SVG图标样式 */
-  &.svg-icon {
-    fill: currentColor;
-    color: inherit;
-  }
-}
-
-/* 确保SVG图标继承颜色 */
-:deep(.svg-icon) {
-  color: inherit !important;
-  fill: currentColor !important;
+/* Element Plus 图标样式 */
+.el-menu-item .el-icon,
+.el-sub-menu__title .el-icon {
+  margin-right: 8px;
+  width: 20px;
+  height: 20px;
+  font-size: 18px;
 }
 </style>

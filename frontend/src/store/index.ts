@@ -6,7 +6,7 @@ import {appState} from "@/store/modules/app";
 import {ThemeConfigState} from "@/store/modules/themeConfig";
 
 const debug = import.meta.env.MODE !== 'production'
-const files= import.meta.globEager('./modules/*.ts')
+const files = import.meta.glob('./modules/*.ts', { eager: true })
 
 export interface RootState {
   // user: userState,

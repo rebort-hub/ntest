@@ -11,7 +11,7 @@ export default [
         name: 'aitestrebort',
         meta: {
             title: 'AI驱动生成管理',
-            icon: 'MagicStick',
+            icon: 'Microphone',
             cache: false
         },
         children: [
@@ -21,7 +21,7 @@ export default [
                 component: () => import('@/views/aitestrebort/project/index.vue'),
                 meta: {
                     title: '项目管理',
-                    icon: 'FolderOpen',
+                    icon: 'FolderOpened',
                     cache: true
                 }
             },
@@ -96,7 +96,7 @@ export default [
                 component: () => import('@/views/aitestrebort/llm-config/index.vue'),
                 meta: {
                     title: 'LLM 厂商配置',
-                    icon: 'Setting',
+                    icon: 'Refrigerator',
                     cache: true
                 }
             },
@@ -126,7 +126,7 @@ export default [
                 component: () => import('@/views/aitestrebort/conversations/index.vue'),
                 meta: {
                     title: 'NT-聊天服务',
-                    icon: 'ChatDotRound',
+                    icon: 'Microphone',
                     cache: true
                 }
             },

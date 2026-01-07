@@ -128,7 +128,8 @@ export default defineComponent({
       padding: 0 20px !important;
       justify-content: center;
       
-      .el-menu-item-icon {
+      .el-menu-item-icon,
+      .icon-park-icon {
         margin-right: 0 !important;
         padding-right: 0 !important;
         width: 24px !important;
@@ -146,6 +147,15 @@ export default defineComponent({
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
         }
+        
+        /* 强制显示SVG */
+        svg {
+          display: block !important;
+          width: 18px !important;
+          height: 18px !important;
+          fill: currentColor !important;
+          stroke: currentColor !important;
+        }
       }
       
       .el-tooltip__trigger {
@@ -160,7 +170,8 @@ export default defineComponent({
         padding: 0 20px !important;
         justify-content: center;
         
-        .el-menu-item-icon {
+        .el-menu-item-icon,
+        .icon-park-icon {
           margin-right: 0 !important;
           padding-right: 0 !important;
           width: 24px !important;
@@ -177,6 +188,15 @@ export default defineComponent({
             font-style: normal;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+          }
+          
+          /* 强制显示SVG */
+          svg {
+            display: block !important;
+            width: 18px !important;
+            height: 18px !important;
+            fill: currentColor !important;
+            stroke: currentColor !important;
           }
         }
         
