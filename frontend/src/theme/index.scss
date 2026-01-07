@@ -1,3 +1,5 @@
+@import './modules/dark.scss';
+
 :root {
   // 主题色
   --system-primary-color: #409eff; // 可做背景色和文本色，用做背景色时，需要和--system-primary-text-color配合使用，避免文件颜色和主题色冲突
@@ -47,5 +49,3 @@ body #nprogress .spinner-icon {
   border-top-color: var(--system-primary-color);
   border-left-color: var(--system-primary-color);
 }
-
-@import './modules/dark.scss';

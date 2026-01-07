@@ -29,25 +29,29 @@ class FastAPI(_FastAPI):
         """ 业务处理成功的响应 """
         return self.restful_result(code=200, message=msg or "处理成功", data=data, **kwargs)
 
-    def trigger_success(self, data=None, **kwargs):
+    def trigger_success(self, data=None, msg=None, **kwargs):
         """ 触发运行成功的响应 """
-        return self.success(msg="触发执行成功，请等待执行完毕", data=data, **kwargs)
+        return self.success(msg=msg or "触发执行成功，请等待执行完毕", data=data, **kwargs)
 
-    def get_success(self, data=None, **kwargs):
+    def get_success(self, data=None, msg=None, **kwargs):
         """ 数据获取成功的响应 """
-        return self.success(msg="获取成功", data=data, **kwargs)
+        return self.success(msg=msg or "获取成功", data=data, **kwargs)
 
-    def post_success(self, data=None, **kwargs):
+    def get_error(self, data=None, msg=None, **kwargs):
+        """ 数据获取失败的响应 """
+        return self.fail(msg=msg or "获取失败", data=data, **kwargs)
+
+    def post_success(self, data=None, msg=None, **kwargs):
         """ 数据新增成功的响应 """
-        return self.success(msg="新增成功", data=data, **kwargs)
+        return self.success(msg=msg or "新增成功", data=data, **kwargs)
 
-    def put_success(self, data=None, **kwargs):
+    def put_success(self, data=None, msg=None, **kwargs):
         """ 数据修改成功的响应 """
-        return self.success(msg="修改成功", data=data, **kwargs)
+        return self.success(msg=msg or "修改成功", data=data, **kwargs)
 
-    def delete_success(self, data=None, **kwargs):
+    def delete_success(self, data=None, msg=None, **kwargs):
         """ 数据删除成功的响应 """
-        return self.success(msg="删除成功", data=data, **kwargs)
+        return self.success(msg=msg or "删除成功", data=data, **kwargs)
 
     def fail(self, msg=None, data=None, **kwargs):
         """ 业务处理失败的响应 """

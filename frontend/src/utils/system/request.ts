@@ -125,15 +125,21 @@ service.interceptors.response.use(
                         if (typeof responseBody.message === 'object'){ // 脚本保存，脚本语法错误
                             ElMessage.warning(`${responseBody.message.msg}\n${responseBody.message.result}`)
                         }else {
-                            ElMessage.warning(responseBody.message)
+                            // @ts-ignore
+                            if (response.config.url.indexOf('/oauth/') === -1 &&
+                                response.config.url.indexOf('/saml/') === -1) { // 不显示OAuth配置和SAML配置的错误消息
+                                ElMessage.warning(responseBody.message)
+                            }
                         }
-                        return
+                        return responseBody
                     } else {
                         // @ts-ignore
                         if (response.config.url.indexOf('download') === -1 && 
                             response.config.url.indexOf('/steps') === -1 &&
                             response.config.url.indexOf('/requirements/') === -1 &&
-                            response.config.url.indexOf('/knowledge/') === -1) { // 不显示测试步骤操作和需求管理、知识库的成功消息
+                            response.config.url.indexOf('/knowledge/') === -1 &&
+                            response.config.url.indexOf('/oauth/') === -1 &&
+                            response.config.url.indexOf('/saml/') === -1) { // 不显示测试步骤操作、需求管理、知识库、OAuth配置和SAML配置的成功消息
                             ElMessage.success(responseBody.message)
                         }
                         return responseBody

@@ -121,9 +121,14 @@
         <!--          </template>-->
         <!--        </el-table-column>-->
 
-        <el-table-column fixed="right" show-overflow-tooltip prop="desc" align="center" label="操作" width="80">
+        <el-table-column fixed="right" show-overflow-tooltip prop="desc" align="center" label="操作" width="100">
           <template #default="scope">
-            <el-button type="text" size="small" @click.native="showEditDrawer(scope.row)">修改</el-button>
+            <div class="action-buttons">
+              <el-button type="warning" size="small" @click.native="showEditDrawer(scope.row)">
+                <el-icon><Edit /></el-icon>
+                修改
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -151,7 +156,7 @@ import {ChangeConfigSort, GetConfigList} from "@/api/config/config-value";
 import {bus, busEvent} from "@/utils/bus-events";
 import {ElMessage} from "element-plus";
 import toClipboard from "@/utils/copy-to-memory";
-import {Help, SortThree} from "@icon-park/vue-next";
+import {Help, SortThree, Edit} from "@icon-park/vue-next";
 
 const tableIsLoading = ref(false)
 const configTypeList = ref([])
@@ -309,5 +314,15 @@ const drawerIsCommit = (message: any) => {
 </script>
 
 <style scoped lang="scss">
+.action-buttons {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  align-items: center;
+}
 
+.action-buttons .el-button {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
 </style>

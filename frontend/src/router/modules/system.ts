@@ -30,6 +30,16 @@ const route: Route[] = [
         meta: { title: '用户管理', icon: 'user' }
       },
       {
+        path: 'saml',
+        component: createNameComponent(() => import('@/views/system/saml/index.vue')),
+        meta: { title: 'SAML SSO配置', icon: 'key' }
+      },
+      {
+        path: 'saml/test',
+        component: createNameComponent(() => import('@/views/system/saml/test.vue')),
+        meta: { title: 'SAML功能测试', icon: 'experiment', hideTabs: true }
+      },
+      {
         path: 'job',
         component: createNameComponent(() => import('@/views/system/job/index.vue')),
         meta: { title: '系统定时任务', icon: 'calendar' }

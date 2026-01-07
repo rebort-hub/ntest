@@ -130,6 +130,7 @@ export default [
                     cache: true
                 }
             },
+
             {
                 path: 'prompts',
                 name: 'aitestrebortPrompts',

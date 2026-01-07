@@ -1,4 +1,4 @@
-﻿import os
+import os
 import platform
 
 from utils.client.test_runner import validate_func as assert_func_file
@@ -238,17 +238,30 @@ make_user_language_mapping = {
     # 'zh_TW': '繁体中文'
 }
 
-auth_type = 'test_platform'  # 身份验证机制 SSO, test_platform
+auth_type = 'test_platform'  # 身份验证机制 SSO, SAML, test_platform
+
+# ============================================================================
+# OAuth 2.0 配置说明
+# ============================================================================
+# 推荐使用UI界面进行OAuth配置管理（/config/oauth），支持多个OAuth提供商
+# 以下配置文件中的OAuth配置仅作为后备方案，当UI中没有启用的配置时才会使用
+# 
+# 迁移建议：
+# 1. 访问 /api/config/oauth/migrate 接口将配置文件配置迁移到UI中
+# 2. 在UI中管理所有OAuth配置，支持启用/禁用、设置默认等功能
+# 3. 配置文件中的配置可以保留作为后备，但建议主要使用UI配置
+# ============================================================================
+
 class _Sso:
     """ 身份验证如果是走SSO，则以下配置项必须正确 """
     # 开放平台SSO地址
-    sso_host = "https://xxx" if is_linux else "http://www.xxx"
+    sso_host = "https://xxx/oauth/" if is_linux else "https://xxxx/oauth/"
     sso_authorize_endpoint = "/oauth2/authorize"
     sso_token_endpoint = "/oauth2/token"
-    client_id = "xxx" if is_linux else "xxx"
-    client_secret = "xxx" if is_linux else "xxx"
+    client_id = "xxxx" if is_linux else "xxxx"
+    client_secret = "xxxx" if is_linux else "xxxx"
     # N-Tester测试平台SSO方式登录的前端地址
-    redirect_uri = "http://xxx/sso/login" if is_linux else "http://xxx/sso/login"
+    redirect_uri = "http://172.16.60.204/sso/login" if is_linux else "http://172.16.60.204/sso/login"
     front_redirect_addr = (f"{sso_host}{sso_authorize_endpoint}?"
                            f"response_type=code&client_id={client_id}&"
                            f"scope=openid&"

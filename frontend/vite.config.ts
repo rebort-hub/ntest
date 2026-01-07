@@ -67,6 +67,18 @@ export default ({ command }: ConfigEnv): UserConfigExport => {
       // }),
     ],
     css: {
+      preprocessorOptions: {
+        scss: {
+          // 静默所有弃用警告
+          silenceDeprecations: ['legacy-js-api', 'import', 'global-builtin', 'color-functions'],
+          // 使用 legacy API 以避免兼容性问题
+          api: 'legacy',
+          // 全局变量注入（如果需要）
+          additionalData: `
+            // 全局 SCSS 变量可以在这里定义
+          `
+        }
+      },
       postcss: {
         plugins: [
             {

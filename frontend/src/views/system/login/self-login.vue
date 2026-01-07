@@ -131,24 +131,15 @@
             <!-- 其他登录方式 -->
             <div class="login-footer">
               <div class="divider">
-                <!-- <span>或者</span>
+                <span>或者</span>
               </div>
               <div class="social-login">
-                <button class="social-btn" title="企业微信登录">
+                <button class="social-btn saml-btn" title="企业SSO登录" @click="handleSamlLogin">
                   <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8.5 12c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5zm5 0c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5z"/>
+                    <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11.5C15.4,11.5 16,12.1 16,12.7V16.2C16,16.8 15.4,17.3 14.8,17.3H9.2C8.6,17.3 8,16.8 8,16.2V12.7C8,12.1 8.4,11.5 9,11.5V10C9,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.2,9.2 10.2,10V11.5H13.8V10C13.8,9.2 12.8,8.2 12,8.2Z"/>
                   </svg>
+                  <span>企业SSO登录</span>
                 </button>
-                <button class="social-btn" title="钉钉登录">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
-                  </svg>
-                </button>
-                <button class="social-btn" title="SSO登录">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                  </svg> -->
-                <!-- </button> -->
               </div>
             </div>
           </div>
@@ -177,6 +168,7 @@ import { useRouter, useRoute } from "vue-router";
 import { ElMessage } from 'element-plus'
 import { LoginApi } from "@/api/system/user";
 import { GetConfigByCode } from "@/api/config/config-value";
+import { samlLogin } from "@/api/system/saml";
 
 const platformName = ref()
 const platformLogo = ref('')
@@ -272,6 +264,24 @@ const submit = () => {
       form.loading = false
     })
   })
+}
+
+// SAML登录函数
+const handleSamlLogin = async () => {
+  try {
+    const response = await samlLogin({
+      relay_state: route.query.redirect || '/'
+    })
+    
+    if (response.data && response.data.redirect_url) {
+      // 重定向到IdP登录页面
+      window.location.href = response.data.redirect_url
+    } else {
+      ElMessage.error('SAML登录配置错误')
+    }
+  } catch (error) {
+    ElMessage.error('SAML登录失败，请联系管理员')
+  }
 }
 
 onMounted(() => {
@@ -768,6 +778,31 @@ onMounted(() => {
         width: 18px;
         height: 18px;
         color: #4a5568;
+      }
+
+      &.saml-btn {
+        width: auto;
+        padding: 8px 16px;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #4a5568;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        border: 2px solid #cbd5e0;
+
+        &:hover {
+          background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+          border-color: #4f46e5;
+          color: white;
+          
+          svg {
+            color: white;
+          }
+        }
+
+        span {
+          font-size: 13px;
+        }
       }
     }
   }

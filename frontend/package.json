@@ -9,7 +9,8 @@
     "start": "vite",
     "build": "vite build --mode=production",
     "build:stag": "vite build --mode=staging",
-    "serve": "vite preview"
+    "serve": "vite preview",
+    "dev:quiet": "cross-env NODE_OPTIONS=--no-deprecation SASS_SILENCE_DEPRECATIONS=* vite"
   },
   "dependencies": {
     "@element-plus/icons": "0.0.11",
@@ -43,9 +44,11 @@
     "@vitejs/plugin-vue": "2.3.4",
     "@vue/compiler-sfc": "3.5.12",
     "@webxrd/vite-plugin-svg": "1.1.5",
+    "cross-env": "^10.1.0",
     "eslint": "8.57.1",
     "file-loader": "6.2.0",
     "sass": "1.80.4",
+    "sass-embedded": "^1.80.4",
     "typescript": "4.9.5",
     "unplugin-auto-import": "0.17.8",
     "unplugin-vue-components": "0.26.0",

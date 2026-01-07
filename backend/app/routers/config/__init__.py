@@ -6,8 +6,10 @@ from app.routers.config.config import conf_router
 from app.routers.config.run_env import run_env_router
 from app.routers.config.business import business_router
 from app.routers.config.webhook import webhook_router
+from app.routers.config.oauth_config import oauth_router
 
 config_router.include_router(conf_router, prefix="", tags=["配置管理"])
 config_router.include_router(run_env_router, prefix="/run-env", tags=["运行环境管理"])
 config_router.include_router(business_router, prefix="/business", tags=["业务线管理"])
 config_router.include_router(webhook_router, prefix="/webhook", tags=["webhook管理"])
+config_router.include_router(oauth_router, prefix="/oauth", tags=["OAuth 2.0配置管理"])

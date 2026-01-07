@@ -44,6 +44,12 @@ const route: Route[] = [
     hideMenu: true,
     meta: { title: 'sso登录', hideTabs: false, icon: 'system' }
   },
+  {
+    path: '/saml/callback',
+    component: createNameComponent(() => import('@/views/system/login/saml-callback.vue')),
+    hideMenu: true,
+    meta: { title: 'SAML登录回调', hideTabs: true, icon: 'system' }
+  },
   // {
   //   // 找不到路由重定向到404页面
   //   path: "/:pathMatch(.*)",

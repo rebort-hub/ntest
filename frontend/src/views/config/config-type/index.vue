@@ -86,10 +86,18 @@
             <span>{{ parseUser(scope.row.create_user) }}</span>
           </template>
         </el-table-column>
-        <el-table-column fixed="right" show-overflow-tooltip prop="desc" align="center" label="操作" width="80">
+        <el-table-column fixed="right" show-overflow-tooltip prop="desc" align="center" label="操作" width="160">
           <template #default="scope">
-            <el-button type="text" size="small" style="margin: 0; padding: 2px" @click.native="showEditDrawer(scope.row, 'edit')">修改</el-button>
-            <el-button type="text" size="small" style="margin: 0; padding: 2px" @click="showEditDrawer(scope.row, 'copy')">复制</el-button>
+            <div class="action-buttons">
+              <el-button type="warning" size="small" @click.native="showEditDrawer(scope.row, 'edit')">
+                <el-icon><Edit /></el-icon>
+                修改
+              </el-button>
+              <el-button type="info" size="small" @click="showEditDrawer(scope.row, 'copy')">
+                <el-icon><CopyOne /></el-icon>
+                复制
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -116,7 +124,7 @@ import AddDrawer from './add-drawer.vue'
 import {ChangeConfigTypeSort, GetConfigTypeList} from "@/api/config/config-type";
 import {GetUserList} from "@/api/system/user";
 import {bus, busEvent} from "@/utils/bus-events";
-import {Help, SortThree} from "@icon-park/vue-next";
+import {Help, SortThree, Edit, CopyOne} from "@icon-park/vue-next";
 
 const tableIsLoading = ref(false)
 const tableDataList = ref([])
@@ -262,5 +270,15 @@ const drawerIsCommit = (message: any) => {
 </script>
 
 <style scoped lang="scss">
+.action-buttons {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  align-items: center;
+}
 
+.action-buttons .el-button {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
 </style>

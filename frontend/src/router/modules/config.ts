@@ -34,6 +34,11 @@ const route: Route[] = [
         path: 'notify',
         component: createNameComponent(() => import('@/views/config/notify/index.vue')),
         meta: { title: '通知管理', icon: 'comment' }
+      },
+      {
+        path: 'oauth',
+        component: createNameComponent(() => import('@/views/config/oauth/index.vue')),
+        meta: { title: 'OAuth 2.0授权', icon: 'key' }
       }
     ]
   }
