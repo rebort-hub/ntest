@@ -308,7 +308,7 @@ class ChangeSortForm(BaseForm):
 class PaginationForm(BaseForm):
     """ 分页的模型 """
     page_no: Optional[int] = Field(default=None, title="页数")
-    page_size: Optional[int] = Field(default=None, title="页码")
+    page_size: Optional[int] = Field(default=None, title="页码", le=1000, description="每页最大1000条记录")
     detail: bool = Field(default=False, title='是否获取详细数据')
 
     def get_query_filter(self, *args, **kwargs):
@@ -328,8 +328,11 @@ class PaginationForm(BaseForm):
         query = db_Model.filter(**self.get_query_filter(**kwargs)).order_by(order_by_filed)
         total = await query.count()
 
+        # 限制分页大小，防止一次性加载过多数据
         if self.page_no and self.page_size:
-            query = query.offset((int(self.page_no) - 1) * int(self.page_size)).limit(int(self.page_size))
+            # 确保page_size不超过1000
+            page_size = min(int(self.page_size), 1000)
+            query = query.offset((int(self.page_no) - 1) * page_size).limit(page_size)
 
         data = await query.values(*get_filed) if get_filed else await query
         return {"total": total, "data": data}

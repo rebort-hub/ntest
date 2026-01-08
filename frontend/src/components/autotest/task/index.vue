@@ -488,7 +488,7 @@ const disableTask = (taskId: number) => {
 }
 
 const getProjectList = () => {
-  GetProjectList(props.testType, {page_no: 1, page_size: 99999}).then(response => {
+  GetProjectList(props.testType, {page_no: 1, page_size: 1000}).then(response => {
     projectDataList.value = response.data.data
     if (tableDataList.value.length < 1) {
       nextTick(() => {

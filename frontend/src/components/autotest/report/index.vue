@@ -96,13 +96,26 @@ const userList = ref([])
 const userDict = ref({})
 
 const getProjectList = () => {
-  GetProjectList(props.testType, {page_no: 1, page_size: 99999}).then(response => {
-    projectDataList.value = response.data.data
-    if (projectDataList.value.length > 0) {
-      nextTick(() => {
-        projectTreeRef.value.$el.querySelector(".el-tree-node__content").click()
-      })
+  GetProjectList(props.testType, {page_no: 1, page_size: 1000}).then(response => {
+    if (response && response.data && response.data.data) {
+      projectDataList.value = response.data.data
+      if (projectDataList.value.length > 0) {
+        nextTick(() => {
+          if (projectTreeRef.value && projectTreeRef.value.$el) {
+            const firstNode = projectTreeRef.value.$el.querySelector(".el-tree-node__content")
+            if (firstNode) {
+              firstNode.click()
+            }
+          }
+        })
+      }
+    } else {
+      console.error('获取项目列表失败: 响应数据格式错误', response)
+      projectDataList.value = []
     }
+  }).catch(error => {
+    console.error('获取项目列表失败:', error)
+    projectDataList.value = []
   })
 }
 

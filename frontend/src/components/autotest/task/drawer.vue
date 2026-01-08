@@ -654,14 +654,14 @@ const getRunEnvList = () => {
 }
 
 const getCaseSuiteTree = (projectId: number) => {
-  GetCaseSuiteList(props.testType, {page_no: 1, page_size: 99999, project_id: projectId, suite_type: 'api,process'}).then(response => {
+  GetCaseSuiteList(props.testType, {page_no: 1, page_size: 1000, project_id: projectId, suite_type: 'api,process'}).then(response => {
     caseSuiteTree.value = arrayToTree(response.data.data, null)
   })
 }
 
 
 const getCaseList = (suiteId: number) => {
-  GetCaseList(props.testType, {page_no: 1, page_size: 99999, suite_id: suiteId, status: 1, detail: true}).then(response => {
+  GetCaseList(props.testType, {page_no: 1, page_size: 1000, suite_id: suiteId, status: 1, detail: true}).then(response => {
     caseList.value = arrayToTree(response.data.data, null)
   })
 }

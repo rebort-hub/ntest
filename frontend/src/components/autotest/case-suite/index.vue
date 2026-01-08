@@ -253,7 +253,7 @@ const clickTree = (data: any) => {
 }
 
 const getProjectList = () => {
-  GetProjectList(props.testType, {page_no: 1, page_size: 99999}).then(response => {
+  GetProjectList(props.testType, {page_no: 1, page_size: 1000}).then(response => {
     projectList.value = response.data.data
 
     // 默认选中第一个服务/app
@@ -267,7 +267,7 @@ const getProjectList = () => {
 
 const getCaseSuiteList = (projectId: number) => {
   if (projectId){
-    GetCaseSuiteList(props.testType, { 'project_id': projectId, page_no: 1, page_size: 99999 }).then(response => {
+    GetCaseSuiteList(props.testType, { 'project_id': projectId, page_no: 1, page_size: 1000 }).then(response => {
       var response_data = JSON.stringify(response.data) === '{}' ? [] : response.data.data
       treeData.value = arrayToTree(response_data, null)
       treeIsDone(treeData.value)

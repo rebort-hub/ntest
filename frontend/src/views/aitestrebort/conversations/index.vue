@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="conversations-management">
     <!-- 页面头部 -->
     <div class="page-header">
@@ -196,9 +196,7 @@
             </div>
           </template>
           
-          <!-- 压缩提示 -->
-          
-          <!-- 消息列表 -->
+          <!-- 消息列表 - 使用优化的渲染 -->
           <div class="messages-container" ref="messagesContainer">
             <!-- 压缩提示 -->
             <el-alert 
@@ -209,6 +207,7 @@
               style="margin-bottom: 16px;"
             />
             
+            <!-- 优化的消息渲染 -->
             <div
               v-for="message in messages"
               :key="message.id"
@@ -221,16 +220,12 @@
                   <span class="message-time">{{ formatTime(message.created_at) }}</span>
                 </div>
                 <div class="message-text">
-                  <div v-if="message.isStreaming" class="streaming-content">
-                    <span v-if="message.content === '正在思考中...'" class="thinking-dots">
-                      <span class="dot"></span>
-                      <span class="dot"></span>
-                      <span class="dot"></span>
-                    </span>
-                    <span v-else v-html="formatMessageContent(message.content)"></span>
-                    <el-icon v-if="message.content !== '正在思考中...'" class="streaming-cursor"><Loading /></el-icon>
-                  </div>
-                  <div v-else v-html="formatMessageContent(message.content)"></div>
+                  <!-- 使用优化的内容渲染组件 -->
+                  <OptimizedMessageContent 
+                    :content="message.content"
+                    :is-streaming="message.isStreaming"
+                    :role="message.role"
+                  />
                 </div>
                 <!-- 消息工具栏 -->
                 <div v-if="!message.isStreaming && message.role === 'assistant'" class="message-toolbar">
@@ -295,6 +290,7 @@
       </el-col>
     </el-row>
 
+    <!-- 对话框保持不变 -->
     <!-- 创建对话对话框 -->
     <el-dialog
       v-model="showCreateDialog"
@@ -393,13 +389,12 @@
 <script setup lang="ts">
 import { ref, reactive, nextTick, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { marked } from 'marked'
-import { highlightCode, detectLanguage } from '@/utils/code-highlight'
 import {
   Plus, Search, MoreFilled, User, MagicStick, Loading, Collection, Document, Setting, Refresh
 } from '@element-plus/icons-vue'
 import { globalApi, type GlobalConversation, type GlobalLLMConfig, type GlobalPrompt } from '@/api/aitestrebort/global'
-import { useStreamChat } from '@/composables/useStreamChat'
+import { useOptimizedStreamChat } from '@/composables/useOptimizedStreamChat'
+import OptimizedMessageContent from './components/MessageRenderer.vue'
 import { useRoute } from 'vue-router'
 import { projectApi } from '@/api/aitestrebort/project'
 
@@ -427,72 +422,6 @@ const getDefaultProjectId = async () => {
   }
 }
 
-// 配置marked
-const markedOptions = {
-  breaks: true, // 支持换行
-  gfm: true, // 支持GitHub风格的markdown
-}
-
-// 自定义渲染器
-const renderer = {
-  // 自定义代码块渲染
-  code(code: string, language: string | undefined) {
-    const detectedLanguage = language && language.trim() !== '' ? language : detectLanguage(code)
-    const highlightedCode = highlightCode(code, detectedLanguage)
-    
-    return `
-      <div class="code-block">
-        <div class="code-header">
-          <span class="code-language">${detectedLanguage}</span>
-          <div class="code-actions">
-            <button class="copy-btn" onclick="window.copyCode && window.copyCode(this)" data-code="${encodeURIComponent(code)}" title="复制代码">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="m5 15-4-4 4-4"></path>
-              </svg>
-              <span class="copy-text">复制</span>
-            </button>
-          </div>
-        </div>
-        <pre><code class="language-${detectedLanguage}">${highlightedCode}</code></pre>
-      </div>
-    `
-  },
-
-  // 自定义行内代码渲染
-  codespan(code: string) {
-    return `<code class="inline-code">${code}</code>`
-  },
-
-  // 自定义表格渲染
-  table(header: string, body: string) {
-    return `
-      <div class="table-wrapper">
-        <table class="markdown-table">
-          <thead>${header}</thead>
-          <tbody>${body}</tbody>
-        </table>
-      </div>
-    `
-  },
-
-  // 自定义列表渲染
-  list(body: string, ordered: boolean) {
-    const tag = ordered ? 'ol' : 'ul'
-    return `<${tag} class="markdown-list">${body}</${tag}>`
-  },
-
-  // 自定义引用渲染
-  blockquote(quote: string) {
-    return `<blockquote class="markdown-blockquote">${quote}</blockquote>`
-  }
-}
-
-// 应用配置
-marked.use({ 
-  ...markedOptions,
-  renderer 
-})
 interface Conversation {
   id: number
   title: string
@@ -549,8 +478,20 @@ const llmConfigs = ref<LLMConfig[]>([])
 const prompts = ref<GlobalPrompt[]>([])
 const messagesContainer = ref()
 
-// 流式响应
-const { isStreaming, streamContent, sendStreamMessage, stopStream } = useStreamChat()
+// 流式响应 - 使用优化版本
+const { 
+  isStreaming, 
+  streamContent, 
+  sendOptimizedStreamMessage, 
+  stopOptimizedStream,
+  getPerformanceMetrics 
+} = useOptimizedStreamChat({
+  enableBatching: true,
+  batchSize: 8,
+  batchDelay: 30,
+  enableCompression: true,
+  maxRetries: 3
+})
 
 // Token使用监控
 const contextInfo = ref<{
@@ -589,7 +530,7 @@ const filteredConversations = computed(() => {
   )
 })
 
-// 方法
+// 方法 - 保持原有的所有方法不变
 const loadConversations = async () => {
   loading.value = true
   try {
@@ -718,7 +659,7 @@ const sendMessage = async () => {
     
     let hasReceivedContent = false  // 标记是否已接收到内容
     
-    sendStreamMessage(
+    sendOptimizedStreamMessage(
       selectedConversation.value.id,
       content,
       (chunk: string) => {
@@ -739,6 +680,10 @@ const sendMessage = async () => {
         aiMessage.id = messageId
         aiMessage.content = totalContent
         aiMessage.isStreaming = false
+        
+        // 输出性能指标
+        const metrics = getPerformanceMetrics()
+        console.log('Message rendering performance:', metrics)
       },
       (error: string) => {
         // 错误
@@ -747,7 +692,6 @@ const sendMessage = async () => {
       },
       () => {
         // 处理中回调 - 后端已开始处理
-        // 可以在这里更新UI状态，但"思考中"已经显示了
         console.log('Backend is processing...')
       }
     )
@@ -767,6 +711,7 @@ const sendMessage = async () => {
   }
 }
 
+// 其他方法保持不变...
 const clearMessages = async () => {
   if (!selectedConversation.value) return
   
@@ -938,174 +883,6 @@ const getRoleLabel = (role: string) => {
   return labels[role] || role
 }
 
-const formatMessageContent = (content: string) => {
-  try {
-    // 预处理：处理数学公式（简单的LaTeX支持）
-    let processedContent = content
-      // 行内数学公式 $...$
-      .replace(/\$([^$\n]+)\$/g, '<span class="math-inline">$1</span>')
-      // 块级数学公式 $$...$$
-      .replace(/\$\$([^$]+)\$\$/g, '<div class="math-block">$1</div>')
-    
-    // 先处理代码块，避免marked解析问题
-    processedContent = processedContent.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
-      // 清理代码内容，只移除明显的非代码解释文字，保留所有注释
-      let cleanCode = code.trim()
-      
-      // 只移除明显的非代码解释行，保留所有可能的代码和注释
-      const lines = cleanCode.split('\n')
-      const filteredLines = lines.filter(line => {
-        const trimmedLine = line.trim()
-        
-        // 保留空行
-        if (!trimmedLine) return true
-        
-        // 保留所有包含代码特征的行（包括注释）
-        const hasCodeFeatures = 
-          // 编程语言注释
-          trimmedLine.startsWith('//') || 
-          trimmedLine.startsWith('#') || 
-          trimmedLine.startsWith('/*') || 
-          trimmedLine.includes('*/') ||
-          trimmedLine.startsWith('*') ||
-          trimmedLine.startsWith('<!--') ||
-          trimmedLine.includes('-->') ||
-          // 代码符号
-          /[{}();=\[\]<>'"`,.\-+*\/\\|&^%$@!~`:]/.test(trimmedLine) ||
-          // 编程关键字
-          /\b(function|def|class|import|export|return|if|else|for|while|var|let|const|public|private|static)\b/.test(trimmedLine) ||
-          // 看起来像代码的模式
-          /^\s*[a-zA-Z_$][a-zA-Z0-9_$]*\s*[=:({]/.test(trimmedLine) ||
-          // 包含英文单词和符号的组合
-          /[a-zA-Z]+.*[{}();=\[\]<>'"`,.\-+*\/\\|&^%$@!~]/.test(trimmedLine)
-        
-        // 只过滤掉明显的纯中文解释段落（通常比较长且没有任何代码特征）
-        const isPureChinese = /^[\u4e00-\u9fa5\s，。！？：；""''（）【】《》、·—…]+$/.test(trimmedLine)
-        const isLongExplanation = trimmedLine.length > 20 && isPureChinese
-        
-        // 保留所有有代码特征的行，只过滤掉长的纯中文解释
-        return hasCodeFeatures || !isLongExplanation
-      })
-      
-      cleanCode = filteredLines.join('\n').trim()
-      
-      // 如果清理后代码为空，使用原始代码
-      if (!cleanCode) {
-        cleanCode = code.trim()
-      }
-      
-      const language = lang || detectLanguage(cleanCode)
-      const highlightedCode = highlightCode(cleanCode, language)
-      return `
-        <div class="code-block">
-          <div class="code-header">
-            <span class="code-language">${language}</span>
-            <div class="code-actions">
-              <button class="copy-btn" onclick="window.copyCode && window.copyCode(this)" data-code="${encodeURIComponent(cleanCode)}" title="复制代码">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                  <path d="m5 15-4-4 4-4"></path>
-                </svg>
-                <span class="copy-text">复制</span>
-              </button>
-            </div>
-          </div>
-          <pre><code class="language-${language}">${highlightedCode}</code></pre>
-        </div>
-      `
-    })
-    
-    // 处理行内代码
-    processedContent = processedContent.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
-    
-    // 使用marked解析其他markdown语法
-    const html = marked.parse(processedContent, {
-      breaks: true,
-      gfm: true
-    })
-    return html
-  } catch (error) {
-    console.error('Markdown解析错误:', error)
-    // 如果解析失败，回退到简单的文本处理
-    let fallbackContent = content
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      
-    // 处理代码块
-    fallbackContent = fallbackContent.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
-      // 清理代码内容，只移除明显的非代码解释文字，保留所有注释
-      let cleanCode = code.trim()
-      
-      // 只移除明显的非代码解释行，保留所有可能的代码和注释
-      const lines = cleanCode.split('\n')
-      const filteredLines = lines.filter(line => {
-        const trimmedLine = line.trim()
-        
-        // 保留空行
-        if (!trimmedLine) return true
-        
-        // 保留所有包含代码特征的行（包括注释）
-        const hasCodeFeatures = 
-          // 编程语言注释
-          trimmedLine.startsWith('//') || 
-          trimmedLine.startsWith('#') || 
-          trimmedLine.startsWith('/*') || 
-          trimmedLine.includes('*/') ||
-          trimmedLine.startsWith('*') ||
-          trimmedLine.startsWith('<!--') ||
-          trimmedLine.includes('-->') ||
-          // 代码符号
-          /[{}();=\[\]<>'"`,.\-+*\/\\|&^%$@!~`:]/.test(trimmedLine) ||
-          // 编程关键字
-          /\b(function|def|class|import|export|return|if|else|for|while|var|let|const|public|private|static)\b/.test(trimmedLine) ||
-          // 看起来像代码的模式
-          /^\s*[a-zA-Z_$][a-zA-Z0-9_$]*\s*[=:({]/.test(trimmedLine) ||
-          // 包含英文单词和符号的组合
-          /[a-zA-Z]+.*[{}();=\[\]<>'"`,.\-+*\/\\|&^%$@!~]/.test(trimmedLine)
-        
-        // 只过滤掉明显的纯中文解释段落（通常比较长且没有任何代码特征）
-        const isPureChinese = /^[\u4e00-\u9fa5\s，。！？：；""''（）【】《》、·—…]+$/.test(trimmedLine)
-        const isLongExplanation = trimmedLine.length > 20 && isPureChinese
-        
-        // 保留所有有代码特征的行，只过滤掉长的纯中文解释
-        return hasCodeFeatures || !isLongExplanation
-      })
-      
-      cleanCode = filteredLines.join('\n').trim()
-      
-      // 如果清理后代码为空，使用原始代码
-      if (!cleanCode) {
-        cleanCode = code.trim()
-      }
-      
-      const language = lang || detectLanguage(cleanCode)
-      const highlightedCode = highlightCode(cleanCode, language)
-      return `
-        <div class="code-block">
-          <div class="code-header">
-            <span class="code-language">${language}</span>
-            <div class="code-actions">
-              <button class="copy-btn" onclick="window.copyCode && window.copyCode(this)" data-code="${encodeURIComponent(cleanCode)}" title="复制代码">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                  <path d="m5 15-4-4 4-4"></path>
-                </svg>
-                <span class="copy-text">复制</span>
-              </button>
-            </div>
-          </div>
-          <pre><code class="language-${language}">${highlightedCode}</code></pre>
-        </div>
-      `
-    })
-    
-    // 处理行内代码
-    fallbackContent = fallbackContent.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
-    
-    return fallbackContent.replace(/\n/g, '<br>')
-  }
-}
-
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('zh-CN')
 }
@@ -1198,7 +975,7 @@ const regenerateMessage = async (message: ConversationMessage) => {
     
     let hasReceivedContent = false
     
-    sendStreamMessage(
+    sendOptimizedStreamMessage(
       selectedConversation.value.id,
       userMessage.content,
       (chunk: string) => {
@@ -1238,11 +1015,22 @@ const regenerateMessage = async (message: ConversationMessage) => {
   }
 }
 
-// 添加全局类型声明
-declare global {
-  interface Window {
-    copyCode: (button: HTMLElement) => void
+// Token监控相关方法
+const getProgressColor = (ratio: number) => {
+  if (ratio < 0.5) return '#67c23a' // 绿色
+  if (ratio < 0.7) return '#e6a23c' // 橙色
+  if (ratio < 0.9) return '#f56c6c' // 红色
+  return '#909399' // 灰色
+}
+
+const formatTokenCount = (count: number) => {
+  if (count >= 1000000) {
+    return `${(count / 1000000).toFixed(1)}M`
   }
+  if (count >= 1000) {
+    return `${(count / 1000).toFixed(1)}K`
+  }
+  return `${count}`
 }
 
 // 生命周期
@@ -1251,73 +1039,11 @@ onMounted(async () => {
   loadConversations()
   loadLLMConfigs()
   loadPrompts()
-  
-  // 添加全局复制代码功能
-  ;(window as any).copyCode = (button: HTMLElement) => {
-    const code = decodeURIComponent(button.getAttribute('data-code') || '')
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(code).then(() => {
-        const originalText = button.innerHTML
-        button.innerHTML = `
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="20,6 9,17 4,12"></polyline>
-          </svg>
-          已复制
-        `
-        button.style.color = '#67c23a'
-        setTimeout(() => {
-          button.innerHTML = originalText
-          button.style.color = ''
-        }, 2000)
-      }).catch(() => {
-        // 降级到旧的复制方法
-        fallbackCopyTextToClipboard(code, button)
-      })
-    } else {
-      // 降级到旧的复制方法
-      fallbackCopyTextToClipboard(code, button)
-    }
-  }
-  
-  // 降级复制方法
-  function fallbackCopyTextToClipboard(text: string, button: HTMLElement) {
-    const textArea = document.createElement('textarea')
-    textArea.value = text
-    textArea.style.position = 'fixed'
-    textArea.style.left = '-999999px'
-    textArea.style.top = '-999999px'
-    document.body.appendChild(textArea)
-    textArea.focus()
-    textArea.select()
-    
-    try {
-      const successful = document.execCommand('copy')
-      if (successful) {
-        const originalText = button.innerHTML
-        button.innerHTML = `
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="20,6 9,17 4,12"></polyline>
-          </svg>
-          已复制
-        `
-        button.style.color = '#67c23a'
-        setTimeout(() => {
-          button.innerHTML = originalText
-          button.style.color = ''
-        }, 2000)
-      } else {
-        ElMessage.error('复制失败')
-      }
-    } catch (err) {
-      ElMessage.error('复制失败')
-    }
-    
-    document.body.removeChild(textArea)
-  }
 })
 </script>
 
 <style scoped>
+/* 保持原有的所有样式不变 */
 .conversations-management {
   padding: 16px;
   height: calc(100vh - 100px);
@@ -1654,431 +1380,6 @@ onMounted(async () => {
   color: #303133;
 }
 
-/* Markdown 样式 */
-.message-text :deep(h1),
-.message-text :deep(h2),
-.message-text :deep(h3),
-.message-text :deep(h4),
-.message-text :deep(h5),
-.message-text :deep(h6) {
-  margin: 8px 0 3px 0;
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.message-text :deep(h1) { font-size: 1.4em; }
-.message-text :deep(h2) { font-size: 1.2em; }
-.message-text :deep(h3) { font-size: 1.1em; }
-.message-text :deep(h4) { font-size: 1em; }
-
-.message-text :deep(p) {
-  margin: 2px 0;
-  line-height: 1.5;
-}
-
-.message-text :deep(strong) {
-  font-weight: 600;
-}
-
-.message-text :deep(em) {
-  font-style: italic;
-}
-
-/* 消息列表样式 */
-.messages-container {
-  flex: 1;
-  overflow-y: scroll;
-  overflow-x: hidden;
-  padding: 16px;
-  scroll-behavior: smooth;
-}
-
-/* 滚动条样式 - Webkit浏览器 */
-.messages-container::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.messages-container::-webkit-scrollbar-track {
-  background: #f5f7fa;
-  border-radius: 4px;
-}
-
-.messages-container::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-  transition: background 0.3s;
-}
-
-.messages-container::-webkit-scrollbar-thumb:hover {
-  background: #909399;
-}
-
-/* 滚动条样式 - Firefox */
-.messages-container {
-  scrollbar-width: thin;
-  scrollbar-color: #c1c1c1 #f5f7fa;
-}
-
-/* 表格样式 */
-.message-text :deep(.table-wrapper) {
-  margin: 5px 0;
-  overflow-x: auto;
-}
-
-.message-text :deep(.markdown-table) {
-  width: 100%;
-  border-collapse: collapse;
-  border-spacing: 0;
-  font-size: 14px;
-}
-
-.message-text :deep(.markdown-table th),
-.message-text :deep(.markdown-table td) {
-  padding: 8px 12px;
-  border: 1px solid #e1e4e8;
-  text-align: left;
-}
-
-.message-text :deep(.markdown-table th) {
-  background-color: #f6f8fa;
-  font-weight: 600;
-}
-
-.message-item.user .message-text :deep(.markdown-table th) {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.message-item.user .message-text :deep(.markdown-table th),
-.message-item.user .message-text :deep(.markdown-table td) {
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-/* 列表样式 */
-.message-text :deep(.markdown-list) {
-  margin: 5px 0;
-  padding-left: 20px;
-}
-
-.message-text :deep(.markdown-list li) {
-  margin: 1px 0;
-  line-height: 1.5;
-}
-
-/* 引用样式 */
-.message-text :deep(.markdown-blockquote) {
-  margin: 5px 0;
-  padding: 8px 16px;
-  border-left: 4px solid #dfe2e5;
-  background-color: #f6f8fa;
-  color: #6a737d;
-}
-
-.message-item.user .message-text :deep(.markdown-blockquote) {
-  border-left-color: rgba(255, 255, 255, 0.3);
-  background-color: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
-}
-
-/* 链接样式 */
-.message-text :deep(a) {
-  color: #0366d6;
-  text-decoration: none;
-}
-
-.message-text :deep(a:hover) {
-  text-decoration: underline;
-}
-
-.message-item.user .message-text :deep(a) {
-  color: #87ceeb;
-}
-
-/* 分割线样式 */
-.message-text :deep(hr) {
-  margin: 5px 0;
-  border: none;
-  border-top: 1px solid #e1e4e8;
-}
-
-.message-item.user .message-text :deep(hr) {
-  border-top-color: rgba(255, 255, 255, 0.2);
-}
-
-/* 数学公式样式 */
-.message-text :deep(.math-inline) {
-  font-family: 'Times New Roman', serif;
-  font-style: italic;
-  background-color: rgba(255, 235, 59, 0.1);
-  padding: 2px 4px;
-  border-radius: 3px;
-  border: 1px solid rgba(255, 235, 59, 0.3);
-}
-
-.message-text :deep(.math-block) {
-  font-family: 'Times New Roman', serif;
-  font-style: italic;
-  text-align: center;
-  margin: 5px 0;
-  padding: 12px;
-  background-color: rgba(255, 235, 59, 0.05);
-  border: 1px solid rgba(255, 235, 59, 0.2);
-  border-radius: 6px;
-  font-size: 1.1em;
-}
-
-.message-item.user .message-text :deep(.math-inline),
-.message-item.user .message-text :deep(.math-block) {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #fff;
-}
-
-/* 代码高亮样式 - 使用 :deep() 确保样式能够穿透到动态生成的HTML中 */
-/* Tomorrow Night Eighties 主题 */
-.message-text :deep(.code-block) {
-  margin: 5px 0;
-  border-radius: 6px;
-  overflow: hidden;
-  background-color: #2d2d2d;
-  border: 1px solid #393939;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
-}
-
-.message-text :deep(.code-header) {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding: 4px 8px;
-  background-color: #393939;
-  border-bottom: 1px solid #515151;
-  font-size: 10px;
-  min-height: 24px;
-  gap: 4px;
-}
-
-.message-text :deep(.code-language) {
-  font-weight: 500;
-  color: #cccccc;
-  text-transform: uppercase;
-  font-size: 9px;
-  letter-spacing: 0.3px;
-  padding: 1px 4px;
-  background-color: rgba(102, 217, 239, 0.2);
-  border-radius: 2px;
-  border: 1px solid rgba(102, 217, 239, 0.3);
-  flex-shrink: 0;
-  line-height: 1;
-  height: 14px;
-  display: flex;
-  align-items: center;
-}
-
-.message-text :deep(.code-actions) {
-  display: flex;
-  gap: 0;
-  flex-shrink: 0;
-}
-
-.message-text :deep(.copy-btn) {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 1px 4px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
-  cursor: pointer;
-  font-size: 9px;
-  color: #cccccc;
-  transition: all 0.2s ease;
-  font-weight: 400;
-  font-family: inherit;
-  line-height: 1;
-  height: 14px;
-}
-
-.message-text :deep(.copy-btn:hover) {
-  background-color: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #ffffff;
-}
-
-.message-text :deep(.copy-btn:active) {
-  transform: scale(0.95);
-}
-
-.message-text :deep(.copy-btn svg) {
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-}
-
-.message-text :deep(.copy-text) {
-  white-space: nowrap;
-  font-size: 9px;
-}
-
-.message-text :deep(.code-block pre) {
-  margin: 0;
-  padding: 10px;
-  background-color: #2d2d2d;
-  overflow-x: auto;
-  font-family: inherit;
-  font-size: 13px;
-  line-height: 1.4;
-  color: #cccccc;
-}
-
-.message-text :deep(.code-block code) {
-  font-family: inherit;
-  font-size: inherit;
-  background: none;
-  padding: 0;
-  border: none;
-  color: inherit;
-}
-
-.message-text :deep(.inline-code) {
-  background-color: rgba(255, 255, 255, 0.1);
-  padding: 2px 4px;
-  border-radius: 3px;
-  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
-  font-size: 0.9em;
-  color: #f99157;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  font-weight: 400;
-}
-
-/* Tomorrow Night Eighties 代码高亮颜色 */
-.message-text :deep(.hljs-keyword) {
-  color: #cc99cc;
-  font-weight: 500;
-}
-
-.message-text :deep(.hljs-type) {
-  color: #6699cc;
-  font-weight: 500;
-}
-
-.message-text :deep(.hljs-string) {
-  color: #99cc99;
-}
-
-.message-text :deep(.hljs-comment) {
-  color: #999999;
-  font-style: italic;
-}
-
-.message-text :deep(.hljs-number) {
-  color: #f99157;
-}
-
-.message-text :deep(.hljs-boolean) {
-  color: #f99157;
-  font-weight: 500;
-}
-
-.message-text :deep(.hljs-property) {
-  color: #ffcc66;
-}
-
-.message-text :deep(.hljs-attribute) {
-  color: #ffcc66;
-}
-
-.message-text :deep(.hljs-tag) {
-  color: #f2777a;
-}
-
-.message-text :deep(.hljs-color) {
-  color: #66d9ef;
-}
-
-.message-text :deep(.hljs-variable) {
-  color: #f2777a;
-}
-
-.message-text :deep(.hljs-template-variable) {
-  color: #99cc99;
-  background-color: rgba(153, 204, 153, 0.1);
-  padding: 1px 2px;
-  border-radius: 2px;
-}
-
-.message-text :deep(.hljs-selector) {
-  color: #f2777a;
-}
-
-.message-text :deep(.hljs-function) {
-  color: #6699cc;
-  font-weight: 500;
-}
-
-.message-text :deep(.hljs-class) {
-  color: #ffcc66;
-  font-weight: 500;
-}
-
-.message-text :deep(.hljs-operator) {
-  color: #66d9ef;
-}
-
-.message-text :deep(.hljs-punctuation) {
-  color: #cccccc;
-}
-
-.message-text :deep(.hljs-regexp) {
-  color: #99cc99;
-  background-color: rgba(153, 204, 153, 0.1);
-}
-
-.message-text :deep(.hljs-escape) {
-  color: #f99157;
-  font-weight: 500;
-}
-
-/* 用户消息中的代码高亮（保持相同的 Tomorrow Night Eighties 主题） */
-.message-item.user .message-text :deep(.code-block) {
-  background-color: rgba(45, 45, 45, 0.9);
-  border-color: rgba(57, 57, 57, 0.9);
-}
-
-.message-item.user .message-text :deep(.code-header) {
-  background-color: rgba(57, 57, 57, 0.9);
-  border-bottom-color: rgba(81, 81, 81, 0.9);
-}
-
-.message-item.user .message-text :deep(.code-language) {
-  color: rgba(204, 204, 204, 0.9);
-  background-color: rgba(102, 217, 239, 0.15);
-  border-color: rgba(102, 217, 239, 0.25);
-}
-
-.message-item.user .message-text :deep(.copy-btn) {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
-  color: rgba(204, 204, 204, 0.9);
-}
-
-.message-item.user .message-text :deep(.copy-btn:hover) {
-  background-color: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.25);
-  color: #ffffff;
-}
-
-.message-item.user .message-text :deep(.code-block pre) {
-  background-color: rgba(45, 45, 45, 0.9);
-  color: rgba(204, 204, 204, 0.9);
-}
-
-.message-item.user .message-text :deep(.inline-code) {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: #f99157;
-  border-color: rgba(255, 255, 255, 0.15);
-}
-
 .input-area {
   padding: 16px;
   background-color: #fff;
@@ -2110,121 +1411,18 @@ onMounted(async () => {
   justify-content: center;
 }
 
-/* 思考中动画 */
-.thinking-dots {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 0;
-}
-
-.thinking-dots .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: #909399;
-  animation: thinking 1.4s infinite ease-in-out both;
-}
-
-.thinking-dots .dot:nth-child(1) {
-  animation-delay: -0.32s;
-}
-
-.thinking-dots .dot:nth-child(2) {
-  animation-delay: -0.16s;
-}
-
-@keyframes thinking {
-  0%, 80%, 100% {
-    transform: scale(0.8);
-    opacity: 0.5;
-  }
-  40% {
-    transform: scale(1.2);
-    opacity: 1;
-  }
-}
-
-/* 流式光标动画 */
-.streaming-cursor {
-  display: inline-block;
-  margin-left: 4px;
-  animation: blink 1s infinite;
-}
-
-@keyframes blink {
-  0%, 50% {
-    opacity: 1;
-  }
-  51%, 100% {
-    opacity: 0;
-  }
-}
-
-/* 流式内容 */
-.streaming-content {
-  display: inline-flex;
-  align-items: center;
-}
-</style>
-
-
-// Token监控相关方法
-const getProgressColor = (ratio: number) => {
-  if (ratio < 0.5) return '#67c23a' // 绿色
-  if (ratio < 0.7) return '#e6a23c' // 橙色
-  if (ratio < 0.9) return '#f56c6c' // 红色
-  return '#909399' // 灰色
-}
-
-const formatTokenCount = (count: number) => {
-  if (count >= 1000000) {
-    return `${(count / 1000000).toFixed(1)}M`
-  }
-  if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}K`
-  }
-  return `${count}`
-}
-
-// 处理SSE事件中的Token信息
-const handleSSEEvent = (event: any) => {
-  if (event.type === 'context_info') {
-    // 更新Token使用信息
-    contextInfo.value = {
-      current_tokens: event.current_tokens,
-      max_tokens: event.max_tokens,
-      usage_ratio: event.usage_ratio
-    }
-  } else if (event.type === 'context_compression') {
-    // 显示压缩提示
-    isCompressing.value = true
-  } else if (event.type === 'context_compressed') {
-    // 压缩完成
-    isCompressing.value = false
-    ElMessage.success(`上下文已压缩：${event.original_tokens} → ${event.compressed_tokens} tokens`)
-  }
-}
-
-
 /* Token使用情况显示样式 */
 .context-info {
   padding: 8px 12px;
   background-color: #f5f7fa;
-  border-radius: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .context-info .el-progress {
-  margin-bottom: 5px;
-}
-
-.context-info .el-text {
-  font-size: 12px;
-}
-
-/* 压缩提示样式 */
-.el-alert {
-  margin-bottom: 10px;
+  flex: 1;
 }
 
 /* 聊天标题区域样式优化 */
@@ -2235,3 +1433,4 @@ const handleSSEEvent = (event: any) => {
 .chat-title h3 {
   margin: 0 0 5px 0;
 }
+</style>

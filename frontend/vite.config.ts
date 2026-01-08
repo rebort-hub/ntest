@@ -73,7 +73,7 @@ export default ({ command }: ConfigEnv): UserConfigExport => {
         scss: {
           // 静默所有弃用警告
           silenceDeprecations: ['legacy-js-api', 'import', 'global-builtin', 'color-functions'],
-          // 使用 legacy API 以避免兼容性问题
+          // 使用 legacy API 以确保兼容性
           api: 'legacy',
           // 全局变量注入（如果需要）
           additionalData: `
