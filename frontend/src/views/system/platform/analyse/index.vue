@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="analyse-container">
     <!-- 查询条件区域 -->
     <div class="query-section">
@@ -187,7 +187,7 @@ const getPassRate = () => {
 
 const getBusinessList = () => {
   if (businessList.value.length < 1) {
-    GetBusinessList({page_no: 1, page_size: 99999}).then(response => {
+    GetBusinessList({page_no: 1, page_size: 1000}).then(response => {
       businessList.value = response.data.data
       queryItems.value.business_id = businessList.value[0].id
       getAnalyseChart()

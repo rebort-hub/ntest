@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <el-drawer v-model="drawerIsShow" title="批量管理【业务线】与【用户】的绑定关系" size="70%">
 
@@ -62,7 +62,7 @@ import {GetBusinessList, BusinessToUser} from "@/api/config/business";
 import {bus, busEvent} from "@/utils/bus-events";
 
 const getBusinessList = () => {
-  GetBusinessList({ page_no: 1, page_size: 99999 }).then(response => {
+  GetBusinessList({ page_no: 1, page_size: 1000 }).then(response => {
     businessDataList.value = response.data.data
   })
 }

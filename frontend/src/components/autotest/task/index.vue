@@ -377,10 +377,18 @@ const showEditDrawer = (row: object | undefined) => {
 
 const getUserList = () => {
   GetUserList({}).then((response: object) => {
-    userList.value = response.data.data
-    response.data.data.forEach(item => {
-      userDict.value[item.id] = item.name
-    })
+    if (response && response.data && response.data.data) {
+      userList.value = response.data.data
+      response.data.data.forEach(item => {
+        userDict.value[item.id] = item.name
+      })
+    } else {
+      console.warn('用户列表数据格式异常:', response)
+      userList.value = []
+    }
+  }).catch((error) => {
+    console.error('获取用户列表失败:', error)
+    userList.value = []
   })
 }
 
@@ -454,8 +462,19 @@ const getTableDataList = () => {
   tableIsLoading.value = true
   GetTaskList(props.testType, queryItems.value).then((response: object) => {
     tableIsLoading.value = false
-    tableDataList.value = response.data.data
-    tableDataTotal.value = response.data.total
+    if (response && response.data) {
+      tableDataList.value = response.data.data || []
+      tableDataTotal.value = response.data.total || 0
+    } else {
+      console.warn('任务列表数据格式异常:', response)
+      tableDataList.value = []
+      tableDataTotal.value = 0
+    }
+  }).catch((error) => {
+    tableIsLoading.value = false
+    console.error('获取任务列表失败:', error)
+    tableDataList.value = []
+    tableDataTotal.value = 0
   })
 }
 
@@ -489,12 +508,20 @@ const disableTask = (taskId: number) => {
 
 const getProjectList = () => {
   GetProjectList(props.testType, {page_no: 1, page_size: 1000}).then(response => {
-    projectDataList.value = response.data.data
+    if (response && response.data && response.data.data) {
+      projectDataList.value = response.data.data
+    } else {
+      console.warn('项目列表数据格式异常:', response)
+      projectDataList.value = []
+    }
     if (tableDataList.value.length < 1) {
       nextTick(() => {
         projectTreeRef.value.$el.querySelector(".el-tree-node__content").click()
       })
     }
+  }).catch((error) => {
+    console.error('获取项目列表失败:', error)
+    projectDataList.value = []
   })
 }
 

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <el-dialog 
         v-model="drawerIsShow" 
@@ -385,7 +385,7 @@ const getData = (dataId: any, isQuoteCase: boolean) => {
 
 const getScriptList = () => {
   if (scriptList.value.length < 1){
-    GetScriptList({page_no: 1, page_size: 99999}).then(response => {
+    GetScriptList({page_no: 1, page_size: 1000}).then(response => {
       if (response) {
         scriptList.value = response.data.data
       }

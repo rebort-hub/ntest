@@ -83,16 +83,16 @@ export default ({ command }: ConfigEnv): UserConfigExport => {
       },
       postcss: {
         plugins: [
-            {
-              postcssPlugin: 'internal:charset-removal',
-              AtRule: {
-                charset: (atRule) => {
-                  if (atRule.name === 'charset') {
-                    atRule.remove();
-                  }
+          {
+            postcssPlugin: 'internal:charset-removal',
+            AtRule: {
+              charset: (atRule) => {
+                if (atRule.name === 'charset') {
+                  atRule.remove();
                 }
               }
             }
+          }
         ],
       },
     }

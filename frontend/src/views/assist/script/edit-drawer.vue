@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <el-drawer v-model="drawerIsShow" :title="formData.id ? '修改脚本' : '新增脚本'" size="70%">
       <el-form
@@ -333,7 +333,7 @@ const findCode = () => {
 }
 
 const getRunEnvList = () => {
-  GetRunEnvList({page_no: 1, page_size: 99999}).then(response => {
+  GetRunEnvList({page_no: 1, page_size: 1000}).then(response => {
     runEnvList.value = response.data.data
     if (runEnvList.value && runEnvList.value.length > 0) {
       selectedRunEnv.value = runEnvList.value[0].code

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <el-dialog 
         v-model="drawerIsShow" 
@@ -153,7 +153,7 @@ const sendEvent = (needRefresh) => {
 }
 
 const getCaseSuiteList = (projectId: number) => {
-  GetCaseSuiteList(props.testType, { 'project_id': projectId, page_no: 1, page_size: 99999 }).then(response => {
+  GetCaseSuiteList(props.testType, { 'project_id': projectId, page_no: 1, page_size: 1000 }).then(response => {
     const response_data = JSON.stringify(response.data) === '{}' ? [] : response.data.data;
     suiteTreeData.value = arrayToTree(response_data, null)
   })

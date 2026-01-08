@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="layout-container">
 
     <div style="margin: 10px">
@@ -107,7 +107,7 @@ const showEditDrawer = (row: object) => {
 }
 
 const getUserList = () => {
-  GetUserList({page_no: 1, page_size: 99999}).then(response => {
+  GetUserList({page_no: 1, page_size: 1000}).then(response => {
     response.data.data.forEach(user => {
       userDict.value[user.id] = user.name
     })

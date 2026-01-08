@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <el-dialog 
         v-model="drawerIsShow" 
@@ -332,7 +332,7 @@ const getProjectEnv = () => {
 }
 
 const getRunEnvList = () => {
-  GetRunEnvList({page_no: 1, page_size: 99999, business_id: businessId.value}).then(response => {
+  GetRunEnvList({page_no: 1, page_size: 1000, business_id: businessId.value}).then(response => {
     runEnvList.value = response.data.data
     formData.value.env_id = runEnvList.value[0].id
     nextTick(() => {

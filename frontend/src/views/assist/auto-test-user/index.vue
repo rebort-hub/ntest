@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="layout-container">
 
     <div class="layout-container-form flex space-between">
@@ -156,7 +156,7 @@ const getTableDataList = () => {
 }
 
 onMounted(() => {
-  GetRunEnvList({page_no: 1, page_size: 99999}).then(response => {
+  GetRunEnvList({page_no: 1, page_size: 1000}).then(response => {
     if (response.data.data.length > 0) {
       queryItems.value.env = response.data.data[0].code
     }

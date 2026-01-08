@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="layout-container">
 
     <div class="layout-container-form flex space-between">
@@ -201,7 +201,7 @@ const showEditDrawer = (row: object | undefined, isAccountList: boolean | undefi
 }
 
 const getBusinessList = () => {
-  GetBusinessList({page_no: 1, page_size: 99999}).then(response => {
+  GetBusinessList({page_no: 1, page_size: 1000}).then(response => {
     businessList.value = response.data.data
     businessList.value.forEach(business => {
       businessDict.value[business.id] = business.name

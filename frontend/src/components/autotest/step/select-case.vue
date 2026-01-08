@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <el-form label-width="60px">
       <el-row>
@@ -241,15 +241,15 @@ const getTableDataList = () => {
 
 const getProjectList = () => {
   if (projectList.value.length < 1){
-    GetProjectList(props.testType, {page_no: 1, page_size: 99999}).then((response: object) => {
+    GetProjectList(props.testType, {page_no: 1, page_size: 1000}).then((response: object) => {
       projectList.value = response.data.data
     })
   }
 }
 
 const selectProject = (projectId: any) => {
-  // GetCaseSuiteList(props.testType, { project_id: projectId, suite_type: 'base,quote', page_no: 1, page_size: 99999 }).then(response => {
-  GetCaseSuiteList(props.testType, { project_id: projectId, suite_type: 'base,api,quote,process,make_data', page_no: 1, page_size: 99999 }).then(response => {
+  // GetCaseSuiteList(props.testType, { project_id: projectId, suite_type: 'base,quote', page_no: 1, page_size: 1000 }).then(response => {
+  GetCaseSuiteList(props.testType, { project_id: projectId, suite_type: 'base,api,quote,process,make_data', page_no: 1, page_size: 1000 }).then(response => {
     caseSuiteTree.value = arrayToTree(response.data.data, null)
   })
 }

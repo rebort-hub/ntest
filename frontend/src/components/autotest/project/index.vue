@@ -355,13 +355,19 @@ const showSwaggerPullLog = (row: any) => {
 }
 
 const getBusinessList = () => {
-  GetBusinessList({page_no: 1, page_size: 99999}).then((response: any) => {
-    businessList.value = response.data.data
-    businessList.value.forEach(business => {
-      businessDict.value[business.id] = business.name
-    })
+  GetBusinessList({page_no: 1, page_size: 1000}).then((response: any) => {
+    if (response && response.data && response.data.data) {
+      businessList.value = response.data.data
+      businessList.value.forEach(business => {
+        businessDict.value[business.id] = business.name
+      })
+    } else {
+      console.warn('业务线列表数据格式异常:', response)
+      businessList.value = []
+    }
   }).catch((error) => {
     console.error('获取业务线列表失败:', error)
+    businessList.value = []
   })
 }
 
@@ -380,11 +386,19 @@ const getTableDataList = () => {
   tableIsLoading.value = true
   GetProjectList(props.testType, queryItems.value).then((response: any) => {
     tableIsLoading.value = false
-    tableDataList.value = response.data.data
-    tableDataTotal.value = response.data.total
+    if (response && response.data) {
+      tableDataList.value = response.data.data || []
+      tableDataTotal.value = response.data.total || 0
+    } else {
+      console.warn('项目列表数据格式异常:', response)
+      tableDataList.value = []
+      tableDataTotal.value = 0
+    }
   }).catch((error) => {
     tableIsLoading.value = false
     console.error('获取项目列表失败:', error)
+    tableDataList.value = []
+    tableDataTotal.value = 0
   })
 }
 
@@ -412,12 +426,18 @@ const deleteData = (dataId: number) => {
 
 const getUserList = () => {
   GetUserList({}).then((response: any) => {
-    userList.value = response.data.data
-    userList.value.forEach(item => {
-      userDict.value[item.id] = item.name
-    })
+    if (response && response.data && response.data.data) {
+      userList.value = response.data.data
+      userList.value.forEach(item => {
+        userDict.value[item.id] = item.name
+      })
+    } else {
+      console.warn('用户列表数据格式异常:', response)
+      userList.value = []
+    }
   }).catch((error) => {
     console.error('获取用户列表失败:', error)
+    userList.value = []
   })
 }
 

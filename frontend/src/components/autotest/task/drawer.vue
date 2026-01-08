@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <el-dialog 
         v-model="drawerIsShow" 
@@ -397,7 +397,7 @@ const getRunAppEnv = () => {
     if (runServerList.value.length > 0) {
       formData.value.conf.server_id = runServerList.value[0].id
     }else {
-      GetServerList({page_no: 1, page_size: 99999}).then(response => {
+      GetServerList({page_no: 1, page_size: 1000}).then(response => {
         runServerList.value = response.data.data
         formData.value.conf.server_id = runServerList.value[0].id
       })
@@ -406,7 +406,7 @@ const getRunAppEnv = () => {
     if (runPhoneList.value.length > 0) {
       formData.value.conf.phone_id = runPhoneList.value[0].id
     }else {
-      GetPhoneList({page_no: 1, page_size: 99999}).then(response => {
+      GetPhoneList({page_no: 1, page_size: 1000}).then(response => {
         runPhoneList.value = response.data.data
         formData.value.conf.phone_id = runPhoneList.value[0].id
       })
@@ -428,7 +428,7 @@ const getBrowserName = () => {
 }
 
 const getWebHookList = () => {
-  GetWebHookList({page_no: 1, page_size: 99999}).then(response => {
+  GetWebHookList({page_no: 1, page_size: 1000}).then(response => {
     dingDingWebHookList.value = [];
     weChatWebHookList.value = [];
     feiShuWebHookList.value = [];
@@ -668,7 +668,7 @@ const getCaseList = (suiteId: number) => {
 
 const getEmailServerList = () => {
   if (emailServerList.value.length < 1){
-    GetConfigTypeList({page_no: 1, page_size: 99999}).then(response => {
+    GetConfigTypeList({page_no: 1, page_size: 1000}).then(response => {
       let emailConfigTypeId = 0
       response.data.data.forEach((item: { name: string; id: number; }) => {
         if (item.name === '邮箱') {

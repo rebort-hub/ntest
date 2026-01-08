@@ -15,8 +15,11 @@ class FindBusinessLineForm(PaginationForm):
     def get_query_filter(self, *args, **kwargs):
         """ 查询条件 """
         user, filter_dict = kwargs.get("user"), {}
-        if self.is_not_admin(user.api_permissions):  # 如果用户不是管理员权限，则只返回当前用户的业务线
-            filter_dict["id__in"] = user.business_list
+        # 如果不是管理员权限且没有设置getAll参数，则只返回当前用户的业务线
+        # 但如果用户的business_list为空，则返回所有业务线（避免用户看不到任何业务线）
+        if self.is_not_admin(user.api_permissions) and not self.getAll:
+            if user.business_list:  # 只有当business_list不为空时才进行过滤
+                filter_dict["id__in"] = user.business_list
         if self.name:
             filter_dict["name__icontains"] = self.name
         if self.code:

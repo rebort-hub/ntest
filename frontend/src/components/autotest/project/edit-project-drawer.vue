@@ -318,28 +318,44 @@ const submitForm = () =>{
 }
 
 const getScriptList = () => {
-  GetScriptList({page_no: 1, page_size: 99999}).then(response => {
-    if (response) {
+  GetScriptList({page_no: 1, page_size: 1000}).then(response => {
+    if (response && response.data && response.data.data) {
       scriptList.value = response.data.data
+    } else {
+      console.warn('脚本列表数据格式异常:', response)
+      scriptList.value = []
     }
+  }).catch((error) => {
+    console.error('获取脚本列表失败:', error)
+    scriptList.value = []
   })
 }
 
 const getPhoneList = () => {
   if (props.testType === 'app' && deviceList.value.length < 1){
-    GetPhoneList({page_no: 1, page_size: 99999}).then(response => {
-      if (response) {
+    GetPhoneList({page_no: 1, page_size: 1000}).then(response => {
+      if (response && response.data && response.data.data) {
         deviceList.value = response.data.data
+      } else {
+        console.warn('设备列表数据格式异常:', response)
+        deviceList.value = []
       }
+    }).catch((error) => {
+      console.error('获取设备列表失败:', error)
+      deviceList.value = []
     })
   }
 }
 
 const getData = (projectId: number) => {
   GetProject(props.testType, {id: projectId}).then(response => {
-    if (response) {
+    if (response && response.data) {
       formData.value = response.data
+    } else {
+      console.warn('项目数据格式异常:', response)
     }
+  }).catch((error) => {
+    console.error('获取项目数据失败:', error)
   })
 }
 

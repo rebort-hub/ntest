@@ -183,10 +183,19 @@ const clickTree = (data: { id: any; }, node: any, element: any) => {
 
 const getCaseList = (suiteId: any) => {
   tableIsLoading.value = true
-  GetCaseList(props.testType, { suite_id: suiteId, status: 1, detail: true, page_no: 1, page_size: 99999 }).then(response => {
+  GetCaseList(props.testType, { suite_id: suiteId, status: 1, detail: true, page_no: 1, page_size: 1000 }).then(response => {
     tableIsLoading.value = false
-    tableDataList.value = response.data.data
+    if (response && response.data && response.data.data) {
+      tableDataList.value = response.data.data
+    } else {
+      console.warn('用例列表数据格式异常:', response)
+      tableDataList.value = []
+    }
     defaultClick() // 获取完用例列表过后 ，执行默认选中事件
+  }).catch((error) => {
+    tableIsLoading.value = false
+    console.error('获取用例列表失败:', error)
+    tableDataList.value = []
   })
 }
 

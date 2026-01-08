@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="layout-container" v-loading="isLoading">
     <div style="margin-top: 10px; margin-left: 5px; margin-right: 5px;">
       <div>
@@ -318,7 +318,7 @@ const runCase = (runConf) => {
 
 
 const getBusinessList = () => {
-  GetBusinessList({page_no: 1, page_size: 99999}).then(response => {
+  GetBusinessList({page_no: 1, page_size: 1000}).then(response => {
     businessList.value = response.data.data
     if (response.data.total > 0){
       selectBusinessId.value = response.data.data[0].id

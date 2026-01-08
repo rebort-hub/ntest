@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="layout-container">
 
     <div class="layout-container-form flex space-between">
@@ -219,7 +219,7 @@ const rowDblclick = async (row: any, column: any, event: any) => {
 }
 
 const getUserList = () => {
-  GetUserList({page_no: 1, page_size: 99999}).then(response => {
+  GetUserList({page_no: 1, page_size: 1000}).then(response => {
     response.data.data.forEach(user => {
       userDict.value[user.id] = user.name
     })

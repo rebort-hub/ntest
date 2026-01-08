@@ -64,12 +64,12 @@ import {GetBusinessList} from "@/api/config/business";
 import {bus, busEvent} from "@/utils/bus-events";
 
 const getRunEnvList = () => {
-  GetRunEnvList({ page_no: 1, page_size: 99999 }).then(response => {
+  GetRunEnvList({ page_no: 1, page_size: 1000 }).then(response => {
     runEnvList.value = response.data.data
   })
 }
 const getBusinessList = () => {
-  GetBusinessList({ page_no: 1, page_size: 99999 }).then(response => {
+  GetBusinessList({ page_no: 1, page_size: 1000 }).then(response => {
     businessDataList.value = response.data.data
   })
 }

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="layout-container">
 
     <div class="layout-container-form flex space-between">
@@ -212,7 +212,7 @@ const showEditDrawer = (row: object | undefined) => {
 }
 
 const getRunEnvList = () => {
-  GetRunEnvList({page_no: 1, page_size: 99999}).then(response => {
+  GetRunEnvList({page_no: 1, page_size: 1000}).then(response => {
     runEnvList.value = response.data.data
     runEnvList.value.forEach(env => {
       runEnvDict.value[env.code] = env.name
@@ -221,12 +221,12 @@ const getRunEnvList = () => {
 }
 
 const getDataPoolBusinessStatus = () => {
-  GetDataPoolBusinessStatus({page_no: 1, page_size: 99999}).then(res => {
+  GetDataPoolBusinessStatus({page_no: 1, page_size: 1000}).then(res => {
     businessStatusList.value = res.data
   })
 }
 const getDataPoolUseStatus = () => {
-  GetDataPoolUseStatus({page_no: 1, page_size: 99999}).then(res => {
+  GetDataPoolUseStatus({page_no: 1, page_size: 1000}).then(res => {
     useStatusList.value = res.data
   })
 }

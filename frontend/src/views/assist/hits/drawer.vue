@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <el-drawer v-model="drawerIsShow" :title="formData.id ? '修改问题记录' : '新增问题记录'" size="60%">
       <el-form
@@ -162,7 +162,7 @@ onBeforeUnmount(() => {
 
 const getProjectList = () => {
   if (!projectListData.value || projectListData.value.length < 1) {
-    GetProjectList('api', {page_no: 1, page_size: 99999}).then(response => {
+    GetProjectList('api', {page_no: 1, page_size: 1000}).then(response => {
       projectListData.value = response.data.data
     })
   }

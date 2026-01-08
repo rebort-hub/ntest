@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <el-drawer title="执行记录" size="70%" v-model="drawerIsShow">
       <div style="margin: 10px">
@@ -150,7 +150,7 @@ const onShowDrawerEvent = (message: any) => {
 }
 
 const getBusinessList = () => {
-  GetBusinessList({page_no: 1, page_size: 99999}).then(response => {
+  GetBusinessList({page_no: 1, page_size: 1000}).then(response => {
     response.data.data.forEach((item: { id: string | number; name: any; }) => {
       businessDict.value[item.id] = item.name
     })

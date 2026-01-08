@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="layout-container">
 
     <div class="layout-container-form flex space-between">
@@ -274,7 +274,7 @@ const deleteData = (row: any) => {
 }
 
 const getProjectList = () => {
-  GetProjectList('api', {page_no: 1, page_size: 99999}).then(response => {
+  GetProjectList('api', {page_no: 1, page_size: 1000}).then(response => {
     projectListData.value = response.data.data
     projectListData.value.forEach(project => {
       projectDictData.value[project.id] = project.name

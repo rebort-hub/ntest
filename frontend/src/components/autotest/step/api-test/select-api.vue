@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <el-form label-width="60px">
 
@@ -224,14 +224,14 @@ const getTableDataList = () => {
 
 const getProjectList = () => {
   if (projectList.value.length < 1){
-    GetProjectList(props.testType, {page_no: 1, page_size: 99999}).then((response: object) => {
+    GetProjectList(props.testType, {page_no: 1, page_size: 1000}).then((response: object) => {
       projectList.value = response.data.data
     })
   }
 }
 
 const selectProject = (projectId: any) => {
-  GetModuleList(props.testType, { project_id: projectId, page_no: 1, page_size: 99999 }).then(response => {
+  GetModuleList(props.testType, { project_id: projectId, page_no: 1, page_size: 1000 }).then(response => {
     moduleTree.value = arrayToTree(response.data.data, null)
   })
 }

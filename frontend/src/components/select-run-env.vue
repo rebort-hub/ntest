@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <!-- 选择环境和运行模式 -->
   <el-dialog
       title="设置运行参数"
@@ -438,7 +438,7 @@ const getRunAppEnv = () => {
   if (runServerList.value.length > 0) {
     runServer.value = runServerList.value[0].id
   }else {
-    GetServerList({page_no: 1, page_size: 99999}).then(response => {
+    GetServerList({page_no: 1, page_size: 1000}).then(response => {
       runServerList.value = response.data.data
       runServer.value = runServerList.value[0].id
     })
@@ -447,7 +447,7 @@ const getRunAppEnv = () => {
   if (runPhoneList.value.length > 0) {
     runPhone.value = runPhoneList.value[0].id
   }else {
-    GetPhoneList({page_no: 1, page_size: 99999}).then(response => {
+    GetPhoneList({page_no: 1, page_size: 1000}).then(response => {
       runPhoneList.value = response.data.data
       runPhone.value = runPhoneList.value[0].id
     })

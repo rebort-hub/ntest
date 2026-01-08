@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div style="margin: 10px">
       <el-table
           ref="expandStepTableRef"
@@ -172,7 +172,7 @@ const userList = ref([])
 const tableDataTotal = ref(0)
 const queryItems = ref({
   page_no: 1,
-  page_size: 99999,
+  page_size: 1000,
   detail: true,
   case_id: Number
 })

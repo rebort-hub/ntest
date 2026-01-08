@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <el-dialog 
       v-model="dialogIsShow" 
@@ -111,7 +111,7 @@ const props = defineProps({
 })
 
 onMounted(() => {
-  GetPermissionList({ page_no: 1, page_size: 99999 }).then(response => {
+  GetPermissionList({ page_no: 1, page_size: 1000 }).then(response => {
     apiPermissionList.value = []
     frontPermissionList.value = []
     response.data.data.forEach((permission: { source_type: string; }) => {

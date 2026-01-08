@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div>
       <el-table
           ref="elementTableRef"
@@ -259,7 +259,7 @@ const sortTable = () => {
 
 onMounted(() => {
   if (props.testType === 'app' && deviceList.value.length === 0) {
-    GetPhoneList({ page_no: 1, page_size: 99999 }).then(response => {
+    GetPhoneList({ page_no: 1, page_size: 1000 }).then(response => {
       deviceList.value = response.data.data
     })
   }

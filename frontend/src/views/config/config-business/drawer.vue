@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <el-drawer v-model="drawerIsShow" :title="formData.id ? '修改业务线' : '新增业务线'" size="60%">
       <el-form
@@ -155,7 +155,7 @@ const onShowDrawerEvent = (message: any) => {
 
 const getRunEnvList = () => {
   runEnvIdList.value = []
-  GetRunEnvList({page_no: 1, page_size: 99999}).then(response => {
+  GetRunEnvList({page_no: 1, page_size: 1000}).then(response => {
     runEnvList.value = response.data.data
     runEnvList.value.forEach(env => {
       runEnvIdList.value.push(env.id)
@@ -171,7 +171,7 @@ const getBusiness = (dataId: number) => {
 }
 
 const getWebHookList = () => {
-  GetWebHookList({page_no: 1, page_size: 99999}).then(response => {
+  GetWebHookList({page_no: 1, page_size: 1000}).then(response => {
     response.data.data.forEach(item => {
       if (item.webhook_type === 'ding_ding'){
         dingDingWebHookList.value.push(item)

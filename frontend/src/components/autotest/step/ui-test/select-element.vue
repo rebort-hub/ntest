@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <el-form label-width="60px">
 
@@ -148,7 +148,7 @@ const props = defineProps({
 
 const queryItems = ref({
   page_no: 1,
-  page_size: 99999,
+  page_size: 1000,
   detail: true,
   project_id: undefined,
   module_id: undefined,
@@ -199,14 +199,14 @@ const getTableDataList = () => {
 
 const getProjectList = () => {
   if (projectList.value.length < 1){
-    GetProjectList(props.testType, {page_no: 1, page_size: 99999}).then((response: object) => {
+    GetProjectList(props.testType, {page_no: 1, page_size: 1000}).then((response: object) => {
       projectList.value = response.data.data
     })
   }
 }
 
 const selectProject = (projectId: any) => {
-  GetModuleList(props.testType, { project_id: projectId, page_no: 1, page_size: 99999 }).then(response => {
+  GetModuleList(props.testType, { project_id: projectId, page_no: 1, page_size: 1000 }).then(response => {
     moduleTree.value = arrayToTree(response.data.data, null)
   })
 }
@@ -225,7 +225,7 @@ const selectModule = (moduleList: any) => {
 const selectPage = (pageId: any) => {
   queryItems.value.page_id = pageId
   tableIsLoading.value = true
-  GetElementList(props.testType, { page_id: pageId, page_no: 1, page_size: 99999, detail: true }).then(response => {
+  GetElementList(props.testType, { page_id: pageId, page_no: 1, page_size: 1000, detail: true }).then(response => {
     tableIsLoading.value = false
     tableDataTotal.value = response.data.total
     tableDataList.value = response.data.data

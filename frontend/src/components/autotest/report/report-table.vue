@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <el-input
         v-model="queryItems.name"
@@ -511,13 +511,13 @@ const clickReRun = () => {
 
   if (props.testType === 'app') {
     if (busEvent.data.runServerList.length < 1) {
-      GetServerList({page_no: 1, page_size: 99999}).then(response => {
+      GetServerList({page_no: 1, page_size: 1000}).then(response => {
         busEvent.data.runServerList = response.data.data
       })
     }
 
     if (busEvent.data.runPhoneList.length < 1) {
-      GetPhoneList({page_no: 1, page_size: 99999}).then(response => {
+      GetPhoneList({page_no: 1, page_size: 1000}).then(response => {
         busEvent.data.runPhoneList = response.data.data
       })
     }

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="layout-container">
 
     <div class="layout-container-form flex space-between">
@@ -259,7 +259,7 @@ const sortTable = () => {
 onMounted(() => {
   getTableDataList()
   getBusinessList()
-  GetRoleList({page_no:1, page_size: 99999}).then(response => {
+  GetRoleList({page_no:1, page_size: 1000}).then(response => {
     roleList.value = response.data.data
   })
 
@@ -282,7 +282,7 @@ const drawerIsCommit = (message: any) => {
 const businessList = ref([])
 const getBusinessList = () => {
   if (businessList.value.length < 1){
-    GetBusinessList({page_no: 1, page_size: 99999}).then(response => {
+    GetBusinessList({page_no: 1, page_size: 1000}).then(response => {
       businessList.value = response.data.data
     })
   }

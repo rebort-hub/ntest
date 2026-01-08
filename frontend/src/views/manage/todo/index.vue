@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="todo-container">
     <!-- 页面头部 -->
     <div class="page-header">
@@ -137,7 +137,7 @@ const getTodoList = () => {
 
 const userDict = ref({})
 const getUserList = () => {
-  GetUserList({page_no:1, page_size: 99999}).then((response: object) => {
+  GetUserList({page_no:1, page_size: 1000}).then((response: object) => {
     response.data.data.forEach((item: any) => {
       userDict.value[item.id] = item.name
     })
