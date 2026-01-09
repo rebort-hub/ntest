@@ -2,6 +2,7 @@ from tortoise import Tortoise, fields, models
 from tortoise.contrib.pydantic import pydantic_model_creator  # 统一归口，都从此处引用 pydantic_model_creator
 
 from app.schemas.enums import DataStatusEnum
+from app.tools.db_compatibility import DatabaseCompatibility
 from utils.util.json_util import JsonUtil
 
 
@@ -78,10 +79,9 @@ class BaseModel(models.Model, JsonUtil):
 
     @classmethod
     async def execute_sql(cls, sql):
-        """ 执行原生SQL """
-        db = Tortoise.get_connection("default")
-        result = await db.execute_query_dict(sql)  # [{'methods': 'POST', 'totle': 3}]
-        return result
+        """ 执行原生SQL，自动适配数据库类型 """
+        from app.tools.db_compatibility import DatabaseCompatibility
+        return await DatabaseCompatibility.execute_raw_sql(sql)
 
     @classmethod
     def get_simple_filed_list(cls):

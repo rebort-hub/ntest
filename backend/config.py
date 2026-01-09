@@ -1,5 +1,13 @@
 import os
 import platform
+from pathlib import Path
+
+# 加载 .env 文件
+from dotenv import load_dotenv
+
+# 获取项目根目录的 .env 文件路径
+env_path = Path(__file__).parent / '.env'
+load_dotenv(dotenv_path=env_path)
 
 from utils.client.test_runner import validate_func as assert_func_file
 from utils.client.test_runner.webdriver_action import Actions
@@ -273,24 +281,41 @@ class _Sso:
 openai_api_key = os.environ.get('OPENAI_API_KEY', '')  # OpenAI API Key
 openai_base_url = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')  # OpenAI API 基础URL
 
-# tortoise-orm 配置
-tortoise_orm_conf = {
-    'connections': {
-        'default': {
-            # 连接字符串的形式特殊符号（#）会被解析为分隔符，所以用指定参数的形式
+# 数据库类型配置
+DB_TYPE = os.environ.get('DB_TYPE', 'mysql').lower()  # mysql 或 postgresql
+
+def get_db_config():
+    """根据数据库类型返回相应的配置"""
+    if DB_TYPE == 'postgresql':
+        return {
+            'engine': 'tortoise.backends.asyncpg',
+            'credentials': {
+                'host': os.environ.get('DB_HOST', 'localhost'),
+                'port': int(os.environ.get('DB_PORT', '5432')),
+                'user': os.environ.get('DB_USER', 'postgres'),
+                'password': os.environ.get('DB_PASSWORD', 'postgres'),
+                'database': os.environ.get('DB_NAME', 'test_platform'),
+                'minsize': 1,
+                'maxsize': 10,
+            }
+        }
+    else:  # mysql
+        return {
             'engine': 'tortoise.backends.mysql',
             'credentials': {
-                "echo": True if not is_linux else False,  # 非Linux则打印sql语句
-
-                # 支持环境变量配置
+                "echo": True if not is_linux else False,  # MySQL支持echo参数
                 'host': os.environ.get('DB_HOST', 'localhost'),
-                'port': os.environ.get('DB_PORT', '3306'),
+                'port': int(os.environ.get('DB_PORT', '3306')),
                 'user': os.environ.get('DB_USER', 'root'),
                 'password': os.environ.get('DB_PASSWORD', 'Rebort'),
                 'database': os.environ.get('DB_NAME', 'test_platform')
             }
-
         }
+
+# tortoise-orm 配置
+tortoise_orm_conf = {
+    'connections': {
+        'default': get_db_config()
     },
     'apps': {
         'test_platform': {

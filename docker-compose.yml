@@ -23,6 +23,26 @@ services:
       timeout: 20s
       retries: 10
 
+  # PostgreSQL数据库
+  postgres:
+    image: postgres:15
+    container_name: test-platform-postgres
+    environment:
+      POSTGRES_DB: test_platform
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - test-platform-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # 后端服务
   backend:
     build:
@@ -32,11 +52,13 @@ services:
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_USER=root
-      - DB_PASSWORD=Rebort
-      - DB_NAME=test_platform
+      - DB_TYPE=${DB_TYPE:-mysql}
+      - DB_HOST=${DB_HOST:-mysql}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USER=${DB_USER:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-Rebort}
+      - DB_NAME=${DB_NAME:-test_platform}
+      - AUTO_INIT_DB=${AUTO_INIT_DB:-true}
     ports:
       - "8018:8018"
       - "8019:8019"
@@ -47,6 +69,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
     networks:
       - test-platform-network
     healthcheck:
@@ -54,6 +78,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    restart: unless-stopped
 
   # 前端服务
   frontend:
@@ -67,9 +92,11 @@ services:
       - backend
     networks:
       - test-platform-network
+    restart: unless-stopped
 
 volumes:
   mysql_data:
+  postgres_data:
 
 networks:
   test-platform-network:

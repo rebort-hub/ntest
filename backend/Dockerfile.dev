@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     unzip \
+    netcat-traditional \
     && rm -rf /var/lib/apt/lists/*
 
 # 复制依赖文件
@@ -24,11 +25,21 @@ COPY requirements.txt .
 # 安装Python依赖
 RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 
+# 复制应用代码
+COPY . .
+
 # 创建必要目录
 RUN mkdir -p logs pids browser_drivers
 
+# 复制并设置启动脚本权限
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # 暴露端口
 EXPOSE 8018 8019
+
+# 设置入口点
+ENTRYPOINT ["docker-entrypoint.sh"]
 
 # 开发模式启动命令（支持热重载）
 CMD ["python", "main.py"]

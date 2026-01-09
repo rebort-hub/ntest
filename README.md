@@ -62,29 +62,59 @@ npm run build
 
 ### 2. 配置数据库
 
-编辑 `config.py` 中的数据库配置：
+编辑 `cp .env.example,重命名为 .env` 中的数据库配置：
 
 ```python
-tortoise_orm_conf = {
-    'connections': {
-        'default': {
-            'engine': 'tortoise.backends.mysql',
-            'credentials': {
-                'host': 'localhost',
-                'port': '3306',
-                'user': 'root',
-                'password': 'your_password',  # 修改为你的密码
-                'database': 'test_platform'
-            }
-        }
-    },
-    # ...
-}
+根据配置，将数据库连接信息填写为自己使用的数据库 mysql ，postgresql
+
+# 数据库配置
+# DB_TYPE=mysql
+# DB_HOST=mysql
+# DB_PORT=3306
+# DB_USER=root
+# DB_PASSWORD=Rebort
+# DB_NAME=test_platform
+
+# PostgreSQL 配置示例（当 DB_TYPE=postgresql 时使用）
+DB_TYPE=postgresql
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=Rebort
+DB_NAME=test_platform
+
+# 后端服务配置
+BACKEND_HOST=0.0.0.0
+BACKEND_PORT=8018
+JOB_PORT=8019
+
+# AI配置
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_BASE_URL=https://api.openai.com/v1
+
+# 其他配置
+TOKEN_SECRET_KEY=localhost
+PASSWORD_SECRET_KEY=PASSWORD_password_secret_key
+
+数据库信息填写后执行初始化
+
+python 
 ```
+## 🔄 数据库切换
 
-### 3. 运行数据库迁移
+如需在 MySQL 和 PostgreSQL 之间切换：
 
->这里直接执行目录下的sql文件手动执行
+```bash
+# 使用切换脚本
+python switch_database.py mysql      # 切换到 MySQL
+python switch_database.py postgresql # 切换到 PostgreSQL
+
+# 重新初始化
+python init_database.py --full
+```
+### 3. 运行数据库迁移（MySQL)
+
+>这里直接执行目录下的sql文件手动执行,也可以执行上面的初始化脚本
 
 ###初始化数据库表结构（项目根目录下依次执行下面命令）：
 

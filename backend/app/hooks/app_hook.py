@@ -29,6 +29,7 @@ def register_app_hook(app):
         from app.routers.manage import manage_router
         from app.routers.tools import tools_router
         from app.routers.config import config_router
+        from app.routers.health import router as health_router
         # aitestrebort 集成路由
         from app.routers.aitestrebort import (
             project_router, testcase_router, automation_router, ai_router, 
@@ -37,6 +38,7 @@ def register_app_hook(app):
         # aitestrebort 高级功能路由
         from app.routers.aitestrebort.advanced_features import router as advanced_features_router
         
+        app.include_router(health_router, prefix='/api', tags=["健康检查"])
         app.include_router(api_test, prefix='/api/api-test', tags=["接口自动化测试"])
         app.include_router(app_test, prefix='/api/app-test', tags=["app自动化测试"])
         app.include_router(ui_test, prefix='/api/ui-test', tags=["ui自动化测试"])

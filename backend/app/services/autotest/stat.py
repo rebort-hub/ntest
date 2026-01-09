@@ -90,30 +90,77 @@ async def get_report_chart(request: Request, form: schema.AnalyseForm = Depends(
     if form.trigger_type:
         filter_dict["trigger_type"] = form.trigger_type.value
     if form.start_time:
-        filter_dict["create_time__range"] = [form.start_time, form.end_time]
+        # 处理日期时间格式兼容性
+        from app.tools.db_compatibility import DatabaseCompatibility
+        import datetime
+        
+        if DatabaseCompatibility.is_postgresql():
+            # PostgreSQL需要datetime对象
+            try:
+                start_dt = datetime.datetime.strptime(form.start_time, "%Y-%m-%d")
+                end_dt = datetime.datetime.strptime(form.end_time, "%Y-%m-%d")
+                # 设置结束时间为当天的23:59:59
+                end_dt = end_dt.replace(hour=23, minute=59, second=59)
+                filter_dict["create_time__range"] = [start_dt, end_dt]
+            except ValueError:
+                # 如果解析失败，尝试其他格式
+                try:
+                    start_dt = datetime.datetime.fromisoformat(form.start_time.replace('Z', '+00:00'))
+                    end_dt = datetime.datetime.fromisoformat(form.end_time.replace('Z', '+00:00'))
+                    filter_dict["create_time__range"] = [start_dt, end_dt]
+                except ValueError:
+                    # 如果都失败了，使用字符串（可能会报错，但至少有错误信息）
+                    filter_dict["create_time__range"] = [form.start_time, form.end_time]
+        else:
+            # MySQL可以使用字符串
+            filter_dict["create_time__range"] = [form.start_time, form.end_time]
 
     # 执行次数维度统计
     all_count = await Report.filter(**filter_dict).count()
     pass_count = await Report.filter(**filter_dict, is_passed=1).count()
     fail_count = all_count - pass_count
 
-    # 创建人执行次数统计
-    user_count_sql = f"""
-        SELECT user.name AS name, count(user.id) AS value
-        FROM system_user user,
-             api_test_report report,
-             api_test_project project
-        WHERE report.project_id = project.id
-          AND project.business_id = {form.business_id}
-          AND user.id = report.create_user
-    """
-    if form.trigger_type:
-        user_count_sql += f"""AND report.trigger_type = '{form.trigger_type.value}' \n"""
-    if form.start_time:
-        user_count_sql += f"""AND report.create_time between '{form.start_time}' and '{form.end_time}' \n"""
-    user_count_sql += """GROUP BY report.create_user"""
+    # 创建人执行次数统计 - 使用数据库兼容的SQL
+    from app.tools.db_compatibility import DatabaseCompatibility
+    
+    if DatabaseCompatibility.is_postgresql():
+        # PostgreSQL语法
+        user_count_sql = f"""
+            SELECT "user"."name" AS name, count("user"."id") AS value
+            FROM "system_user" "user",
+                 "api_test_report" "report",
+                 "api_test_project" "project"
+            WHERE "report"."project_id" = "project"."id"
+              AND "project"."business_id" = {form.business_id}
+              AND "user"."id" = "report"."create_user"
+        """
+        if form.trigger_type:
+            user_count_sql += f"""AND "report"."trigger_type" = '{form.trigger_type.value}' \n"""
+        if form.start_time:
+            # 对于PostgreSQL，使用处理过的datetime对象
+            if 'create_time__range' in filter_dict:
+                start_dt, end_dt = filter_dict['create_time__range']
+                user_count_sql += f"""AND "report"."create_time" BETWEEN '{start_dt}' AND '{end_dt}' \n"""
+        user_count_sql += """GROUP BY "report"."create_user", "user"."name" """
+    else:
+        # MySQL语法
+        user_count_sql = f"""
+            SELECT user.name AS name, count(user.id) AS value
+            FROM system_user user,
+                 api_test_report report,
+                 api_test_project project
+            WHERE report.project_id = project.id
+              AND project.business_id = {form.business_id}
+              AND user.id = report.create_user
+        """
+        if form.trigger_type:
+            user_count_sql += f"""AND report.trigger_type = '{form.trigger_type.value}' \n"""
+        if form.start_time:
+            user_count_sql += f"""AND report.create_time between '{form.start_time}' and '{form.end_time}' \n"""
+        user_count_sql += """GROUP BY report.create_user"""
+    
     request.app.logger.info(f'api.report.stat.analyse.user_count_sql: {user_count_sql}')
-    user_count_list = await Report.execute_sql(user_count_sql)
+    user_count_list = await DatabaseCompatibility.execute_raw_sql(user_count_sql)
 
     return request.app.get_success({
         "use_count": {

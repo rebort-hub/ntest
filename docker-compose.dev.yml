@@ -19,6 +19,21 @@ services:
     networks:
       - test-platform-network
 
+  # PostgreSQL数据库 - 开发环境
+  postgres:
+    image: postgres:15
+    container_name: test-platform-postgres-dev
+    environment:
+      POSTGRES_DB: test_platform
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    networks:
+      - test-platform-network
+
   # 后端服务 - 开发模式（热重载）
   backend:
     build:
@@ -28,11 +43,13 @@ services:
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_USER=root
-      - DB_PASSWORD=Rebort
-      - DB_NAME=test_platform
+      - DB_TYPE=${DB_TYPE:-mysql}
+      - DB_HOST=${DB_HOST:-mysql}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USER=${DB_USER:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-Rebort}
+      - DB_NAME=${DB_NAME:-test_platform}
+      - AUTO_INIT_DB=${AUTO_INIT_DB:-true}
     ports:
       - "8018:8018"
       - "8019:8019"
@@ -42,12 +59,14 @@ services:
       - ./backend/uploads:/app/uploads
     depends_on:
       - mysql
+      - postgres
     networks:
       - test-platform-network
-    command: ["python", "main.py", "--reload"]
+    restart: unless-stopped
 
 volumes:
   mysql_dev_data:
+  postgres_dev_data:
 
 networks:
   test-platform-network:

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 from datetime import date, timedelta
+from app.tools.db_compatibility import DatabaseCompatibility
 
 
 def get_week_start_and_end(n=0):
@@ -15,12 +16,24 @@ def get_week_start_and_end(n=0):
 
 def get_now(str_format="%Y-%m-%d %H:%M:%S"):
     """ 获取当前时间 """
-    return datetime.datetime.now().strftime(str_format)
+    if DatabaseCompatibility.is_postgresql():
+        # PostgreSQL需要datetime对象
+        return datetime.datetime.now()
+    else:
+        # MySQL可以使用字符串
+        return datetime.datetime.now().strftime(str_format)
 
 
 def time_calculate(days=0, str_format="%Y-%m-%d %H:%M:%S"):
     """ 以当前时间为坐标，获取指定天数之和的时间 """
-    return (date.today() + timedelta(days=int(days))).strftime(str_format)
+    target_date = date.today() + timedelta(days=int(days))
+    
+    if DatabaseCompatibility.is_postgresql():
+        # PostgreSQL需要datetime对象
+        return datetime.datetime.combine(target_date, datetime.time.min)
+    else:
+        # MySQL可以使用字符串
+        return target_date.strftime(str_format)
 
 
 if __name__ == "__main__":

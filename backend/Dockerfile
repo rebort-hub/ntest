@@ -16,29 +16,35 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     unzip \
+    netcat-traditional \
     && rm -rf /var/lib/apt/lists/*
 
 # 复制依赖文件
 COPY requirements.txt .
 
 # 安装Python依赖
-RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # 复制应用代码
 COPY . .
 
 # 创建必要目录
-RUN mkdir -p logs pids browser_drivers
+RUN mkdir -p logs pids browser_drivers uploads
 
-# 设置权限
-RUN chmod +x start.sh kill.sh
+# 复制并设置启动脚本权限
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# 创建非root用户
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+RUN chown -R appuser:appuser /app
+USER appuser
 
 # 暴露端口
 EXPOSE 8018 8019
 
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8018/api/health || exit 1
+# 设置入口点
+ENTRYPOINT ["docker-entrypoint.sh"]
 
-# 启动命令
+# 生产模式启动命令
 CMD ["python", "main.py"]
