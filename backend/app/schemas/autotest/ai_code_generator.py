@@ -42,6 +42,7 @@ class AICodeGenerateRequest(BaseModel):
     parameters: List[APIParameter] = Field(default=[], description="接口参数")
     request_body: Optional[str] = Field(None, description="请求体JSON")
     response_example: Optional[str] = Field(None, description="响应示例JSON")
+    framework: Optional[str] = Field(default="pytest", description="测试框架")
     tags: Optional[List[str]] = Field(default=[], description="接口标签")
 
 
@@ -103,3 +104,50 @@ class CodeTemplate(BaseModel):
     variables: Optional[List[str]] = Field(default=[], description="模板变量")
     created_at: Optional[str] = Field(None, description="创建时间")
     updated_at: Optional[str] = Field(None, description="更新时间")
+
+
+class GenerationHistoryItem(BaseModel):
+    """生成历史记录项"""
+    id: int = Field(..., description="记录ID")
+    path: str = Field(..., description="接口路径")
+    method: str = Field(..., description="请求方法")
+    summary: Optional[str] = Field(None, description="接口描述")
+    file_name: str = Field(..., description="文件名")
+    generated_code: str = Field(..., description="生成的代码")
+    language: str = Field(..., description="编程语言")
+    framework: str = Field(..., description="测试框架")
+    code_lines: Optional[int] = Field(None, description="代码行数")
+    generation_time: Optional[float] = Field(None, description="生成耗时")
+    download_count: int = Field(default=0, description="下载次数")
+    copy_count: int = Field(default=0, description="复制次数")
+    create_time: str = Field(..., description="创建时间")
+    last_used_time: Optional[str] = Field(None, description="最后使用时间")
+
+
+class GenerationHistoryListRequest(BaseModel):
+    """生成历史列表请求"""
+    page_no: int = Field(default=1, description="页码")
+    page_size: int = Field(default=20, description="每页大小")
+    method: Optional[str] = Field(None, description="请求方法筛选")
+    path: Optional[str] = Field(None, description="路径关键词筛选")
+    start_date: Optional[str] = Field(None, description="开始日期")
+    end_date: Optional[str] = Field(None, description="结束日期")
+
+
+class GenerationHistoryListResponse(BaseModel):
+    """生成历史列表响应"""
+    data: List[GenerationHistoryItem] = Field(..., description="历史记录列表")
+    total: int = Field(..., description="总记录数")
+    page_no: int = Field(..., description="当前页码")
+    page_size: int = Field(..., description="每页大小")
+
+
+class UpdateUsageStatsRequest(BaseModel):
+    """更新使用统计请求"""
+    record_id: int = Field(..., description="记录ID")
+    action: str = Field(..., description="操作类型: copy/download")
+
+
+class DeleteHistoryRequest(BaseModel):
+    """删除历史记录请求"""
+    record_ids: List[int] = Field(..., description="要删除的记录ID列表")

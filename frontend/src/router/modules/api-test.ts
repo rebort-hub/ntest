@@ -42,6 +42,11 @@ const route: Route[] = [
         component: createNameComponent(() => import('@/views/api-test/report/index.vue')),
         meta: { title: '测试报告', icon: 'chartHistogram' }
       },
+      {
+        path: 'ai-code',
+        component: createNameComponent(() => import('@/views/api-test/ai-code-generator/index.vue')),
+        meta: { title: 'AI接口生成', icon: 'chartHistogram' }
+      },
     ]
   }
 ]

@@ -50,21 +50,27 @@ const aceConfig = reactive({
 })
 const editorRef = ref()
 const editorInstance = ref()
-const tempData = ref()
+
+// 先定义props
 const props = defineProps({
   pythonCode: {
     default: '',
     type: String
   }
 })
-const tableHeight = ref('10px')
+
+// 然后使用props初始化tempData
+const tempData = ref(props.pythonCode || '')
+const tableHeight = ref('450px') // 设置合适的初始高度
 
 const setTableHeight = () => {
-  if (window.innerHeight < 800){  // 小屏
-    tableHeight.value = `${window.innerHeight * 0.738}px`
-  }else {  // 大屏
-    tableHeight.value =  `${window.innerHeight * 0.8}px`
-  }
+  // 计算可用高度，充分利用容器空间
+  const availableHeight = window.innerHeight - 300 // 减去页面头部、导航等固定高度
+  const minHeight = 400
+  const maxHeight = 800
+  
+  const calculatedHeight = Math.max(minHeight, Math.min(maxHeight, availableHeight))
+  tableHeight.value = `${calculatedHeight}px`
 }
 
 const handleResize = () => {
@@ -76,6 +82,8 @@ watch(() => props.pythonCode, (newValue, oldValue) => {
 })
 
 onMounted(() => {
+  // 初始化时设置初始值
+  tempData.value = props.pythonCode
   bus.on(busEvent.drawerIsShow, findAndSelectText);
   setTableHeight()
   window.addEventListener('resize', handleResize);

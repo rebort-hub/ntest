@@ -25,10 +25,16 @@
             <template #header>
               <div class="card-header">
                 <span>接口信息</span>
-                <el-button type="primary" size="small" @click="importFromSwagger">
-                  <template #icon><Api /></template>
-                  从Swagger导入
-                </el-button>
+                <div class="import-actions">
+                  <el-button type="primary" size="small" @click="importFromApiManagement">
+                    <template #icon><Connection /></template>
+                    从接口管理导入
+                  </el-button>
+                  <el-button type="default" size="small" @click="importFromSwagger">
+                    <template #icon><Connection /></template>
+                    从Swagger导入
+                  </el-button>
+                </div>
               </div>
             </template>
 
@@ -60,6 +66,29 @@
                 />
               </el-form-item>
 
+              <el-form-item label="测试框架" required>
+                <el-select v-model="endpointInfo.framework" placeholder="选择测试框架" style="width: 100%">
+                  <el-option label="pytest (Python)" value="pytest" />
+                  <el-option label="unittest (Python)" value="unittest" />
+                  <el-option label="TestNG (Java)" value="testng" />
+                  <el-option label="Jest (JavaScript)" value="jest" />
+                </el-select>
+                <div class="framework-description">
+                  <span v-if="endpointInfo.framework === 'pytest'" class="framework-desc">
+                    使用pytest框架生成Python测试代码，支持fixture和参数化测试
+                  </span>
+                  <span v-else-if="endpointInfo.framework === 'unittest'" class="framework-desc">
+                    使用unittest框架生成Python测试代码，Python标准库测试框架
+                  </span>
+                  <span v-else-if="endpointInfo.framework === 'testng'" class="framework-desc">
+                    使用TestNG框架生成Java测试代码，支持注解和数据驱动测试
+                  </span>
+                  <span v-else-if="endpointInfo.framework === 'jest'" class="framework-desc">
+                    使用Jest框架生成JavaScript测试代码，支持异步测试和Mock
+                  </span>
+                </div>
+              </el-form-item>
+
               <el-form-item label="请求参数">
                 <div class="parameters-section">
                   <div class="parameters-header">
@@ -71,7 +100,11 @@
                   </div>
                   
                   <div v-if="endpointInfo.parameters.length === 0" class="empty-parameters">
-                    <el-empty description="暂无参数" :image-size="60" />
+                    <el-empty description="暂无参数" :image-size="40">
+                      <template #description>
+                        <span style="font-size: 12px; color: #909399;">暂无参数</span>
+                      </template>
+                    </el-empty>
                   </div>
                   
                   <div v-else class="parameters-list">
@@ -143,7 +176,7 @@
             <div class="form-actions">
               <el-button @click="resetForm">重置</el-button>
               <el-button type="primary" @click="generateCode" :loading="generating">
-                <template #icon><Magic /></template>
+                <template #icon><MagicStick /></template>
                 生成测试代码
               </el-button>
             </div>
@@ -189,7 +222,10 @@
                 </div>
                 
                 <div class="code-editor">
-                  <pre><code class="language-python">{{ generatedCode }}</code></pre>
+                  <div v-if="!generatedCode" style="padding: 20px; text-align: center; color: #999;">
+                    暂无代码
+                  </div>
+                  <pythonEditor v-else :python-code="generatedCode" />
                 </div>
               </div>
             </div>
@@ -212,9 +248,9 @@
         </template>
 
         <el-table :data="generationHistory" style="width: 100%">
-          <el-table-column prop="timestamp" label="生成时间" width="180">
+          <el-table-column prop="create_time" label="生成时间" width="180">
             <template #default="scope">
-              {{ formatTime(scope.row.timestamp) }}
+              {{ formatTime(scope.row.create_time) }}
             </template>
           </el-table-column>
           <el-table-column prop="method" label="方法" width="80">
@@ -228,7 +264,7 @@
           <el-table-column prop="summary" label="描述" show-overflow-tooltip />
           <el-table-column label="操作" width="200">
             <template #default="scope">
-              <el-button size="small" type="text" @click="loadHistory(scope.row)">
+              <el-button size="small" type="text" @click="loadHistoryRecord(scope.row)">
                 加载
               </el-button>
               <el-button size="small" type="text" @click="copyHistoryCode(scope.row)">
@@ -242,6 +278,113 @@
         </el-table>
       </el-card>
     </div>
+
+    <!-- 接口管理导入对话框 -->
+    <el-dialog v-model="apiManagementDialogVisible" title="从接口管理导入" width="800px">
+      <div class="api-import-container">
+        <!-- 项目和模块选择 -->
+        <div class="filter-section">
+          <el-form :model="apiImportForm" label-width="80px" inline>
+            <el-form-item label="项目">
+              <el-select 
+                v-model="apiImportForm.projectId" 
+                placeholder="选择项目" 
+                @change="onProjectChange"
+                style="width: 200px"
+              >
+                <el-option 
+                  v-for="project in projectList" 
+                  :key="project.id"
+                  :label="project.name"
+                  :value="project.id"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="模块">
+              <el-select 
+                v-model="apiImportForm.moduleId" 
+                placeholder="选择模块" 
+                @change="onModuleChange"
+                style="width: 200px"
+              >
+                <el-option 
+                  v-for="module in moduleList" 
+                  :key="module.id"
+                  :label="module.name"
+                  :value="module.id"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="loadApiList" :loading="loadingApiList">
+                查询接口
+              </el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+
+        <!-- 接口列表 -->
+        <div class="api-list-section" v-if="apiList.length > 0">
+          <el-table 
+            :data="apiList" 
+            style="width: 100%" 
+            height="400px"
+            @selection-change="handleApiSelection"
+          >
+            <el-table-column type="selection" width="55" />
+            <el-table-column label="接口信息" min-width="60%">
+              <template #default="scope">
+                <div class="api-info">
+                  <span 
+                    class="method-tag" 
+                    :class="`method-${scope.row.method.toLowerCase()}`"
+                  >
+                    {{ scope.row.method }}
+                  </span>
+                  <span class="api-path">{{ scope.row.addr }}</span>
+                  <div class="api-name">{{ scope.row.name }}</div>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="level" label="重要级" width="80" align="center">
+              <template #default="scope">
+                <el-tag 
+                  :type="scope.row.level === 'P0' ? 'danger' : scope.row.level === 'P1' ? 'warning' : 'success'"
+                  size="small"
+                >
+                  {{ scope.row.level === 'P0' ? '高' : scope.row.level === 'P1' ? '中' : '低' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="status" label="状态" width="80" align="center">
+              <template #default="scope">
+                <el-tag 
+                  :type="scope.row.status === 'enable' ? 'success' : 'info'"
+                  size="small"
+                >
+                  {{ scope.row.status === 'enable' ? '启用' : '禁用' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
+        <div v-else-if="!loadingApiList && apiImportForm.moduleId" class="empty-state">
+          <el-empty description="该模块下暂无接口数据" />
+        </div>
+      </div>
+      
+      <template #footer>
+        <el-button @click="apiManagementDialogVisible = false">取消</el-button>
+        <el-button 
+          type="primary" 
+          @click="importSelectedApi" 
+          :disabled="selectedApis.length === 0"
+        >
+          导入选中接口 ({{ selectedApis.length }})
+        </el-button>
+      </template>
+    </el-dialog>
 
     <!-- Swagger导入对话框 -->
     <el-dialog v-model="swaggerDialogVisible" title="从Swagger导入" width="600px">
@@ -275,20 +418,37 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
-  Api, Plus, Delete, Magic, CopyDocument, Download, 
-  CaretRight, Document 
-} from '@icon-park/vue-next'
+  Connection, Plus, Delete, MagicStick, CopyDocument, Download, 
+  CaretRight 
+} from '@element-plus/icons-vue'
 import toClipboard from '@/utils/copy-to-memory'
-import { generateTestCode, getGenerationStats } from '@/api/autotest/ai-code-generator'
+import { generateTestCode, getGenerationStats, getGenerationHistory, updateUsageStats, deleteGenerationHistory } from '@/api/autotest/ai-code-generator'
+import { GetApiList } from '@/api/autotest/api'
+import { GetProjectList } from '@/api/autotest/project'
+import { GetModuleList } from '@/api/autotest/module'
+import pythonEditor from '@/components/editor/python-editor.vue'
 
 // 响应式数据
 const generating = ref(false)
 const importing = ref(false)
 const swaggerDialogVisible = ref(false)
+const apiManagementDialogVisible = ref(false)
+const loadingApiList = ref(false)
 const generatedCode = ref('')
 const fileName = ref('')
+const currentRecordId = ref(null)  // 当前生成记录的ID
 const todayGenerated = ref(0)
 const totalGenerated = ref(0)
+
+// 接口管理导入相关数据
+const apiImportForm = reactive({
+  projectId: '',
+  moduleId: ''
+})
+const projectList = ref([])
+const moduleList = ref([])
+const apiList = ref([])
+const selectedApis = ref([])
 
 // 接口信息表单
 const endpointInfo = reactive({
@@ -297,7 +457,8 @@ const endpointInfo = reactive({
   summary: '',
   parameters: [],
   requestBody: '',
-  responseExample: ''
+  responseExample: '',
+  framework: 'pytest'  // 新增：测试框架选择
 })
 
 // Swagger导入表单
@@ -331,6 +492,7 @@ const resetForm = () => {
   endpointInfo.parameters = []
   endpointInfo.requestBody = ''
   endpointInfo.responseExample = ''
+  endpointInfo.framework = 'pytest'  // 重置为默认框架
   generatedCode.value = ''
   fileName.value = ''
 }
@@ -351,37 +513,49 @@ const generateCode = async () => {
       summary: endpointInfo.summary,
       parameters: endpointInfo.parameters,
       request_body: endpointInfo.requestBody,
-      response_example: endpointInfo.responseExample
+      response_example: endpointInfo.responseExample,
+      framework: endpointInfo.framework  // 新增：测试框架
     }
 
     // 调用后端API生成代码
     const response = await generateTestCode(requestData)
+    
+    console.log('API响应:', response)
+    console.log('response.data:', response.data)
+    console.log('response.data.data:', response.data.data)
 
     if (response && response.data) {
-      const result = response.data.data
+      const result = response.data  // 直接使用 response.data，不是 response.data.data
+      console.log('AI生成的代码长度:', result.code.length)
+      console.log('AI生成的代码前100字符:', result.code.substring(0, 100))
+      
       generatedCode.value = result.code
       fileName.value = result.fileName
-
-      // 保存到历史记录
-      const historyItem = {
-        ...endpointInfo,
-        code: generatedCode.value,
-        fileName: fileName.value,
-        timestamp: new Date().toISOString()
-      }
-      generationHistory.value.unshift(historyItem)
       
-      // 更新统计
-      todayGenerated.value++
-      totalGenerated.value++
-
-      ElMessage.success('代码生成成功')
+      ElMessage.success('AI代码生成成功')
+      
+      // 添加小延迟确保数据库操作完成
+      setTimeout(async () => {
+        // 重新加载统计数据和历史记录
+        await loadStats()
+        await loadHistory()
+        
+        // 从历史记录中找到最新的记录ID（刚生成的）
+        if (generationHistory.value.length > 0) {
+          currentRecordId.value = generationHistory.value[0].id
+        }
+      }, 500) // 延迟500ms
     } else {
+      console.log('响应数据结构异常:', {
+        hasResponse: !!response,
+        hasData: !!(response && response.data)
+      })
       throw new Error('API响应格式错误')
     }
 
   } catch (error) {
     console.error('生成代码失败:', error)
+    console.log('进入catch块，使用模拟代码')
     
     // 使用模拟生成的代码作为后备
     const mockCode = generateMockCode()
@@ -563,12 +737,24 @@ const copyCode = async () => {
   try {
     await toClipboard(generatedCode.value)
     ElMessage.success('代码已复制到剪贴板')
+    
+    // 静默更新使用统计（如果有当前记录ID）
+    if (currentRecordId.value) {
+      try {
+        await updateUsageStats({
+          record_id: currentRecordId.value,
+          action: 'copy'
+        })
+      } catch (error) {
+        console.error('更新复制统计失败:', error)
+      }
+    }
   } catch (error) {
     ElMessage.error('复制失败')
   }
 }
 
-const downloadCode = () => {
+const downloadCode = async () => {
   const blob = new Blob([generatedCode.value], { type: 'text/plain' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -580,6 +766,18 @@ const downloadCode = () => {
   URL.revokeObjectURL(url)
   
   ElMessage.success(`文件 ${fileName.value} 下载成功`)
+  
+  // 更新使用统计（如果有当前记录ID）
+  if (currentRecordId.value) {
+    try {
+      await updateUsageStats({
+        record_id: currentRecordId.value,
+        action: 'download'
+      })
+    } catch (error) {
+      console.error('更新下载统计失败:', error)
+    }
+  }
 }
 
 const runCode = () => {
@@ -590,13 +788,173 @@ const importFromSwagger = () => {
   swaggerDialogVisible.value = true
 }
 
+const importFromApiManagement = async () => {
+  apiManagementDialogVisible.value = true
+  await loadProjectList()
+}
+
+const loadProjectList = async () => {
+  try {
+    const response = await GetProjectList('api', {
+      page_no: 1,
+      page_size: 1000
+    })
+    if (response && response.data) {
+      projectList.value = response.data.data || []
+    }
+  } catch (error) {
+    console.error('加载项目列表失败:', error)
+    ElMessage.error('加载项目列表失败')
+  }
+}
+
+const onProjectChange = async () => {
+  apiImportForm.moduleId = ''
+  moduleList.value = []
+  apiList.value = []
+  selectedApis.value = []
+  
+  if (apiImportForm.projectId) {
+    await loadModuleList()
+  }
+}
+
+const loadModuleList = async () => {
+  try {
+    const response = await GetModuleList('api', {
+      project_id: apiImportForm.projectId,
+      page_no: 1,
+      page_size: 1000
+    })
+    if (response && response.data) {
+      moduleList.value = response.data.data || []
+    }
+  } catch (error) {
+    console.error('加载模块列表失败:', error)
+    ElMessage.error('加载模块列表失败')
+  }
+}
+
+const onModuleChange = () => {
+  apiList.value = []
+  selectedApis.value = []
+}
+
+const loadApiList = async () => {
+  if (!apiImportForm.projectId || !apiImportForm.moduleId) {
+    ElMessage.warning('请先选择项目和模块')
+    return
+  }
+
+  loadingApiList.value = true
+  try {
+    const response = await GetApiList({
+      module_id: parseInt(apiImportForm.moduleId),
+      page_no: 1,
+      page_size: 1000,
+      detail: true
+    })
+    
+    if (response && response.data) {
+      apiList.value = response.data.data || []
+      
+      if (apiList.value.length === 0) {
+        ElMessage.info('该模块下暂无接口数据')
+      } else {
+        ElMessage.success(`成功加载 ${apiList.value.length} 个接口`)
+      }
+    }
+  } catch (error) {
+    console.error('加载接口列表失败:', error)
+    ElMessage.error('加载接口列表失败')
+  } finally {
+    loadingApiList.value = false
+  }
+}
+
+const handleApiSelection = (selection) => {
+  selectedApis.value = selection
+}
+
+const importSelectedApi = () => {
+  if (selectedApis.value.length === 0) {
+    ElMessage.warning('请选择要导入的接口')
+    return
+  }
+
+  // 如果选择了多个接口，使用第一个
+  const selectedApi = selectedApis.value[0]
+  
+  // 映射接口数据到表单
+  endpointInfo.path = selectedApi.addr
+  endpointInfo.method = selectedApi.method
+  endpointInfo.summary = selectedApi.name
+  
+  // 处理参数
+  endpointInfo.parameters = []
+  if (selectedApi.params && Array.isArray(selectedApi.params)) {
+    selectedApi.params.forEach(param => {
+      if (param.key && param.key.trim()) {
+        endpointInfo.parameters.push({
+          name: param.key,
+          type: 'string', // 默认类型
+          in: 'query',
+          description: param.remark || '',
+          required: param.required || false
+        })
+      }
+    })
+  }
+  
+  // 处理请求体
+  if (selectedApi.data_json) {
+    try {
+      const jsonData = typeof selectedApi.data_json === 'string' 
+        ? selectedApi.data_json 
+        : JSON.stringify(selectedApi.data_json, null, 2)
+      endpointInfo.requestBody = jsonData
+    } catch (error) {
+      console.error('解析请求体失败:', error)
+    }
+  }
+  
+  // 处理响应示例
+  if (selectedApi.response) {
+    try {
+      const responseData = typeof selectedApi.response === 'string' 
+        ? selectedApi.response 
+        : JSON.stringify(selectedApi.response, null, 2)
+      endpointInfo.responseExample = responseData
+    } catch (error) {
+      console.error('解析响应示例失败:', error)
+    }
+  }
+
+  apiManagementDialogVisible.value = false
+  ElMessage.success(`已导入接口: ${selectedApi.method} ${selectedApi.addr}`)
+}
+
 const importEndpoint = () => {
   ElMessage.success('Swagger导入功能开发中...')
   swaggerDialogVisible.value = false
 }
 
 const formatTime = (timestamp: string) => {
-  return new Date(timestamp).toLocaleString()
+  if (!timestamp) return '-'
+  try {
+    const date = new Date(timestamp)
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
+  } catch (error) {
+    console.error('时间格式化失败:', error)
+    return timestamp
+  }
 }
 
 const getMethodColor = (method: string) => {
@@ -610,33 +968,54 @@ const getMethodColor = (method: string) => {
   return colors[method] || 'info'
 }
 
-const loadHistory = (item: any) => {
+const loadHistoryRecord = (item: any) => {
   Object.assign(endpointInfo, {
     path: item.path,
     method: item.method,
     summary: item.summary,
     parameters: item.parameters || [],
-    requestBody: item.requestBody || '',
-    responseExample: item.responseExample || ''
+    requestBody: item.request_body || '',
+    responseExample: item.response_example || ''
   })
-  generatedCode.value = item.code
-  fileName.value = item.fileName
+  generatedCode.value = item.generated_code
+  fileName.value = item.file_name
+  currentRecordId.value = item.id
   
   ElMessage.success('历史记录已加载')
 }
 
 const copyHistoryCode = async (item: any) => {
   try {
-    await toClipboard(item.code)
+    await toClipboard(item.generated_code)
     ElMessage.success('代码已复制到剪贴板')
+    
+    // 静默更新使用统计
+    try {
+      await updateUsageStats({
+        record_id: item.id,
+        action: 'copy'
+      })
+    } catch (error) {
+      console.error('更新复制统计失败:', error)
+    }
   } catch (error) {
     ElMessage.error('复制失败')
   }
 }
 
-const deleteHistory = (index: number) => {
-  generationHistory.value.splice(index, 1)
-  ElMessage.success('历史记录已删除')
+const deleteHistory = async (index: number) => {
+  try {
+    const item = generationHistory.value[index]
+    await deleteGenerationHistory({ record_ids: [item.id] })
+    
+    // 重新加载历史记录
+    await loadHistory()
+    
+    ElMessage.success('历史记录已删除')
+  } catch (error) {
+    console.error('删除历史记录失败:', error)
+    ElMessage.error('删除历史记录失败')
+  }
 }
 
 const clearHistory = async () => {
@@ -644,28 +1023,78 @@ const clearHistory = async () => {
     await ElMessageBox.confirm('确定要清空所有历史记录吗？', '确认删除', {
       type: 'warning'
     })
-    generationHistory.value = []
+    
+    // 获取所有历史记录的ID
+    const recordIds = generationHistory.value.map(item => item.id)
+    if (recordIds.length === 0) {
+      ElMessage.info('没有历史记录需要清空')
+      return
+    }
+    
+    // 调用删除API
+    await deleteGenerationHistory({ record_ids: recordIds })
+    
+    // 重新加载数据
+    await loadHistory()
+    await loadStats()
+    
     ElMessage.success('历史记录已清空')
-  } catch {
-    // 用户取消
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('清空历史记录失败:', error)
+      ElMessage.error('清空历史记录失败')
+    }
   }
 }
 
-// 初始化
-onMounted(async () => {
-  // 加载统计数据
+const loadStats = async () => {
   try {
     const response = await getGenerationStats()
+    
     if (response && response.data) {
-      const stats = response.data.data
+      const stats = response.data
       todayGenerated.value = stats.today_generated || 0
       totalGenerated.value = stats.total_generated || 0
+    } else {
+      todayGenerated.value = 0
+      totalGenerated.value = 0
     }
   } catch (error) {
     console.error('加载统计数据失败:', error)
     todayGenerated.value = 0
     totalGenerated.value = 0
   }
+}
+
+const loadHistory = async () => {
+  try {
+    const response = await getGenerationHistory({
+      page_no: 1,
+      page_size: 100  // 加载最近100条记录
+    })
+    
+    if (response && response.data) {
+      const historyData = response.data
+      
+      if (historyData.data && Array.isArray(historyData.data)) {
+        generationHistory.value = historyData.data
+      } else {
+        generationHistory.value = []
+      }
+    } else {
+      generationHistory.value = []
+    }
+  } catch (error) {
+    console.error('加载历史记录失败:', error)
+    generationHistory.value = []
+  }
+}
+
+// 初始化
+onMounted(async () => {
+  // 加载统计数据和历史记录
+  await loadStats()
+  await loadHistory()
 })
 </script>
 
@@ -710,8 +1139,36 @@ onMounted(async () => {
   margin-bottom: 20px;
 }
 
-.input-card, .code-card {
-  height: 800px;
+.input-card {
+  height: calc(100vh - 200px); // 与右侧代码卡片保持一致的高度
+  display: flex;
+  flex-direction: column;
+  
+  :deep(.el-card__body) {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+  }
+  
+  .endpoint-form {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 20px;
+  }
+  
+  .form-actions {
+    flex-shrink: 0;
+    text-align: center;
+    padding: 20px 0 0 0;
+    border-top: 1px solid #ebeef5;
+    background-color: #fff;
+  }
+}
+
+.code-card {
+  height: calc(100vh - 200px); // 动态高度，适应屏幕大小
   
   :deep(.el-card__body) {
     height: calc(100% - 60px);
@@ -723,6 +1180,11 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  
+  .import-actions {
+    display: flex;
+    gap: 8px;
+  }
 }
 
 .endpoint-form {
@@ -737,7 +1199,22 @@ onMounted(async () => {
     
     .empty-parameters {
       text-align: center;
-      padding: 20px;
+      padding: 12px;
+      background-color: #fafafa;
+      border-radius: 4px;
+      border: 1px dashed #d9d9d9;
+      
+      :deep(.el-empty) {
+        padding: 8px 0;
+        
+        .el-empty__image {
+          margin-bottom: 4px;
+        }
+        
+        .el-empty__description {
+          margin-top: 4px;
+        }
+      }
     }
     
     .parameters-list {
@@ -749,13 +1226,21 @@ onMounted(async () => {
       }
     }
   }
+  
+  // 框架描述样式
+  .framework-description {
+    margin-top: 8px;
+    
+    .framework-desc {
+      font-size: 12px;
+      color: #909399;
+      line-height: 1.4;
+      display: block;
+    }
+  }
 }
 
-.form-actions {
-  text-align: center;
-  padding-top: 20px;
-  border-top: 1px solid #ebeef5;
-}
+
 
 .code-container {
   height: 100%;
@@ -790,24 +1275,12 @@ onMounted(async () => {
     
     .code-editor {
       flex: 1;
-      border: 1px solid #dcdfe6;
+      border: 1px solid #e9ecef;
       border-top: none;
       border-radius: 0 0 4px 4px;
-      overflow: auto;
-      
-      pre {
-        margin: 0;
-        padding: 16px;
-        background-color: #fafafa;
-        height: 100%;
-        
-        code {
-          font-family: 'Courier New', Monaco, monospace;
-          font-size: 13px;
-          line-height: 1.5;
-          color: #2c3e50;
-        }
-      }
+      overflow: hidden;
+      min-height: 500px;
+      height: calc(100vh - 350px); // 动态计算高度，充分利用屏幕空间
     }
   }
 }
@@ -821,6 +1294,72 @@ onMounted(async () => {
 .code-actions {
   display: flex;
   gap: 8px;
+}
+
+// 接口管理导入对话框样式
+.api-import-container {
+  .filter-section {
+    margin-bottom: 20px;
+    padding: 16px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+  }
+  
+  .api-list-section {
+    .api-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      
+      .method-tag {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+        width: fit-content;
+        
+        &.method-get {
+          background-color: #61affe;
+        }
+        
+        &.method-post {
+          background-color: #49cc90;
+        }
+        
+        &.method-put {
+          background-color: #fca130;
+        }
+        
+        &.method-delete {
+          background-color: #f93e3e;
+        }
+        
+        &.method-patch {
+          background-color: #50e3c2;
+        }
+      }
+      
+      .api-path {
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        color: #606266;
+        margin-left: 8px;
+      }
+      
+      .api-name {
+        font-size: 12px;
+        color: #909399;
+        margin-top: 2px;
+      }
+    }
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+  }
 }
 
 // 响应式适配

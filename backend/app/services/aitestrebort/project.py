@@ -1120,7 +1120,7 @@ async def send_message(request: Request, project_id: int, conversation_id: int, 
             metadata=getattr(message_data, 'metadata', {})
         )
         
-        # 获取 LLM 配置
+        # 获取 LLM 配置 - 使用更宽松的查询条件
         llm_config = None
         if conversation.llm_config_id:
             try:
@@ -1132,15 +1132,28 @@ async def send_message(request: Request, project_id: int, conversation_id: int, 
                 pass
         
         if not llm_config:
-            # 使用默认配置
+            # 优先使用默认的全局配置
             llm_config = await aitestrebortLLMConfig.filter(
-                project_id=None,
+                project_id__isnull=True,
                 is_default=True,
                 is_active=True
             ).first()
         
         if not llm_config:
-            return request.app.fail(msg="未找到可用的 LLM 配置")
+            # 如果没有默认配置，使用任意可用的全局配置
+            llm_config = await aitestrebortLLMConfig.filter(
+                project_id__isnull=True,
+                is_active=True
+            ).first()
+        
+        if not llm_config:
+            # 如果还是没有，使用任意可用的配置（包括项目配置）
+            llm_config = await aitestrebortLLMConfig.filter(
+                is_active=True
+            ).first()
+        
+        if not llm_config:
+            return request.app.fail(msg="未找到可用的 LLM 配置，请先在项目设置中配置 LLM")
         
         # 创建 LLM 实例
         try:

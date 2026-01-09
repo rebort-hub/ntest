@@ -11,6 +11,7 @@ from app.routers.autotest.task import task_router
 from app.routers.autotest.report import report_router
 from app.routers.autotest.dashboard import dashboard_router
 from app.routers.autotest.stat import stat_router
+from app.routers.autotest.ai_code_generator import ai_code_router
 api_test.include_router(project_router, prefix="/project", tags=["服务管理"])
 api_test.include_router(module_router, prefix="/module", tags=["模块管理"])
 api_test.include_router(api_router, prefix="/api", tags=["接口管理"])
@@ -21,6 +22,7 @@ api_test.include_router(task_router, prefix="/task", tags=["任务管理"])
 api_test.include_router(report_router, prefix="/report", tags=["报告管理"])
 api_test.include_router(dashboard_router, prefix="/dashboard", tags=["dashboard"])
 api_test.include_router(stat_router, prefix="/stat", tags=["stat"])
+api_test.include_router(ai_code_router, prefix="/ai-code-generator", tags=["AI代码生成"])
 
 
 app_test = APIRouter()

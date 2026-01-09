@@ -3,7 +3,7 @@
 
 项目介绍
 该项目采用 前后端分离架构，融合 Python 后端框架 FastAPI 和前端主流框架 Vue3 实现统一开发，提供了一站式开箱即用的体验
-打造AI结合，支持AI生成用例生成，接口自动化，APP自动化，UI自动化，智能排版，LLM厂商自定义配置的一体化管理平台。
+打造AI结合，支持AI生成用例生成，AI 接口测试脚本一键生成，接口自动化，APP自动化，UI自动化，智能排版，LLM厂商自定义配置的一体化管理平台。
 
 ## 技术架构
 
@@ -30,11 +30,12 @@ Vue3 / Vite / TypeScript/ElementPlus
     查看最大连接数 show variables like 'max_connections';
     设置最大连接数 set global max_connections=16384;
 
-## 后端启动
+## 后端&前端启动
 
 ### 1. 安装依赖
 
 ```bash
+后端 
 cd backend
 
 # 激活虚拟环境 (Windows)
@@ -42,6 +43,21 @@ cd backend
 
 # 安装依赖
 pip install -r requirements.txt
+
+启动：
+
+python main.py
+
+前端：
+
+cd frontend
+
+npm install 
+
+npm run dev
+
+生产环境
+npm run build
 ```
 
 ### 2. 配置数据库
@@ -85,8 +101,8 @@ tortoise_orm_conf = {
 
 ### 生产环境下的一些配置:
 
-    1.把main端口改为8024启动
-    2.把job端口改为8025启动
+    1.把main端口改为8025启动
+    2.把job端口改为8026启动
     3.准备好前端包，并在nginx.location / 下指定前端包的路径
     4.直接把项目下的nginx.conf文件替换nginx下的nginx.conf文件
     5.nginx -s reload 重启nginx
@@ -130,10 +146,6 @@ uvicorn main:app --host 0.0.0.0 --port 8018 --reload
 
 cd frontend
 
-pip3 install -r requirements.txt
-=======
-cd frontend
-
 npm install
 ```
 
@@ -145,23 +157,6 @@ npm run dev
 
 前端dev将在 http://localhost:8016 启动
 
-## 验证安装
-
-### 运行集成测试
-
-```bash
-cd backend
-python test_mcp_integration.py
-```
-这个步骤可以忽略
-cd backend
-python test_mcp_integration.py
-```
-
-预期输出：
-```
-🎉 所有测试通过！系统已准备就绪。
-```
 
 ### 测试 API 端点
 
@@ -259,47 +254,7 @@ pip install langchain-mcp-adapters>=0.2.0
 - 使用 ESLint + Prettier 格式化前端代码
 - 遵循 PEP 8 编码规范
 
-### 测试
 
-```bash
-# 运行后端测试
-pytest
-
-# 运行前端测试
-npm run test
-```
-
-### 调试
-
-#### 后端调试
-
-在 VS Code 中添加 `.vscode/launch.json`:
-
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Python: FastAPI",
-      "type": "python",
-      "request": "launch",
-      "module": "uvicorn",
-      "args": [
-        "main:app",
-        "--reload",
-        "--port",
-        "8018"
-      ],
-      "jinja": true,
-      "justMyCode": false
-    }
-  ]
-}
-```
-
-#### 前端调试
-
-在浏览器中使用 Vue DevTools 扩展
 
 ## 生产部署
 
@@ -346,6 +301,9 @@ server {
 #### 选择运行环境
 
 ![登录页](backend/img/case/login.png)
+
+#### AI接口自动化代码生成
+![接口自动化](backend/img/case/gin.png)
 
 #### 测试执行进度
 

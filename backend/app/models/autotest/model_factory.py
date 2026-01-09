@@ -10,3 +10,4 @@ from .task import *
 from .report import *
 from .report_case import *
 from .report_step import *
+from .ai_code_generation import *

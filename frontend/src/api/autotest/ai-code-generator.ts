@@ -6,7 +6,7 @@ import service from '@/utils/system/request'
 // 生成测试代码
 export const generateTestCode = (data: any) => {
   return service({
-    url: '/api/autotest/ai-code-generator/generate',
+    url: '/api/api-test/ai-code-generator/generate',
     method: 'post',
     data
   })
@@ -15,8 +15,35 @@ export const generateTestCode = (data: any) => {
 // 获取生成统计
 export const getGenerationStats = () => {
   return service({
-    url: '/api/autotest/ai-code-generator/stats',
+    url: '/api/api-test/ai-code-generator/stats',
     method: 'get'
+  })
+}
+
+// 获取生成历史
+export const getGenerationHistory = (params: any) => {
+  return service({
+    url: '/api/api-test/ai-code-generator/history',
+    method: 'get',
+    params
+  })
+}
+
+// 更新使用统计
+export const updateUsageStats = (data: any) => {
+  return service({
+    url: '/api/api-test/ai-code-generator/history/usage',
+    method: 'put',
+    data
+  })
+}
+
+// 删除历史记录
+export const deleteGenerationHistory = (data: any) => {
+  return service({
+    url: '/api/api-test/ai-code-generator/history',
+    method: 'delete',
+    data
   })
 }
 
