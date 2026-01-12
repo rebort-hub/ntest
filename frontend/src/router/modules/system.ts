@@ -9,11 +9,11 @@ const route: Route[] = [
     hideMenu: false,
     meta: { title: '系统管理', icon: 'system', alwaysShow: false },
     children: [
-      {
-        path: 'package-manage',
-        component: createNameComponent(() => import('@/views/system/package-manage/index.vue')),
-        meta: { title: 'python包管理', icon: 'figmaComponent' }
-      },
+      // {
+      //   path: 'package-manage',
+      //   component: createNameComponent(() => import('@/views/system/package-manage/index.vue')),
+      //   meta: { title: 'python包管理', icon: 'figmaComponent' }
+      // },
       {
         path: 'permission',
         component: createNameComponent(() => import('@/views/system/permission/index.vue')),

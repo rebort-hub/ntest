@@ -8,9 +8,18 @@
 ## 技术架构
 
 后端：
-FastAPI/ Uvicorn / Pydantic 2.0
-前端：
-Vue3 / Vite / TypeScript/ElementPlus
+FastAPI / Uvicorn / Pydantic 2.0 /  Tortoise ORM
+AI：大语言模型（LLM）、LangChain、多种嵌入服务（OpenAI、Azure OpenAI、Ollama等）
+
+存储：可切换为 PostgreSQL / MySQL
+
+前端： Vue3 / Vite / TypeScript/ElementPlus
+
+AI技术栈：LangChain/LangGraph
+
+向量数据库：
+
+MCP :fastmcp、mcp
 
 ## 环境要求
 
