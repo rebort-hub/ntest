@@ -9,6 +9,10 @@ export function getRunTimeout() {
     if (busEvent.data.runTimeout === 10){
         GetConfigByCode({ code: 'run_time_out' }).then(response => {
             busEvent.data.runTimeout = response.data
+        }).catch(error => {
+            console.error('获取运行超时配置失败:', error)
+            // 如果获取失败，使用默认值 60 秒
+            busEvent.data.runTimeout = 60
         })
     }
 }

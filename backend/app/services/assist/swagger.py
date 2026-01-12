@@ -396,8 +396,12 @@ async def pull_swagger(request: Request, form: schema.SwaggerPullForm):
             # 处理接口
             request.app.logger.info(f"解析接口地址：{api_addr}")
             request.app.logger.info(f"解析接口数据：{swagger_api}")
+            # 处理 deprecated 字段，将布尔值转换为对应的枚举值
+            deprecated = swagger_api.get("deprecated", False)
+            status = DataStatusEnum.DISABLE if deprecated else DataStatusEnum.ENABLE
+            
             api_template = {
-                "status": swagger_api.get("deprecated", DataStatusEnum.ENABLE),  # 没有deprecated字段说明没有被废弃
+                "status": status,
                 "project_id": project.id,
                 "module_id": module.id,
                 "method": api_method.upper(),

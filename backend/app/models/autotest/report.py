@@ -4,6 +4,7 @@ import time
 
 from ..base_model import BaseModel, fields, pydantic_model_creator
 from app.schemas.enums import TriggerTypeEnum
+from utils.logs.log import logger
 
 
 class BaseReport(BaseModel):
@@ -120,7 +121,19 @@ class BaseReport(BaseModel):
 
     async def update_report_process(self, **kwargs):
         """ 开始解析数据 """
-        await self.__class__.filter(id=self.id).update(**kwargs)
+        logger.info(f"准备更新报告进度，报告ID: {self.id}, 参数: {kwargs}")
+        try:
+            result = await self.__class__.filter(id=self.id).update(**kwargs)
+            logger.info(f"报告进度更新成功，影响行数: {result}")
+            # 验证更新是否成功
+            updated_report = await self.__class__.filter(id=self.id).first()
+            if updated_report:
+                logger.info(f"更新后的报告状态: process={updated_report.process}, status={updated_report.status}")
+            else:
+                logger.error(f"无法找到报告ID: {self.id}")
+        except Exception as e:
+            logger.error(f"更新报告进度失败: {str(e)}")
+            raise e
 
     async def parse_data_start(self):
         """ 开始解析数据 """
@@ -128,15 +141,21 @@ class BaseReport(BaseModel):
 
     async def parse_data_finish(self):
         """ 数据解析完毕 """
+        logger.info(f"准备更新报告状态为解析完成，报告ID: {self.id}")
         await self.update_report_process(process=1, status=2)
+        logger.info(f"报告状态更新完成: process=1, status=2")
 
     async def run_case_start(self):
         """ 开始运行测试 """
+        logger.info(f"准备更新报告状态为开始运行测试，报告ID: {self.id}")
         await self.update_report_process(process=2, status=1)
+        logger.info(f"报告状态更新完成: process=2, status=1")
 
     async def run_case_finish(self):
         """ 测试运行完毕 """
+        logger.info(f"准备更新报告状态为测试完成，报告ID: {self.id}")
         await self.update_report_process(process=2, status=2)
+        logger.info(f"报告状态更新完成: process=2, status=2")
 
     async def save_report_start(self):
         """ 开始保存报告 """

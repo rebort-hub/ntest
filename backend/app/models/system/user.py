@@ -220,7 +220,16 @@ class User(NumFiled):
         if hasattr(request.state, "user"):
             return request.state.user.id
         data = await User.filter(account='common').first().values("id")
-        return data["id"]
+        if data:
+            return data["id"]
+        else:
+            # 如果没有找到 common 用户，返回第一个用户的 ID
+            first_user = await User.first().values("id")
+            if first_user:
+                return first_user["id"]
+            else:
+                # 如果数据库中没有任何用户，返回默认值 1
+                return 1
 
 
 class UserRoles(BaseModel):

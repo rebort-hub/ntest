@@ -20,16 +20,31 @@ class RunApi(RunTestRunner):
 
     async def parse_and_run(self):
         """ 把解析放到异步线程里面 """
-        self.time_out = await Config.get_request_time_out()
-        self.test_plan["response_time_level"] = await Config.get_response_time_level()
-        self.front_report_addr = f'{await Config.get_report_host()}{await Config.get_api_report_addr()}'
-        self.test_plan["pause_step_time_out"] = await Config.get_pause_step_time_out()
-        await Script.create_script_file(self.env_code)  # 创建所有函数文件
-        self.report = await self.report_model.filter(id=self.report_id).first()
-        self.project = await self.get_format_project(self.report.project_id)  # 解析当前服务信息
-        await self.format_data_for_template()  # 解析api
-        await self.report.parse_data_finish()
-        await self.run_case()
+        logger.info("=== 开始接口运行流程 ===")
+        try:
+            # 测试数据库连接
+            test_report = await self.report_model.filter(id=self.report_id).first()
+            if not test_report:
+                logger.error(f"无法找到报告 ID: {self.report_id}")
+                return
+            logger.info(f"数据库连接正常，找到报告: {test_report.id}")
+            
+            self.time_out = await Config.get_request_time_out()
+            self.test_plan["response_time_level"] = await Config.get_response_time_level()
+            self.front_report_addr = f'{await Config.get_report_host()}{await Config.get_api_report_addr()}'
+            self.test_plan["pause_step_time_out"] = await Config.get_pause_step_time_out()
+            await Script.create_script_file(self.env_code)  # 创建所有函数文件
+            self.report = await self.report_model.filter(id=self.report_id).first()
+            self.project = await self.get_format_project(self.report.project_id)  # 解析当前服务信息
+            await self.format_data_for_template()  # 解析api
+            await self.report.parse_data_finish()
+            await self.run_case()
+            logger.info("=== 接口运行流程完成 ===")
+        except Exception as e:
+            logger.error(f"接口运行异常: {str(e)}")
+            import traceback
+            logger.error(f"异常详情: {traceback.format_exc()}")
+            raise e
 
     async def format_data_for_template(self):
         """ 接口调试 """
@@ -37,7 +52,9 @@ class RunApi(RunTestRunner):
 
         # 解析api
         for api_id in self.api_id_list:
+            logger.info(f'开始解析接口 ID: {api_id}')
             api_dict = await self.get_format_api(self.project, api_id=api_id)
+            logger.info(f'接口解析完成: {api_dict["name"]}')
 
             # 记录解析下后的用例，单接口运行时，没有用例，为了统一数据结构，所以把接口视为一条用例
             report_case = await ReportCase.create(
@@ -52,6 +69,7 @@ class RunApi(RunTestRunner):
                     },
                 summary=ReportCase.get_summary_template()
             )
+            logger.info(f'报告用例创建完成: {report_case.id}')
 
             # 合并头部信息
             step_headers = {}
@@ -66,9 +84,12 @@ class RunApi(RunTestRunner):
                 name=api_dict["name"],
                 step_data=api_dict
             )
+            logger.info(f'报告步骤创建完成: {report_step.id}')
             api_dict["report_step"] = report_step
             self.test_plan["report_case_list"].append(report_case.id)
+        logger.info('所有接口解析完成，开始初始化解析数据')
         self.init_parsed_data()
+        logger.info('数据初始化完成')
 
 
 class RunCase(RunTestRunner):

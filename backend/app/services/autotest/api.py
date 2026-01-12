@@ -161,8 +161,14 @@ async def run_api(request: Request, form: schema.RunApiMsgForm):
             summary=summary
         )
 
-        asyncio.create_task(RunApi(
-            api_id_list=run_api_list, report_id=report.id, env_code=env_code, env_name=env_code
-        ).parse_and_run())
+        try:
+            task = asyncio.create_task(RunApi(
+                api_id_list=run_api_list, report_id=report.id, env_code=env_code, env_name=env_code
+            ).parse_and_run())
+            # 不等待任务完成，让它在后台运行
+        except Exception as e:
+            logger.error(f"创建接口运行任务失败: {str(e)}")
+            # 如果创建任务失败，更新报告状态
+            await report.run_case_finish()
 
     return request.app.trigger_success({"batch_id": batch_id})

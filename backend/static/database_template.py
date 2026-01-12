@@ -93,7 +93,7 @@ def database_template_update_token(mobile, token, user_id, company_name, company
 
 def database_template_insert_user(mobile, password, token, role=None, company_id=None, company_name=None, user_id=None):
     """ 插入用户信息 """
-    m_sql = f"INSERT INTO `auto_test_user` (`create_time`, `update_time`, `create_user`, `update_user`, `mobile`, `password`, `u_token`, `role`, `company_id`, `company_name`, `user_id`, `comment`, `env`) VALUES (NULL, NULL, NULL, NULL, '{mobile}', '{password}', '{token}', '{role}', '{company_id}', '{company_name}', '{user_id}', NULL, '{env}');"
+    m_sql = f"INSERT INTO auto_test_user (create_time, update_time, create_user, update_user, mobile, password, u_token, role, company_id, company_name, user_id, comment, env) VALUES (NULL, NULL, NULL, NULL, '{mobile}', '{password}', '{token}', '{role}', '{company_id}', '{company_name}', '{user_id}', NULL, '{env}');"
     print(m_sql)
     database_template.execute(m_sql)
 

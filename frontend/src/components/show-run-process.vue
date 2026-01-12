@@ -347,9 +347,17 @@ const tableRowClassName = ({ row, rowIndex }) => {
 }
 
 const getShowReportId = (batch_id: any) => {
-  GetReportShowId(props.testType, { batch_id: batch_id }).then(response => (
+  console.log('获取要显示的报告ID, batch_id:', batch_id)
+  GetReportShowId(props.testType, { batch_id: batch_id }).then(response => {
+    console.log('获取报告ID响应:', response)
+    if (response && response.data) {
       openReportById(response.data)
-  ))
+    } else {
+      console.error('获取报告ID失败: 响应数据为空')
+    }
+  }).catch(error => {
+    console.error('获取报告ID失败:', error)
+  })
 }
 
 const changeReportStepStatus = (report_id: number, report_case_id: number, report_step_id: number, status: string) => {
@@ -367,9 +375,16 @@ const clickCase = (row: { id: undefined; }, column: any, event: any) => {
 }
 
 const openReportById = (reportId: any) => {
+  console.log('准备跳转到报告页面, reportId:', reportId, 'testType:', props.testType)
   // 使用路由跳转替代新窗口打开
-  const router = useRouter()
-  router.push(`/${props.testType}-test/report-show?id=${reportId}`)
+  const targetPath = `/${props.testType}-test/report-show?id=${reportId}`
+  console.log('跳转路径:', targetPath)
+  try {
+    router.push(targetPath)
+    console.log('路由跳转成功')
+  } catch (error) {
+    console.error('路由跳转失败:', error)
+  }
 }
 
 async function getReport (batch_id) {
@@ -378,21 +393,30 @@ async function getReport (batch_id) {
   // 已出结果，则停止查询，展示测试报告
   const runTimeoutCount = Number(busEvent.data.runTimeout) * 1000 / 1500
   let queryCount = 1
+  
+  console.log('开始查询报告状态, batch_id:', batch_id, 'runTimeout:', busEvent.data.runTimeout, 'runTimeoutCount:', runTimeoutCount)
 
   async function waiteTestFinish() {
     if (processIsShow.value == false){
+      console.log('进度框已关闭，停止查询')
       return
     }
     if (queryCount <= runTimeoutCount) {
+      console.log('查询第', queryCount, '次, activeProcess:', activeProcess.value, 'activeStatus:', activeStatus.value)
+      
       const reportStatus = await GetReportStatus(props.testType, {
         batch_id: batch_id,
         process: activeProcess.value,
         status: activeStatus.value
       });
 
+      console.log('报告状态响应:', reportStatus)
+
       if (reportStatus.status === 200) { // 获取成功
         activeProcess.value = reportStatus.data.process
         activeStatus.value = reportStatus.data.status
+        
+        console.log('更新状态: process =', activeProcess.value, 'status =', activeStatus.value)
 
         if (reportId.value && activeProcess.value === 2) { // 执行中
           const reportCaseList = await GetReportCaseList(props.testType, {report_id: reportId.value}) // 获取执行的用例
@@ -405,17 +429,21 @@ async function getReport (batch_id) {
           reportStepDataList.value = reportStepList.data
 
         } else if (activeProcess.value === 3 && activeStatus.value === 2) {// 执行完毕
+          console.log('执行完毕，准备跳转到报告页面')
           processIsShow.value = false // 关闭进度框
           getShowReportId(batch_id)
           return
         }
       } else { // 获取失败
+        console.log('获取报告状态失败:', reportStatus)
         processIsShow.value = false // 关闭进度框
       }
       await new Promise(resolve => setTimeout(resolve, 1500));
       queryCount += 1
     } else { // 超时还未出结果
+      console.log('查询超时，显示超时提示')
       showTimeOutMessage.value = true
+      return // 超时后停止递归调用
     }
     return waiteTestFinish()
   }

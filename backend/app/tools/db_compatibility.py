@@ -68,8 +68,9 @@ class DatabaseCompatibility:
     def adapt_sql_for_db(sql: str) -> str:
         """根据数据库类型调整SQL语句"""
         if DatabaseCompatibility.is_postgresql():
-            # PostgreSQL特定调整
-            sql = sql.replace('`', '"')  # 替换反引号为双引号
+            # PostgreSQL特定调整 - 移除所有引号，让PostgreSQL自动处理
+            sql = sql.replace('`', '')  # 移除反引号
+            sql = sql.replace('"', '')  # 移除双引号
             sql = sql.replace('AUTO_INCREMENT', 'SERIAL')
         else:
             # MySQL特定调整

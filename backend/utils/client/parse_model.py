@@ -148,7 +148,7 @@ class FormatModel(JsonUtil):
 
     def build_data(self, data_type, value):
         """ 根据数据类型解析数据 """
-        if data_type in ["variable", "func", "str"]:
+        if data_type in ["variable", "func", "str", "string"]:  # 添加 "string" 到字符串类型
             return value
         elif data_type == "json":
             return self.dumps(self.loads(value))
@@ -157,7 +157,19 @@ class FormatModel(JsonUtil):
         elif data_type == "data_driver_list":
             return eval(f'list({value})')
         else:  # python数据类型
-            return eval(f'{data_type}({value})')
+            # 处理常见的数据类型映射
+            type_mapping = {
+                "string": "str",
+                "integer": "int",
+                "number": "float",
+                "boolean": "bool"
+            }
+            actual_type = type_mapping.get(data_type, data_type)
+            try:
+                return eval(f'{actual_type}({value})')
+            except (NameError, TypeError, ValueError) as e:
+                # 如果 eval 失败，返回原始值
+                return value
 
     def build_actual_result(self, data_source, key):
         """ 生成实际结果表达式 """

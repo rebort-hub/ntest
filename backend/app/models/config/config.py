@@ -33,7 +33,22 @@ class Config(NumFiled):
     async def get_config(cls, name: str):
         """ 获取配置 """
         data = await cls.filter(name=name).first().values("value")
-        return data["value"]
+        if data:
+            return data["value"]
+        else:
+            # 如果配置项不存在，返回默认值
+            default_values = {
+                "api_report_addr": "/api-test/report-show",
+                "web_ui_report_addr": "/ui-test/report-show",
+                "app_ui_report_addr": "/app-test/report-show",
+                "report_host": "http://localhost:8080",
+                "request_time_out": 60,
+                "response_time_level": [0.5, 1, 2],
+                "pause_step_time_out": 300,
+                "appium_new_command_timeout": 120,
+                "run_time_out": 60
+            }
+            return default_values.get(name, "")
 
     @classmethod
     async def get_pip_command(cls):

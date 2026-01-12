@@ -520,7 +520,8 @@ const reRun = (runConf) => {
     no_reset: runConf.noReset,
     temp_variables: runConf.temp_variables,
     insert_to: insert_to.value,
-    'trigger_type': 'page'
+    'trigger_type': 'page',
+    extend: {}  // 添加必需的 extend 字段
   }).then(response => {
     if (response) {
       bus.emit(busEvent.drawerIsShow, {

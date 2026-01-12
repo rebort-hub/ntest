@@ -53,7 +53,7 @@ class AsyncIOScheduler(_AsyncIOScheduler):
         memory_job = self.add_job(*args, **kwargs, **parse_cron(cron))
 
         db = Tortoise.get_connection("default")
-        result = await db.execute_query_dict(f"SELECT `id` FROM apscheduler_jobs WHERE task_code='{task_code}'")
+        result = await db.execute_query_dict(f"SELECT id FROM apscheduler_jobs WHERE task_code='{task_code}'")
         if result:
             await db.execute_script(f"update apscheduler_jobs set job_id = '{memory_job.id}', cron = '{cron}'  WHERE task_code='{task_code}'")
         else:
@@ -64,11 +64,11 @@ class AsyncIOScheduler(_AsyncIOScheduler):
     async def remove_exist_job(self, job_code, *args, **kwargs):
         """ 移除任务 """
         db = Tortoise.get_connection("default")
-        job = await db.execute_query_dict(f"SELECT `job_id` FROM apscheduler_jobs WHERE task_code='{job_code}'")
+        job = await db.execute_query_dict(f"SELECT job_id FROM apscheduler_jobs WHERE task_code='{job_code}'")
         if job:
             job_id = job[0]["job_id"]
             self.remove_job(job_id, *args, **kwargs)
-            await db.execute_script(f'delete FROM apscheduler_jobs WHERE job_id="{job_id}"')
+            await db.execute_script(f"delete FROM apscheduler_jobs WHERE job_id='{job_id}'")
 
 
 scheduler = AsyncIOScheduler()
@@ -83,7 +83,7 @@ async def request_run_task_api(task_code, task_type, skip_holiday=True):
 
         # 查配置的节假日
         db = Tortoise.get_connection("default")
-        result = await db.execute_query_dict("SELECT `value` FROM config_config WHERE name='holiday_list'")
+        result = await db.execute_query_dict("SELECT value FROM config_config WHERE name='holiday_list'")
         holiday_list = json.loads(result[0]['value'])
 
         if datetime.datetime.today().strftime("%m-%d") in holiday_list:
@@ -113,7 +113,7 @@ async def request_run_task_api(task_code, task_type, skip_holiday=True):
 
     # 更新 next_run_time
     db = Tortoise.get_connection("default")
-    job_data = await db.execute_query_dict(f"SELECT `job_id` FROM apscheduler_jobs WHERE task_code='{task_code}'")
+    job_data = await db.execute_query_dict(f"SELECT job_id FROM apscheduler_jobs WHERE task_code='{task_code}'")
     job = scheduler.get_job(job_data[0]["job_id"])
     await db.execute_script(
         f"update apscheduler_jobs set next_run_time = '{job.next_run_time}' WHERE task_code='{task_code}'")

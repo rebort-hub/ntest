@@ -261,7 +261,6 @@ const showEditDrawer = (row: object | undefined) => {
 
 const showReport = (row: { test_type: string, report_id: any; }) => {
   // 使用路由跳转替代新窗口打开
-  const router = useRouter()
   router.push(`/${row.test_type}-test/report-show?id=${row.report_id}`)
 }
 

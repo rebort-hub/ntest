@@ -719,14 +719,17 @@ const runTask = (runConf) => {
     phone_id: runConf.runPhone,
     no_reset: runConf.noReset,
     temp_variables: runConf.temp_variables,
-    'trigger_type': 'page'
+    'trigger_type': 'page',
+    extend: {}  // 添加必需的 extend 字段
   }).then(response => {
-    if (response) {
+    if (response && response.data) {
       bus.emit(busEvent.drawerIsShow, {
         eventType: 'run-process',
         batch_id: response.data.batch_id,
         report_id: response.data.report_id
       })
+    } else {
+      console.error('任务运行失败：响应数据为空', response)
     }
   })
 }
