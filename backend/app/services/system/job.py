@@ -200,20 +200,41 @@ class JobFuncs:
                 project_template = copy.deepcopy(business_template)
                 project_template.pop("countTime")
 
-                data_report = await ApiReport.execute_sql(f"""SELECT
-                       project_id,
-                       sum( CASE is_passed WHEN 1 THEN 1 ELSE 0 END ) AS pass,
-                       sum( CASE is_passed WHEN 0 THEN 1 ELSE 0 END ) AS fail 
-                   FROM
-                       api_test_report WHERE `trigger_type` in ("cron", "pipeline") 
-                       AND project_id in ({project.id})
-                       AND `process` = '3' 
-                       AND `status` = '2' 
-                       AND {count_day}""")
+                # 使用数据库兼容的SQL查询
+                from app.tools.db_compatibility import DatabaseCompatibility
+                
+                if DatabaseCompatibility.is_postgresql():
+                    # PostgreSQL语法
+                    data_report = await DatabaseCompatibility.execute_raw_sql(f"""SELECT
+                           "project_id",
+                           sum( CASE "is_passed" WHEN 1 THEN 1 ELSE 0 END ) AS pass,
+                           sum( CASE "is_passed" WHEN 0 THEN 1 ELSE 0 END ) AS fail 
+                       FROM
+                           "api_test_report" WHERE "trigger_type" in ('cron', 'pipeline') 
+                           AND "project_id" in ({project.id})
+                           AND "process" = '3' 
+                           AND "status" = '2' 
+                           AND {count_day}""")
 
-                data_hit = await ApiReport.execute_sql(
-                    f"""SELECT project_id,hit_type,count(hit_type)  FROM auto_test_hits 
-                           WHERE project_id in ({project.id}) AND {count_day} GROUP BY hit_type """)
+                    data_hit = await DatabaseCompatibility.execute_raw_sql(
+                        f"""SELECT "project_id","hit_type",count("hit_type")  FROM "auto_test_hits" 
+                               WHERE "project_id" in ({project.id}) AND {count_day} GROUP BY "hit_type" """)
+                else:
+                    # MySQL语法
+                    data_report = await ApiReport.execute_sql(f"""SELECT
+                           project_id,
+                           sum( CASE is_passed WHEN 1 THEN 1 ELSE 0 END ) AS pass,
+                           sum( CASE is_passed WHEN 0 THEN 1 ELSE 0 END ) AS fail 
+                       FROM
+                           api_test_report WHERE "trigger_type" in ("cron", "pipeline") 
+                           AND project_id in ({project.id})
+                           AND "process" = '3' 
+                           AND "status" = '2' 
+                           AND {count_day}""")
+
+                    data_hit = await ApiReport.execute_sql(
+                        f"""SELECT project_id,hit_type,count(hit_type)  FROM auto_test_hits 
+                               WHERE project_id in ({project.id}) AND {count_day} GROUP BY hit_type """)
 
                 pass_count = int(data_report[0]["pass"]) if data_report[0]["pass"] else 0
                 fail_count = int(data_report[0]["fail"]) if data_report[0]["fail"] else 0

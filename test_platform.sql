@@ -11,7 +11,7 @@
  Target Server Version : 80042 (8.0.42)
  File Encoding         : 65001
 
- Date: 09/01/2026 15:28:17
+ Date: 12/01/2026 15:55:43
 */
 
 SET NAMES utf8mb4;
@@ -568,7 +568,7 @@ CREATE TABLE `aitestrebort_project_credential`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `fk_wharttes_wharttes_ce6b00a5`(`project_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_ce6b00a5` FOREIGN KEY (`project_id`) REFERENCES `aitestrebort_project` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '项目凭据表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '项目凭据表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of aitestrebort_project_credential
@@ -673,7 +673,7 @@ CREATE TABLE `aitestrebort_script_execution`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `fk_wharttes_wharttes_f3549ee6`(`script_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_f3549ee6` FOREIGN KEY (`script_id`) REFERENCES `aitestrebort_automation_script` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '脚本执行记录表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '脚本执行记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of aitestrebort_script_execution
@@ -703,7 +703,7 @@ CREATE TABLE `aitestrebort_test_execution`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `fk_wharttes_wharttes_3ec73eaf`(`suite_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_3ec73eaf` FOREIGN KEY (`suite_id`) REFERENCES `aitestrebort_testsuite` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '测试执行记录表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '测试执行记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of aitestrebort_test_execution
@@ -727,7 +727,7 @@ CREATE TABLE `aitestrebort_test_suite`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uid_wharttest_ts_proj_name`(`project_id` ASC, `name` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_ts_proj` FOREIGN KEY (`project_id`) REFERENCES `aitestrebort_project` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = ' 测试套件表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = ' 测试套件表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of aitestrebort_test_suite
@@ -846,7 +846,7 @@ CREATE TABLE `aitestrebort_testcase_result`  (
   INDEX `fk_wharttes_wharttes_f015f2a8`(`testcase_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_3ccc3d76` FOREIGN KEY (`execution_id`) REFERENCES `aitestrebort_test_execution` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `fk_wharttes_wharttes_f015f2a8` FOREIGN KEY (`testcase_id`) REFERENCES `aitestrebort_testcase` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = ' 测试用例执行结果表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = ' 测试用例执行结果表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of aitestrebort_testcase_result
@@ -873,7 +873,7 @@ CREATE TABLE `aitestrebort_testcase_screenshot`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `fk_wharttes_wharttes_94e50689`(`test_case_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_94e50689` FOREIGN KEY (`test_case_id`) REFERENCES `aitestrebort_testcase` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '测试用例截图表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '测试用例截图表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of aitestrebort_testcase_screenshot
@@ -954,7 +954,7 @@ CREATE TABLE `aitestrebort_testsuite`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uid_wharttest_t_project_da2079`(`project_id` ASC, `name` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_32490379` FOREIGN KEY (`project_id`) REFERENCES `aitestrebort_project` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '测试套件表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '测试套件表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of aitestrebort_testsuite
@@ -977,7 +977,7 @@ CREATE TABLE `aitestrebort_testsuite_case`  (
   INDEX `fk_wharttes_wharttes_a4029897`(`testcase_id` ASC) USING BTREE,
   CONSTRAINT `fk_wharttes_wharttes_a4029897` FOREIGN KEY (`testcase_id`) REFERENCES `aitestrebort_testcase` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `fk_wharttes_wharttes_bc4124ce` FOREIGN KEY (`suite_id`) REFERENCES `aitestrebort_testsuite` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '测试套件用例关联表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '测试套件用例关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of aitestrebort_testsuite_case
@@ -1082,7 +1082,7 @@ CREATE TABLE `api_test_case_suite`  (
   `project_id` int NOT NULL COMMENT '所属的服务id',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_api_test_ca_project_f2f530`(`project_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 37 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '接口测试用例集表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 52 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '接口测试用例集表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of api_test_case_suite
@@ -1092,6 +1092,21 @@ INSERT INTO `api_test_case_suite` VALUES (33, '2026-01-09 10:50:19.831506', '202
 INSERT INTO `api_test_case_suite` VALUES (34, '2026-01-09 10:50:19.831506', '2026-01-09 10:50:19.831506', 1, 1, '单接口用例集', 2, 'api', NULL, 11);
 INSERT INTO `api_test_case_suite` VALUES (35, '2026-01-09 10:50:19.831506', '2026-01-09 10:50:19.831506', 1, 1, '流程用例集', 3, 'process', NULL, 11);
 INSERT INTO `api_test_case_suite` VALUES (36, '2026-01-09 10:50:19.831506', '2026-01-09 10:50:19.831506', 1, 1, '造数据用例集', 4, 'make_data', NULL, 11);
+INSERT INTO `api_test_case_suite` VALUES (37, '2026-01-12 15:53:18.539201', '2026-01-12 15:53:18.539201', 1, 1, '基础用例集', 0, 'base', NULL, 12);
+INSERT INTO `api_test_case_suite` VALUES (38, '2026-01-12 15:53:18.539201', '2026-01-12 15:53:18.539201', 1, 1, '引用用例集', 1, 'quote', NULL, 12);
+INSERT INTO `api_test_case_suite` VALUES (39, '2026-01-12 15:53:18.539201', '2026-01-12 15:53:18.539201', 1, 1, '单接口用例集', 2, 'api', NULL, 12);
+INSERT INTO `api_test_case_suite` VALUES (40, '2026-01-12 15:53:18.539201', '2026-01-12 15:53:18.539201', 1, 1, '流程用例集', 3, 'process', NULL, 12);
+INSERT INTO `api_test_case_suite` VALUES (41, '2026-01-12 15:53:18.539201', '2026-01-12 15:53:18.539201', 1, 1, '造数据用例集', 4, 'make_data', NULL, 12);
+INSERT INTO `api_test_case_suite` VALUES (42, '2026-01-12 15:53:33.011323', '2026-01-12 15:53:33.011323', 1, 1, '基础用例集', 0, 'base', NULL, 14);
+INSERT INTO `api_test_case_suite` VALUES (43, '2026-01-12 15:53:33.011323', '2026-01-12 15:53:33.011323', 1, 1, '引用用例集', 1, 'quote', NULL, 14);
+INSERT INTO `api_test_case_suite` VALUES (44, '2026-01-12 15:53:33.011323', '2026-01-12 15:53:33.011323', 1, 1, '单接口用例集', 2, 'api', NULL, 14);
+INSERT INTO `api_test_case_suite` VALUES (45, '2026-01-12 15:53:33.011323', '2026-01-12 15:53:33.011323', 1, 1, '流程用例集', 3, 'process', NULL, 14);
+INSERT INTO `api_test_case_suite` VALUES (46, '2026-01-12 15:53:33.011323', '2026-01-12 15:53:33.011323', 1, 1, '造数据用例集', 4, 'make_data', NULL, 14);
+INSERT INTO `api_test_case_suite` VALUES (47, '2026-01-12 15:53:40.790550', '2026-01-12 15:53:40.790550', 1, 1, '基础用例集', 0, 'base', NULL, 15);
+INSERT INTO `api_test_case_suite` VALUES (48, '2026-01-12 15:53:40.790550', '2026-01-12 15:53:40.790550', 1, 1, '引用用例集', 1, 'quote', NULL, 15);
+INSERT INTO `api_test_case_suite` VALUES (49, '2026-01-12 15:53:40.790550', '2026-01-12 15:53:40.790550', 1, 1, '单接口用例集', 2, 'api', NULL, 15);
+INSERT INTO `api_test_case_suite` VALUES (50, '2026-01-12 15:53:40.790550', '2026-01-12 15:53:40.790550', 1, 1, '流程用例集', 3, 'process', NULL, 15);
+INSERT INTO `api_test_case_suite` VALUES (51, '2026-01-12 15:53:40.790550', '2026-01-12 15:53:40.790550', 1, 1, '造数据用例集', 4, 'make_data', NULL, 15);
 
 -- ----------------------------
 -- Table structure for api_test_module
@@ -1137,12 +1152,15 @@ CREATE TABLE `api_test_project`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `name`(`name` ASC) USING BTREE,
   INDEX `idx_api_test_pr_busines_feaf24`(`business_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 12 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '接口测试服务表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '接口测试服务表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of api_test_project
 -- ----------------------------
 INSERT INTO `api_test_project` VALUES (11, '2026-01-09 10:50:19.798592', '2026-01-09 10:50:57.243114', 1, 1, '开发接口', 3, '[4]', NULL, 2, 'http://172.16.60.204:8018/docs', 0);
+INSERT INTO `api_test_project` VALUES (12, '2026-01-12 15:53:18.497043', '2026-01-12 15:53:18.497043', 1, 1, '9999', 3, '[]', NULL, 2, NULL, 1);
+INSERT INTO `api_test_project` VALUES (14, '2026-01-12 15:53:33.000667', '2026-01-12 15:53:33.001664', 1, 1, '888', 4, '[]', NULL, 1, NULL, 1);
+INSERT INTO `api_test_project` VALUES (15, '2026-01-12 15:53:40.782711', '2026-01-12 15:53:40.782711', 1, 1, '666', 2, '[]', NULL, 2, NULL, 1);
 
 -- ----------------------------
 -- Table structure for api_test_project_env
@@ -1162,7 +1180,7 @@ CREATE TABLE `api_test_project_env`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_api_test_pr_env_id_8091f5`(`env_id` ASC) USING BTREE,
   INDEX `idx_api_test_pr_project_305b54`(`project_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 41 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '接口测试服务环境表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 59 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '接口测试服务环境表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of api_test_project_env
@@ -1207,6 +1225,24 @@ INSERT INTO `api_test_project_env` VALUES (37, '2026-01-09 10:50:19.827530', '20
 INSERT INTO `api_test_project_env` VALUES (38, '2026-01-09 10:50:19.827530', '2026-01-09 10:50:19.827530', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 1, 11, '[{\"key\": null, \"value\": null, \"remark\": null}]');
 INSERT INTO `api_test_project_env` VALUES (39, '2026-01-09 10:50:19.827530', '2026-01-09 10:50:19.827530', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 2, 11, '[{\"key\": null, \"value\": null, \"remark\": null}]');
 INSERT INTO `api_test_project_env` VALUES (40, '2026-01-09 10:50:19.827530', '2026-01-09 10:50:19.827530', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 4, 11, '[{\"key\": null, \"value\": null, \"remark\": null}]');
+INSERT INTO `api_test_project_env` VALUES (41, '2026-01-12 15:53:18.533723', '2026-01-12 15:53:18.533723', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 7, 12, '[{\"key\": null, \"value\": null, \"remark\": null}]');
+INSERT INTO `api_test_project_env` VALUES (42, '2026-01-12 15:53:18.534702', '2026-01-12 15:53:18.534702', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 6, 12, '[{\"key\": null, \"value\": null, \"remark\": null}]');
+INSERT INTO `api_test_project_env` VALUES (43, '2026-01-12 15:53:18.534702', '2026-01-12 15:53:18.534702', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 3, 12, '[{\"key\": null, \"value\": null, \"remark\": null}]');
+INSERT INTO `api_test_project_env` VALUES (44, '2026-01-12 15:53:18.534702', '2026-01-12 15:53:18.534702', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 1, 12, '[{\"key\": null, \"value\": null, \"remark\": null}]');
+INSERT INTO `api_test_project_env` VALUES (45, '2026-01-12 15:53:18.534702', '2026-01-12 15:53:18.534702', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 2, 12, '[{\"key\": null, \"value\": null, \"remark\": null}]');
+INSERT INTO `api_test_project_env` VALUES (46, '2026-01-12 15:53:18.534702', '2026-01-12 15:53:18.534702', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 4, 12, '[{\"key\": null, \"value\": null, \"remark\": null}]');
+INSERT INTO `api_test_project_env` VALUES (47, '2026-01-12 15:53:33.007253', '2026-01-12 15:53:33.007253', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 7, 14, '[{\"key\": null, \"value\": null, \"remark\": null}]');
+INSERT INTO `api_test_project_env` VALUES (48, '2026-01-12 15:53:33.007253', '2026-01-12 15:53:33.007253', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 6, 14, '[{\"key\": null, \"value\": null, \"remark\": null}]');
+INSERT INTO `api_test_project_env` VALUES (49, '2026-01-12 15:53:33.007253', '2026-01-12 15:53:33.007253', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 3, 14, '[{\"key\": null, \"value\": null, \"remark\": null}]');
+INSERT INTO `api_test_project_env` VALUES (50, '2026-01-12 15:53:33.007253', '2026-01-12 15:53:33.007253', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 1, 14, '[{\"key\": null, \"value\": null, \"remark\": null}]');
+INSERT INTO `api_test_project_env` VALUES (51, '2026-01-12 15:53:33.007253', '2026-01-12 15:53:33.007253', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 2, 14, '[{\"key\": null, \"value\": null, \"remark\": null}]');
+INSERT INTO `api_test_project_env` VALUES (52, '2026-01-12 15:53:33.007253', '2026-01-12 15:53:33.007253', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 4, 14, '[{\"key\": null, \"value\": null, \"remark\": null}]');
+INSERT INTO `api_test_project_env` VALUES (53, '2026-01-12 15:53:40.786189', '2026-01-12 15:53:40.786189', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 7, 15, '[{\"key\": null, \"value\": null, \"remark\": null}]');
+INSERT INTO `api_test_project_env` VALUES (54, '2026-01-12 15:53:40.786189', '2026-01-12 15:53:40.786189', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 6, 15, '[{\"key\": null, \"value\": null, \"remark\": null}]');
+INSERT INTO `api_test_project_env` VALUES (55, '2026-01-12 15:53:40.786189', '2026-01-12 15:53:40.786189', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 3, 15, '[{\"key\": null, \"value\": null, \"remark\": null}]');
+INSERT INTO `api_test_project_env` VALUES (56, '2026-01-12 15:53:40.786189', '2026-01-12 15:53:40.786189', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 1, 15, '[{\"key\": null, \"value\": null, \"remark\": null}]');
+INSERT INTO `api_test_project_env` VALUES (57, '2026-01-12 15:53:40.786189', '2026-01-12 15:53:40.786189', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 2, 15, '[{\"key\": null, \"value\": null, \"remark\": null}]');
+INSERT INTO `api_test_project_env` VALUES (58, '2026-01-12 15:53:40.786189', '2026-01-12 15:53:40.786189', 1, 1, 'http://localhost:8018', '[{\"key\": null, \"value\": null, \"remark\": null, \"data_type\": null}]', 4, 15, '[{\"key\": null, \"value\": null, \"remark\": null}]');
 
 -- ----------------------------
 -- Table structure for api_test_report
@@ -1909,7 +1945,7 @@ CREATE TABLE `auto_test_data_pool`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_auto_test_d_env_b56a48`(`env` ASC) USING BTREE,
   INDEX `idx_auto_test_d_mobile_c57ee1`(`mobile` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '测试数据池' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '测试数据池' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of auto_test_data_pool
@@ -1996,7 +2032,7 @@ CREATE TABLE `auto_test_queue_instance`  (
   `access_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'rocket_mq access_id',
   `access_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'rocket_mq access_key',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '消息队列实例管理' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '消息队列实例管理' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of auto_test_queue_instance
@@ -2064,7 +2100,7 @@ CREATE TABLE `auto_test_shell_command_record`  (
   `cmd_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '日志里面的cmdId',
   `algo_instance_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '日志里面的algoInstanceId',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'shell造数据' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'shell造数据' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of auto_test_shell_command_record
@@ -3519,7 +3555,7 @@ CREATE TABLE `web_ui_test_step`  (
   `element_id` int NULL DEFAULT NULL COMMENT '步骤所引用的元素的id',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_web_ui_test_case_id_0b9f14`(`case_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'web-ui测试步骤表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'web-ui测试步骤表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of web_ui_test_step

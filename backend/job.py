@@ -29,7 +29,17 @@ async def init_scheduler_job():
     await Tortoise.init(tortoise_orm_conf, timezone="Asia/Shanghai")  # 数据库链接
     # await Tortoise.generate_schemas(safe=True)
 
-    task_list = await Tortoise.get_connection("default").execute_query_dict("SELECT `task_code`, cron  FROM apscheduler_jobs")  # 数据库中的所有任务
+    # 使用数据库兼容的SQL查询
+    from app.tools.db_compatibility import DatabaseCompatibility
+    
+    if DatabaseCompatibility.is_postgresql():
+        # PostgreSQL语法
+        sql = 'SELECT "task_code", "cron" FROM "apscheduler_jobs"'
+    else:
+        # MySQL语法
+        sql = "SELECT `task_code`, `cron` FROM `apscheduler_jobs`"
+    
+    task_list = await DatabaseCompatibility.execute_raw_sql(sql)  # 数据库中的所有任务
     await scheduler.init_scheduler(task_list)
     logger.info(f'\n\n\n{"*" * 20} 服务【{job.title}】启动完成 {"*" * 20}\n\n\n'"")
 

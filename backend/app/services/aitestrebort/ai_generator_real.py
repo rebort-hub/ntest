@@ -329,7 +329,7 @@ async def test_llm_config(request: Request, config_id: int):
             
             # 提供更详细的错误信息
             error_msg = str(e)
-            if "null value for `choices`" in error_msg:
+            if "null value for "choices"" in error_msg:
                 error_msg = "LLM API返回了空的choices字段，可能的原因：\n1. API密钥无效或过期\n2. 模型名称不正确\n3. Base URL配置错误\n4. API服务商暂时不可用"
             elif "401" in error_msg or "Unauthorized" in error_msg:
                 error_msg = "API密钥无效或过期，请检查配置"
