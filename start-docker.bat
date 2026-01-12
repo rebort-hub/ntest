@@ -1,6 +1,6 @@
 @echo off
 echo ================================
-echo   测试平台 Docker 一键部署
+echo   N-Tester测试平台 Docker 一键部署
 echo ================================
 
 echo.

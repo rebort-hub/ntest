@@ -5,6 +5,7 @@
 ```bash
 # 1.安装node18+，确保在 cmd 下 node -v 能出现版本号
 # 2.克隆并进入项目目录
+cd frontend
 # 3.安装依赖
 npm install 
 
