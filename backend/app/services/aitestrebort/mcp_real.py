@@ -206,7 +206,7 @@ async def validate_user_mcp_api_key_match(user_id: int, mcp_config) -> dict:
         
         # 1. 获取MCP服务实际使用的密钥
         # 从环境变量或配置中获取MCP服务器的实际API密钥
-        actual_mcp_api_key = os.getenv('aitestrebort_API_KEY', 'aitestrebort-default-mcp-key-2025')
+        actual_mcp_api_key = os.getenv('N-Tester_API_KEY', 'N-Tester-default-mcp-key-2025')
         logger.info(f"MCP server actual API key: {actual_mcp_api_key[:10]}...")
         
         # 2. 查找用户的所有激活API密钥

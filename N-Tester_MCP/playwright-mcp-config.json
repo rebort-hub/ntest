@@ -1,0 +1,20 @@
+{
+  "browser": {
+    "browserName": "chromium",
+    "isolated": true,
+    "launchOptions": {
+      "headless": true,
+      "channel": "chromium"
+    },
+    "contextOptions": {
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      }
+    }
+  },
+  "server": {
+    "url": "http://127.0.0.1:8007/mcp",
+    "port": 8931
+  }
+}
