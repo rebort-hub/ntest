@@ -4,7 +4,7 @@ OAuth配置管理器
 """
 from typing import Optional, Dict, Any
 from ...models.config.model_factory import OAuthConfig
-from config import _Sso, auth_type
+from app.configs.config import _Sso, auth_type
 
 
 class OAuthConfigManager:

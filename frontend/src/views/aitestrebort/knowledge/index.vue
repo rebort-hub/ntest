@@ -3,6 +3,10 @@
     <!-- 页面头部 -->
     <div v-if="!selectedKnowledgeBase" class="page-header">
       <div class="header-left">
+        <el-button @click="$router.push(`/aitestrebort/project/${projectId}/testcase`)" style="margin-right: 16px;">
+          <el-icon><ArrowLeft /></el-icon>
+          返回
+        </el-button>
         <h1 class="page-title">知识库管理</h1>
       </div>
       <div class="header-right">
@@ -206,7 +210,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Plus, Search, Refresh, Setting, Document, MoreFilled
+  Plus, Search, Refresh, Setting, Document, MoreFilled, ArrowLeft
 } from '@element-plus/icons-vue'
 import { knowledgeEnhancedApi, type KnowledgeBase } from '@/api/aitestrebort/knowledge-enhanced'
 import { knowledgeApi } from '@/api/aitestrebort/knowledge'
@@ -502,6 +506,8 @@ onMounted(() => {
 
 .header-left {
   flex: 1;
+  display: flex;
+  align-items: center;
 }
 
 .header-right {

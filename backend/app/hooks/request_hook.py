@@ -21,7 +21,7 @@ async def get_body(request: Request) -> str:
 def check_is_log_response(path):
     """ 不打日志的接口 """
     return all(sub not in path for sub in [
-        'download', '/report/step-img', '/report/suite-list', '/docs', '/redoc', '/api/openapi'
+        'download', '/report/step-img', '/report/suite-list', '/docs', '/redoc', '/api/openapi', '/export/xmind'
     ])
 
 

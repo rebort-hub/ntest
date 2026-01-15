@@ -1,6 +1,5 @@
 ﻿"""
 aitestrebort 测试用例管理服务
-基于原始 aitestrebort 架构的完整功能实现
 """
 from typing import Optional, List, Dict, Any
 from fastapi import Request, Depends, Query, UploadFile, File
@@ -42,6 +41,17 @@ async def get_testcase_modules(request: Request, project_id: int):
         root_modules = await aitestrebortTestCaseModule.filter(
             project=project, parent_id=None
         ).order_by('name').all()
+        
+        # 如果没有模块，创建一个默认模块
+        if not root_modules:
+            default_module = await aitestrebortTestCaseModule.create(
+                project=project,
+                name="默认测试用例模块",
+                description="系统自动创建的默认测试用例模块",
+                level=1,
+                creator_id=request.state.user.id
+            )
+            root_modules = [default_module]
         
         async def build_module_tree(modules):
             """递归构建模块树"""
@@ -1237,3 +1247,188 @@ async def cancel_test_execution(request: Request, project_id: int, execution_id:
         return request.app.fail(msg="项目或执行记录不存在")
     except Exception as e:
         return request.app.error(msg=f"取消执行失败: {str(e)}")
+
+
+
+async def export_testcases_to_xmind(request: Request, project_id: int):
+    """导出测试用例为XMind格式 - 使用项目标准工具"""
+    try:
+        import os
+        from utils.make_data.make_xmind import make_xmind
+        from utils.util.file_util import TEMP_FILE_ADDRESS
+        
+        project = await aitestrebortProject.get(id=project_id)
+        
+        # 检查权限
+        try:
+            if hasattr(request.state, 'user') and request.state.user:
+                if not await aitestrebortProjectMember.filter(
+                    project=project, user_id=request.state.user.id
+                ).exists():
+                    return request.app.forbidden(msg="无权限访问此项目")
+        except Exception as e:
+            logger.warning(f"权限检查失败，继续执行: {e}")
+        
+        logger.info(f"开始导出项目 {project.name} 的测试用例到XMind")
+        
+        # 获取所有模块
+        modules = await aitestrebortTestCaseModule.filter(
+            project=project
+        ).order_by('name').all()
+        
+        logger.info(f"找到 {len(modules)} 个模块")
+        
+        # 构建模块树
+        module_dict = {}
+        for module in modules:
+            module_dict[module.id] = {
+                'module': module,
+                'children': [],
+                'testcases': []
+            }
+        
+        # 组织模块层级关系
+        root_modules = []
+        for module in modules:
+            if module.parent_id is None:
+                root_modules.append(module)
+            else:
+                if module.parent_id in module_dict:
+                    module_dict[module.parent_id]['children'].append(module)
+        
+        # 获取所有测试用例
+        testcases = await aitestrebortTestCase.filter(
+            module__project=project
+        ).all()
+        
+        logger.info(f"找到 {len(testcases)} 个测试用例")
+        
+        # 为每个测试用例预加载步骤
+        testcase_steps_dict = {}
+        for testcase in testcases:
+            steps = await aitestrebortTestCaseStep.filter(
+                test_case=testcase
+            ).order_by('step_number').all()
+            testcase_steps_dict[testcase.id] = steps
+            
+            # 将测试用例分配到对应模块
+            if testcase.module_id in module_dict:
+                module_dict[testcase.module_id]['testcases'].append(testcase)
+        
+        # 构建XMind数据结构
+        def build_module_data(module):
+            """递归构建模块数据"""
+            module_data = module_dict[module.id]
+            children = []
+            
+            # 添加该模块下的测试用例
+            for testcase in module_data['testcases']:
+                testcase_node = {
+                    "topic": f"{testcase.name} [{testcase.level or 'P3'}]",
+                    "children": []
+                }
+                
+                # 添加前置条件
+                if testcase.precondition:
+                    testcase_node["children"].append({
+                        "topic": f"前置条件: {testcase.precondition}",
+                        "children": []
+                    })
+                
+                # 添加测试步骤
+                steps = testcase_steps_dict.get(testcase.id, [])
+                if steps:
+                    steps_node = {
+                        "topic": "测试步骤",
+                        "children": []
+                    }
+                    
+                    for step in steps:
+                        step_node = {
+                            "topic": f"步骤{step.step_number}: {step.description}",
+                            "children": []
+                        }
+                        
+                        # 添加预期结果
+                        if step.expected_result:
+                            step_node["children"].append({
+                                "topic": f"预期结果: {step.expected_result}",
+                                "children": []
+                            })
+                        
+                        steps_node["children"].append(step_node)
+                    
+                    testcase_node["children"].append(steps_node)
+                
+                # 添加备注
+                if testcase.notes:
+                    testcase_node["children"].append({
+                        "topic": f"备注: {testcase.notes}",
+                        "children": []
+                    })
+                
+                children.append(testcase_node)
+            
+            # 递归添加子模块
+            for child_module in module_data['children']:
+                children.append(build_module_data(child_module))
+            
+            return {
+                "topic": module.name,
+                "children": children
+            }
+        
+        # 构建根节点数据
+        root_children = []
+        for module in root_modules:
+            root_children.append(build_module_data(module))
+        
+        # 如果没有数据，添加提示
+        if not root_children:
+            root_children.append({
+                "topic": "暂无测试用例数据",
+                "children": []
+            })
+        
+        # 构建完整的XMind数据
+        xmind_data = {
+            "nodeData": {
+                "topic": f"{project.name} 测试用例",
+                "children": root_children
+            }
+        }
+        
+        # 生成文件路径
+        filename = f"{project.name}_testcases.xmind"
+        filepath = os.path.join(TEMP_FILE_ADDRESS, filename)
+        
+        # 删除已存在的文件
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        
+        # 使用标准工具生成XMind文件
+        logger.info(f"使用标准工具生成XMind文件: {filepath}")
+        make_xmind(filepath, xmind_data)
+        
+        # 检查文件是否存在
+        if not os.path.exists(filepath):
+            logger.error(f"XMind文件未生成: {filepath}")
+            return request.app.error(msg="XMind文件生成失败")
+        
+        file_size = os.path.getsize(filepath)
+        logger.info(f"XMind文件生成成功，大小: {file_size} bytes")
+        
+        # 返回文件响应
+        from fastapi.responses import FileResponse
+        return FileResponse(
+            filepath,
+            filename=filename,
+            media_type="application/octet-stream"
+        )
+        
+    except DoesNotExist:
+        logger.error(f"项目不存在: {project_id}")
+        return request.app.fail(msg="项目不存在")
+    except Exception as e:
+        logger.error(f"导出XMind失败: {str(e)}", exc_info=True)
+        return request.app.error(msg=f"导出XMind失败: {str(e)}")

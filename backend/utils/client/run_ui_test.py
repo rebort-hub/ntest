@@ -9,7 +9,7 @@ from utils.client.run_test_runner import RunTestRunner
 from utils.client.parse_model import StepModel, FormatModel
 from utils.client.test_runner.utils import build_url
 from utils.util.file_util import FileUtil
-from config import ui_action_mapping_reverse
+from app.configs.config import ui_action_mapping_reverse
 
 
 class RunCase(RunTestRunner):

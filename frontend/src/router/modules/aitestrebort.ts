@@ -96,7 +96,7 @@ export default [
                 component: () => import('@/views/aitestrebort/llm-config/index.vue'),
                 meta: {
                     title: 'LLM 厂商配置',
-                    icon: 'Refrigerator',
+                    icon: 'Connection',
                     cache: true
                 }
             },
@@ -105,8 +105,8 @@ export default [
                 name: 'aitestrebortMCPConfig',
                 component: () => import('@/views/aitestrebort/mcp-config/index.vue'),
                 meta: {
-                    title: 'MCP 配置管理',
-                    icon: 'Link',
+                    title: 'MCP 配置',
+                    icon: 'Box',
                     cache: true
                 }
             },
@@ -116,7 +116,7 @@ export default [
                 component: () => import('@/views/aitestrebort/api-keys/index.vue'),
                 meta: {
                     title: 'API 密钥管理',
-                    icon: 'Key',
+                    icon: 'Link',
                     cache: true
                 }
             },
@@ -125,7 +125,7 @@ export default [
                 name: 'aitestrebortConversations',
                 component: () => import('@/views/aitestrebort/conversations/index.vue'),
                 meta: {
-                    title: 'NT-聊天服务',
+                    title: 'Ai助手',
                     icon: 'Microphone',
                     cache: true
                 }
@@ -137,7 +137,7 @@ export default [
                 component: () => import('@/views/aitestrebort/prompts/index.vue'),
                 meta: {
                     title: '提示词管理',
-                    icon: 'Document',
+                    icon: 'Share',
                     cache: true
                 }
             },
@@ -242,6 +242,19 @@ export default [
                 meta: {
                     title: '需求文档详情',
                     icon: 'View',
+                    cache: false,
+                    hideMenu: true,
+                    hidden: true
+                },
+                props: true
+            },
+            {
+                path: 'project/:projectId/requirement-review',
+                name: 'aitestrebortRequirementReview',
+                component: () => import('@/views/aitestrebort/requirement-review/index.vue'),
+                meta: {
+                    title: '需求评审',
+                    icon: 'Document',
                     cache: false,
                     hideMenu: true,
                     hidden: true

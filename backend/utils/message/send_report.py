@@ -11,7 +11,7 @@ from .template import run_time_error_msg, call_back_webhook_msg, render_html_rep
     get_business_stage_count_msg, inspection_ding_ding, inspection_we_chat, server_status_msg_ding_ding, \
     server_status_msg_we_chat
 from ..logs.log import logger
-from config import _default_web_hook_type, _default_web_hook, _web_hook_secret
+from app.configs.config import _default_web_hook_type, _default_web_hook, _web_hook_secret
 
 
 async def send_msg(addr, msg):

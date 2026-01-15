@@ -1,86 +1,124 @@
 ﻿<template>
   <el-dialog
-    :model-value="modelValue"
-    title="需求详情"
-    width="900px"
-    @update:model-value="$emit('update:modelValue', $event)"
+    v-model="visible"
+    :title="requirement ? '需求详情' : '需求详情'"
+    width="800px"
+    :close-on-click-modal="false"
+    @closed="handleClose"
   >
-    <div v-if="requirement" class="requirement-detail">
+    <div class="requirement-detail" v-if="requirement">
       <!-- 基本信息 -->
-      <div class="info-section">
-        <h4>基本信息</h4>
+      <el-card class="basic-info" shadow="never">
+        <template #header>
+          <span>基本信息</span>
+        </template>
+        
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="需求标题">{{ requirement.title }}</el-descriptions-item>
+          <el-descriptions-item label="需求标题">
+            {{ requirement.title }}
+          </el-descriptions-item>
           <el-descriptions-item label="需求类型">
-            <el-tag :type="getTypeColor(requirement.type)" size="small">
-              {{ getTypeText(requirement.type) }}
+            <el-tag :type="getRequirementTypeColor(requirement.type)">
+              {{ getRequirementTypeText(requirement.type) }}
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="优先级">
-            <el-tag :type="getPriorityColor(requirement.priority)" size="small">
+            <el-tag :type="getPriorityColor(requirement.priority)">
               {{ getPriorityText(requirement.priority) }}
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="状态">
-            <el-tag :type="getStatusColor(requirement.status)" size="small">
-              {{ getStatusText(requirement.status) }}
+            <el-tag :type="getRequirementStatusColor(requirement.status)">
+              {{ getRequirementStatusText(requirement.status) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="创建者">{{ requirement.creator_name }}</el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ formatDate(requirement.created_at) }}</el-descriptions-item>
+          <el-descriptions-item label="创建者">
+            {{ requirement.creator_name || '未知' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="创建时间">
+            {{ formatDateTime(requirement.created_at) }}
+          </el-descriptions-item>
         </el-descriptions>
-      </div>
+      </el-card>
 
       <!-- 需求描述 -->
-      <div class="info-section">
-        <h4>需求描述</h4>
+      <el-card class="description" shadow="never">
+        <template #header>
+          <span>需求描述</span>
+        </template>
         <div class="description-content">
           {{ requirement.description }}
         </div>
-      </div>
+      </el-card>
 
       <!-- 相关人员 -->
-      <div class="info-section">
-        <h4>相关人员</h4>
-        <div class="stakeholders">
+      <el-card class="stakeholders" shadow="never" v-if="requirement.stakeholders && requirement.stakeholders.length > 0">
+        <template #header>
+          <span>相关人员</span>
+        </template>
+        <div class="stakeholders-list">
           <el-tag
-            v-for="stakeholder in requirement.stakeholders"
-            :key="stakeholder"
-            style="margin-right: 8px; margin-bottom: 8px"
+            v-for="person in requirement.stakeholders"
+            :key="person"
+            class="stakeholder-tag"
           >
-            {{ stakeholder }}
+            {{ person }}
           </el-tag>
         </div>
-      </div>
+      </el-card>
 
-      <!-- 操作按钮 -->
-      <div class="action-section">
-        <el-button type="primary" @click="generateTestCases">
-          <el-icon><DocumentAdd /></el-icon>
-          生成测试用例
-        </el-button>
-        <el-button @click="exportRequirement">
-          <el-icon><Download /></el-icon>
-          导出需求
-        </el-button>
-        <el-button @click="editRequirement">
-          <el-icon><Edit /></el-icon>
+      <!-- 操作历史 -->
+      <el-card class="history" shadow="never">
+        <template #header>
+          <span>操作历史</span>
+        </template>
+        <el-timeline>
+          <el-timeline-item
+            timestamp="刚刚"
+            type="primary"
+          >
+            查看需求详情
+          </el-timeline-item>
+          <el-timeline-item
+            :timestamp="formatDateTime(requirement.updated_at)"
+            type="success"
+          >
+            需求信息更新
+          </el-timeline-item>
+          <el-timeline-item
+            :timestamp="formatDateTime(requirement.created_at)"
+            type="info"
+          >
+            需求创建
+          </el-timeline-item>
+        </el-timeline>
+      </el-card>
+    </div>
+
+    <div v-else class="no-requirement">
+      <el-empty description="暂无需求信息" />
+    </div>
+
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="handleClose">关闭</el-button>
+        <el-button type="primary" @click="handleEdit" v-if="requirement">
           编辑需求
         </el-button>
+        <el-button type="success" @click="handleGenerateTestCases" v-if="requirement">
+          生成测试用例
+        </el-button>
       </div>
-    </div>
-    
-    <template #footer>
-      <el-button @click="$emit('update:modelValue', false)">关闭</el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { DocumentAdd, Download, Edit } from '@element-plus/icons-vue'
 import type { Requirement } from '@/api/aitestrebort/requirements'
 
+// Props
 interface Props {
   modelValue: boolean
   requirement: Requirement | null
@@ -88,31 +126,45 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+// Emits
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
-  refresh: []
-  edit: [requirement: Requirement]
+  'refresh': []
+  'edit': [requirement: Requirement]
 }>()
 
+// 响应式数据
+const visible = computed({
+  get: () => props.modelValue,
+  set: (value) => emit('update:modelValue', value)
+})
+
 // 方法
-const generateTestCases = () => {
-  ElMessage.info(`正在为需求 "${props.requirement?.title}" 生成测试用例...`)
-  // 这里可以集成到高级功能的测试用例生成
+const handleClose = () => {
+  visible.value = false
 }
 
-const exportRequirement = () => {
-  ElMessage.info('导出功能开发中...')
-}
-
-const editRequirement = () => {
+const handleEdit = () => {
   if (props.requirement) {
     emit('edit', props.requirement)
-    emit('update:modelValue', false)
+    handleClose()
+  }
+}
+
+const handleGenerateTestCases = () => {
+  if (props.requirement) {
+    // 这里可以跳转到测试用例生成页面
+    ElMessage.info('跳转到测试用例生成页面')
   }
 }
 
 // 辅助方法
-const getTypeColor = (type: string) => {
+const formatDateTime = (dateString: string) => {
+  return new Date(dateString).toLocaleString('zh-CN')
+}
+
+const getRequirementTypeColor = (type: string) => {
   const colors: Record<string, string> = {
     functional: 'primary',
     'non-functional': 'success',
@@ -123,7 +175,7 @@ const getTypeColor = (type: string) => {
   return colors[type] || 'info'
 }
 
-const getTypeText = (type: string) => {
+const getRequirementTypeText = (type: string) => {
   const texts: Record<string, string> = {
     functional: '功能需求',
     'non-functional': '非功能需求',
@@ -152,7 +204,7 @@ const getPriorityText = (priority: string) => {
   return texts[priority] || priority
 }
 
-const getStatusColor = (status: string) => {
+const getRequirementStatusColor = (status: string) => {
   const colors: Record<string, string> = {
     draft: 'info',
     pending: 'warning',
@@ -163,7 +215,7 @@ const getStatusColor = (status: string) => {
   return colors[status] || 'info'
 }
 
-const getStatusText = (status: string) => {
+const getRequirementStatusText = (status: string) => {
   const texts: Record<string, string> = {
     draft: '草稿',
     pending: '待审核',
@@ -173,47 +225,46 @@ const getStatusText = (status: string) => {
   }
   return texts[status] || status
 }
-
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('zh-CN')
-}
 </script>
 
 <style scoped>
 .requirement-detail {
-  padding: 16px;
+  max-height: 600px;
+  overflow-y: auto;
 }
 
-.info-section {
-  margin-bottom: 24px;
-}
-
-.info-section h4 {
-  margin: 0 0 16px 0;
-  font-size: 16px;
-  font-weight: bold;
-  color: #303133;
-  border-bottom: 1px solid #ebeef5;
-  padding-bottom: 8px;
+.basic-info,
+.description,
+.stakeholders,
+.history {
+  margin-bottom: 16px;
 }
 
 .description-content {
-  padding: 16px;
-  background-color: #f8f9fa;
-  border-radius: 6px;
   line-height: 1.6;
-  color: #303133;
+  color: #606266;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
-.stakeholders {
+.stakeholders-list {
   display: flex;
   flex-wrap: wrap;
+  gap: 8px;
 }
 
-.action-section {
+.stakeholder-tag {
+  margin: 0;
+}
+
+.no-requirement {
+  text-align: center;
+  padding: 40px 0;
+}
+
+.dialog-footer {
   display: flex;
-  gap: 12px;
-  padding-top: 16px;
-  border-top: 1px solid #ebeef5;
+  justify-content: flex-end;
+  gap: 8px;
 }
 </style>

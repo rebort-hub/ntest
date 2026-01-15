@@ -490,19 +490,36 @@ _llm_services: Dict[str, LLMService] = {}
 async def get_llm_service(config_name: str = "default") -> LLMService:
     """获取LLM服务实例"""
     if config_name not in _llm_services:
-        # TODO: 从配置中加载LLM配置
-        # 这里使用默认配置
-        default_config = {
-            "provider": LLMProvider.CUSTOM,
-            "base_url": "http://localhost:11434",
-            "model": "qwen2.5:7b",
-            "timeout": 60.0
-        }
-        
-        _llm_services[config_name] = LLMService(
-            provider=LLMProvider.CUSTOM,
-            config=default_config
-        )
+        try:
+            # 从数据库加载LLM配置
+            from app.models.aitestrebort.project import aitestrebortLLMConfig
+            
+            # 获取激活的LLM配置
+            llm_config = await aitestrebortLLMConfig.filter(is_active=True).first()
+            
+            if not llm_config:
+                raise ValueError("没有找到激活的LLM配置，请先在系统中配置LLM")
+            
+            # 构建配置
+            config = {
+                "provider": LLMProvider.CUSTOM,  # 使用自定义提供商
+                "base_url": llm_config.base_url,
+                "model": llm_config.name,
+                "api_key": llm_config.api_key,
+                "timeout": 60.0
+            }
+            
+            _llm_services[config_name] = LLMService(
+                provider=LLMProvider.CUSTOM,
+                config=config
+            )
+            
+            logger.info(f"LLM服务已配置: {llm_config.config_name} ({llm_config.name})")
+            
+        except Exception as e:
+            logger.error(f"LLM服务配置失败: {e}")
+            # 不使用默认配置，直接抛出错误
+            raise ValueError(f"LLM服务配置失败: {e}")
     
     return _llm_services[config_name]
 

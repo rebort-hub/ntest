@@ -1,4 +1,4 @@
-﻿/**
+/**
  * aitestrebort 需求管理 API
  * 基于原Django架构完整实现
  */
@@ -49,25 +49,7 @@ export interface RequirementStatistics {
   requirement_priority_distribution: Record<string, number>
   requirement_status_distribution: Record<string, number>
   document_status_distribution: Record<string, number>
-  review_statistics: Record<string, any>
-}
-
-export interface ProjectStatistics {
-  total_knowledge_bases: number
-  active_knowledge_bases: number
-  inactive_knowledge_bases: number
-  total_documents: number
-  processed_documents: number
-  processing_documents: number
-  failed_documents: number
-  total_requirements: number
-  requirement_type_distribution: Record<string, number>
-  requirement_priority_distribution: Record<string, number>
-  total_chunks: number
-  system_status: string
-  database_status: string
-  vector_db_status: string
-  last_updated: string
+  review_status_distribution: Record<string, number>
 }
 
 // ==================== 需求文档管理 ====================
@@ -107,27 +89,18 @@ export const requirementDocumentApi = {
     return request.delete(`${baseDiraitestrebort}/requirements/projects/${projectId}/documents/${documentId}`)
   },
 
-  // 拆分文档模块
-  splitModules: (projectId: number, documentId: string, data: {
+  // 模块拆分
+  splitModules: (projectId: number, documentId: string, splitOptions: {
     split_level: string
-    include_context: boolean
-    chunk_size: number
+    chunk_size?: number
+    include_context?: boolean
   }) => {
-    return request.post(`${baseDiraitestrebort}/requirements/projects/${projectId}/documents/${documentId}/split-modules`, data)
-  }
-}
+    return request.post(`${baseDiraitestrebort}/requirements/projects/${projectId}/documents/${documentId}/split-modules`, splitOptions)
+  },
 
-// ==================== 需求评审管理 ====================
-
-export const requirementReviewApi = {
-  // 获取需求文档列表（用于评审）
-  getDocuments: (projectId: number, params?: {
-    search?: string
-    status?: string
-    page?: number
-    page_size?: number
-  }) => {
-    return request.get(`${baseDiraitestrebort}/requirements/projects/${projectId}/documents`, { params })
+  // 获取文档模块列表
+  getModules: (projectId: number, documentId: string) => {
+    return request.get(`${baseDiraitestrebort}/requirements/projects/${projectId}/documents/${documentId}/modules`)
   },
 
   // 开始评审
@@ -136,8 +109,12 @@ export const requirementReviewApi = {
     focus_areas?: string[]
   }) => {
     return request.post(`${baseDiraitestrebort}/requirements/projects/${projectId}/documents/${documentId}/start-review`, data)
-  },
+  }
+}
 
+// ==================== 需求评审管理 ====================
+
+export const requirementReviewApi = {
   // 获取评审结果列表
   getReviewResults: (projectId: number, params?: {
     document_id?: string
@@ -148,14 +125,14 @@ export const requirementReviewApi = {
     return request.get(`${baseDiraitestrebort}/requirements/reviews`, { params: { project_id: projectId, ...params } })
   },
 
-  // 获取评审进度
-  getReviewProgress: (reviewId: string) => {
-    return request.get(`${baseDiraitestrebort}/requirements/reviews/${reviewId}/progress`)
-  },
-
   // 获取评审详情
   getReviewDetail: (reviewId: string) => {
     return request.get(`${baseDiraitestrebort}/requirements/reviews/${reviewId}`)
+  },
+
+  // 获取评审进度
+  getReviewProgress: (reviewId: string) => {
+    return request.get(`${baseDiraitestrebort}/requirements/reviews/${reviewId}/progress`)
   },
 
   // 获取评审问题列表

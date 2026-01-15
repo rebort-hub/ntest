@@ -3,6 +3,10 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
+        <el-button @click="$router.push(`/aitestrebort/project/${projectId}/testcase`)" style="margin-right: 16px;">
+          <el-icon><ArrowLeft /></el-icon>
+          返回
+        </el-button>
         <el-breadcrumb separator="/">
           <el-breadcrumb-item @click="$router.push('/aitestrebort/project')">项目管理</el-breadcrumb-item>
           <el-breadcrumb-item @click="$router.push(`/aitestrebort/project/${projectId}/testcase`)">{{ projectName }}</el-breadcrumb-item>
@@ -284,7 +288,8 @@ import {
   Search,
   Refresh,
   Document,
-  MagicStick
+  MagicStick,
+  ArrowLeft
 } from '@element-plus/icons-vue'
 import { automationApi, type AutomationScript, type CreateScriptData, type ExecuteScriptData } from '@/api/aitestrebort/automation'
 import { projectApi } from '@/api/aitestrebort/project'
@@ -639,6 +644,11 @@ onMounted(() => {
   margin-bottom: 20px;
   padding-bottom: 20px;
   border-bottom: 1px solid #ebeef5;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
 }
 
 .search-bar {

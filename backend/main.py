@@ -6,7 +6,7 @@ from app.routers.base_view import FastAPI
 from app.hooks.error_hook import register_exception_handler
 from app.hooks.request_hook import register_request_hook
 from app.hooks.app_hook import register_app_hook
-from config import main_server_port
+from app.configs.config import main_server_port
 
 app = FastAPI(
     openapi_version="3.0.0",

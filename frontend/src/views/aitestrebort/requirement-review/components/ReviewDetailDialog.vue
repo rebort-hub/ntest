@@ -193,6 +193,18 @@
               </el-button>
             </template>
           </el-table-column>
+          
+          <!-- 空数据提示 -->
+          <template #empty>
+            <el-empty description="暂无问题记录">
+              <template #image>
+                <el-icon size="60"><Document /></el-icon>
+              </template>
+              <template #description>
+                <p>当前评审没有发现问题记录</p>
+              </template>
+            </el-empty>
+          </template>
         </el-table>
       </el-card>
 
@@ -212,12 +224,12 @@
             <div class="analysis-content">
               <div class="analysis-score">
                 <span>评分: </span>
-                <el-tag :type="getScoreTagType(analysis.score)" size="large">
-                  {{ analysis.score }} 分
+                <el-tag :type="getScoreTagType(analysis.overall_score || analysis.score || 0)" size="large">
+                  {{ analysis.overall_score || analysis.score || 0 }} 分
                 </el-tag>
               </div>
               
-              <div class="analysis-section" v-if="analysis.strengths">
+              <div class="analysis-section" v-if="analysis.strengths && analysis.strengths.length > 0">
                 <h4>优点</h4>
                 <ul>
                   <li v-for="strength in analysis.strengths" :key="strength">
@@ -226,7 +238,7 @@
                 </ul>
               </div>
               
-              <div class="analysis-section" v-if="analysis.recommendations">
+              <div class="analysis-section" v-if="analysis.recommendations && analysis.recommendations.length > 0">
                 <h4>建议</h4>
                 <ul>
                   <li v-for="recommendation in analysis.recommendations" :key="recommendation">
@@ -239,22 +251,41 @@
                 <h4>发现的问题</h4>
                 <div class="issue-list">
                   <div 
-                    v-for="issue in analysis.issues" 
-                    :key="issue.title"
+                    v-for="(issue, index) in analysis.issues" 
+                    :key="index"
                     class="issue-item"
                   >
-                    <div class="issue-header">
-                      <span class="issue-title">{{ issue.title }}</span>
-                      <el-tag :type="getPriorityColor(issue.priority)" size="small">
-                        {{ getPriorityText(issue.priority) }}
-                      </el-tag>
-                    </div>
-                    <div class="issue-description">{{ issue.description }}</div>
-                    <div class="issue-suggestion" v-if="issue.suggestion">
-                      <strong>建议: </strong>{{ issue.suggestion }}
-                    </div>
+                    <!-- 对象格式的问题 -->
+                    <template v-if="typeof issue === 'object'">
+                      <div class="issue-header">
+                        <span class="issue-title">{{ issue.title || '未知问题' }}</span>
+                        <el-tag :type="getPriorityColor(issue.priority)" size="small">
+                          {{ getPriorityText(issue.priority) }}
+                        </el-tag>
+                      </div>
+                      <div class="issue-description">{{ issue.description }}</div>
+                      <div class="issue-suggestion" v-if="issue.suggestion">
+                        <strong>建议: </strong>{{ issue.suggestion }}
+                      </div>
+                    </template>
+                    <!-- 字符串格式的问题 -->
+                    <template v-else>
+                      <div class="issue-header">
+                        <span class="issue-title">{{ issue }}</span>
+                        <el-tag type="warning" size="small">中</el-tag>
+                      </div>
+                    </template>
                   </div>
                 </div>
+              </div>
+              
+              <!-- 如果没有详细分析数据，显示默认内容 -->
+              <div v-if="!analysis.strengths && !analysis.recommendations && !analysis.issues" class="analysis-placeholder">
+                <el-empty description="暂无详细分析数据">
+                  <template #image>
+                    <el-icon size="60"><Document /></el-icon>
+                  </template>
+                </el-empty>
               </div>
             </div>
           </el-tab-pane>
@@ -281,7 +312,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Refresh } from '@element-plus/icons-vue'
+import { Refresh, Document } from '@element-plus/icons-vue'
 import IssueDetailDialog from './IssueDetailDialog.vue'
 import { requirementReviewApi } from '@/api/aitestrebort/requirements'
 import { formatDateTime } from '@/utils/format'
@@ -304,7 +335,7 @@ const emit = defineEmits(['update:modelValue', 'refresh'])
 // 响应式数据
 const issues = ref([])
 const issuesLoading = ref(false)
-const activeAnalysisTab = ref('completeness')
+const activeAnalysisTab = ref('clarity_analysis')
 const issueDetailVisible = ref(false)
 const selectedIssue = ref(null)
 
@@ -318,6 +349,13 @@ const dialogVisible = computed({
 watch(() => props.reviewData, (newData) => {
   if (newData) {
     loadIssues()
+    // 设置默认的专项分析标签页
+    if (newData.specialized_analyses) {
+      const analysisKeys = Object.keys(newData.specialized_analyses)
+      if (analysisKeys.length > 0) {
+        activeAnalysisTab.value = analysisKeys[0]
+      }
+    }
   }
 }, { immediate: true })
 
@@ -328,9 +366,26 @@ const loadIssues = async () => {
   issuesLoading.value = true
   try {
     const response = await requirementReviewApi.getReviewIssues(props.reviewData.id)
-    issues.value = response.data || []
+    
+    // 处理不同的响应数据结构
+    let issuesData = response.data
+    if (response.data?.data) {
+      issuesData = response.data.data
+    }
+    
+    issues.value = Array.isArray(issuesData) ? issuesData : []
+    
+    console.log('加载的问题数据:', issues.value)
+    
+    // 如果没有问题数据，显示提示信息
+    if (!issues.value || issues.value.length === 0) {
+      console.log('当前评审没有问题记录')
+    }
   } catch (error) {
+    console.error('加载问题列表失败:', error)
     ElMessage.error('加载问题列表失败: ' + error.message)
+    // 设置空数组以显示"暂无数据"
+    issues.value = []
   } finally {
     issuesLoading.value = false
   }
@@ -346,8 +401,13 @@ const viewIssueDetail = (issue) => {
 }
 
 const exportReport = () => {
-  // TODO: 实现报告导出功能
-  ElMessage.info('报告导出功能开发中')
+  // 显示功能开发中的提示
+  ElMessage({
+    message: '导出报告功能开发中，敬请期待',
+    type: 'info',
+    duration: 3000,
+    showClose: true
+  })
 }
 
 const handleClose = () => {
@@ -423,13 +483,19 @@ const getIssueTypeText = (type) => {
 
 const getAnalysisTabLabel = (key) => {
   const labels = {
+    completeness_analysis: '完整性分析',
+    consistency_analysis: '一致性分析',
+    testability_analysis: '可测性分析',
+    feasibility_analysis: '可行性分析',
+    clarity_analysis: '清晰度分析',
+    // 兼容旧格式
     completeness: '完整性分析',
     consistency: '一致性分析',
     testability: '可测性分析',
     feasibility: '可行性分析',
     clarity: '清晰度分析'
   }
-  return labels[key] || key
+  return labels[key] || key.replace('_analysis', '').replace('_', ' ')
 }
 </script>
 
@@ -567,5 +633,14 @@ const getAnalysisTabLabel = (key) => {
 
 .dialog-footer {
   text-align: right;
+}
+
+.analysis-placeholder {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.analysis-placeholder .el-empty {
+  padding: 20px 0;
 }
 </style>

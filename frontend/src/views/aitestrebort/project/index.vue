@@ -3,8 +3,8 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
-        <h2>aitestrebort 项目管理</h2>
-        <p>智能测试用例管理平台</p>
+        <h2>项目管理</h2>
+        <p>项目之间独立隔离，用例生成单独归属独立项目</p>
       </div>
       <div class="header-right">
         <el-button type="primary" @click="showCreateDialog = true">
@@ -40,128 +40,124 @@
 
     <!-- 项目列表 -->
     <div class="project-list">
-      <el-row :gutter="20" v-loading="loading">
-        <el-col :span="8" v-for="project in projects" :key="project.id">
+      <el-row :gutter="16" v-loading="loading">
+        <el-col :span="6" v-for="project in projects" :key="project.id">
           <el-card class="project-card" shadow="hover" @click="enterProject(project)">
-            <template #header>
-              <div class="card-header">
-                <span class="project-name">{{ project.name }}</span>
-                <el-dropdown @command="handleProjectAction">
-                  <el-button type="text" @click.stop>
+            <div class="project-content">
+              <!-- 项目头部 -->
+              <div class="project-header">
+                <div class="project-icon">
+                  <el-icon><Folder /></el-icon>
+                </div>
+                <div class="project-info">
+                  <h3 class="project-name">{{ project.name }}</h3>
+                  <p class="project-description">{{ project.description || '暂无描述' }}</p>
+                </div>
+                <el-dropdown @command="handleProjectAction" trigger="click">
+                  <el-button type="text" size="small" @click.stop class="more-btn">
                     <el-icon><MoreFilled /></el-icon>
                   </el-button>
                   <template #dropdown>
                     <el-dropdown-menu>
-                      <el-dropdown-item :command="{action: 'edit', project}">编辑</el-dropdown-item>
-                      <el-dropdown-item :command="{action: 'delete', project}" divided>删除</el-dropdown-item>
+                      <el-dropdown-item :command="{action: 'edit', project}">
+                        <el-icon><Edit /></el-icon>
+                        编辑
+                      </el-dropdown-item>
+                      <el-dropdown-item :command="{action: 'delete', project}" divided>
+                        <el-icon><Delete /></el-icon>
+                        删除
+                      </el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
                 </el-dropdown>
               </div>
-            </template>
-            
-            <div class="project-content">
-              <p class="project-description">{{ project.description || '暂无描述' }}</p>
               
+              <!-- 项目统计 -->
               <div class="project-stats">
                 <div class="stat-item">
                   <el-icon><Document /></el-icon>
-                  <span>测试用例: {{ project.testcase_count || 0 }}</span>
+                  <span>{{ project.testcase_count || 0 }}</span>
                 </div>
                 <div class="stat-item">
                   <el-icon><User /></el-icon>
-                  <span>成员: {{ project.member_count || 0 }}</span>
+                  <span>{{ project.member_count || 0 }}</span>
+                </div>
+                <div class="stat-item">
+                  <el-icon><Clock /></el-icon>
+                  <span>{{ formatDate(project.create_time) }}</span>
                 </div>
               </div>
 
-              <!-- 高级功能快速入口 -->
-              <div class="advanced-features">
-                <div class="feature-title">高级功能</div>
-                <div class="feature-buttons">
-                  <el-button 
-                    size="small" 
-                    type="primary" 
-                    @click.stop="goToAdvancedFeature(project, 'langgraph-orchestration')"
-                  >
-                    <el-icon><Link /></el-icon>
-                    LangGraph编排
-                  </el-button>
-                  <el-button 
-                    size="small" 
-                    type="success" 
-                    @click.stop="goToAdvancedFeature(project, 'agent-execution')"
-                  >
-                    <el-icon><Setting /></el-icon>
-                    Agent执行
-                  </el-button>
-                  <el-button 
-                    size="small" 
-                    type="warning" 
-                    @click.stop="goToAdvancedFeature(project, 'script-generation')"
-                  >
-                    <el-icon><EditPen /></el-icon>
-                    脚本生成
-                  </el-button>
-                  <el-button 
-                    size="small" 
-                    type="info" 
-                    @click.stop="goToAdvancedFeature(project, 'requirement-retrieval')"
-                  >
-                    <el-icon><Search /></el-icon>
-                    需求检索
-                  </el-button>
-                  <el-button 
-                    size="small" 
-                    type="danger" 
-                    @click.stop="goToAdvancedFeature(project, 'quality-assessment')"
-                  >
-                    <el-icon><Star /></el-icon>
-                    质量评估
-                  </el-button>
+              <!-- 快速操作 -->
+              <div class="quick-actions">
+                <div class="action-buttons">
+                  <el-tooltip content="需求管理" placement="top">
+                    <el-button 
+                      size="small" 
+                      text
+                      @click.stop="goToAdvancedFeature(project, 'requirements')"
+                    >
+                      <el-icon><Document /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip content="测试套件" placement="top">
+                    <el-button 
+                      size="small" 
+                      text
+                      @click.stop="goToAdvancedFeature(project, 'test-suite')"
+                    >
+                      <el-icon><Collection /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip content="脚本生成" placement="top">
+                    <el-button 
+                      size="small" 
+                      text
+                      @click.stop="goToAdvancedFeature(project, 'script-generation')"
+                    >
+                      <el-icon><EditPen /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip content="更多功能" placement="top">
+                    <el-dropdown @command="(cmd) => goToAdvancedFeature(project, cmd)" trigger="click">
+                      <el-button size="small" text @click.stop>
+                        <el-icon><More /></el-icon>
+                      </el-button>
+                      <template #dropdown>
+                        <el-dropdown-menu>
+                          <el-dropdown-item command="langgraph-orchestration">
+                            <el-icon><Link /></el-icon>
+                            LangGraph编排
+                          </el-dropdown-item>
+                          <el-dropdown-item command="agent-execution">
+                            <el-icon><Setting /></el-icon>
+                            Agent执行
+                          </el-dropdown-item>
+                          <el-dropdown-item command="requirement-retrieval">
+                            <el-icon><Search /></el-icon>
+                            需求检索
+                          </el-dropdown-item>
+                          <el-dropdown-item command="quality-assessment">
+                            <el-icon><Star /></el-icon>
+                            质量评估
+                          </el-dropdown-item>
+                          <el-dropdown-item command="ai-diagram">
+                            <el-icon><PieChart /></el-icon>
+                            AI图表生成
+                          </el-dropdown-item>
+                          <el-dropdown-item command="test-execution">
+                            <el-icon><Timer /></el-icon>
+                            执行历史
+                          </el-dropdown-item>
+                        </el-dropdown-menu>
+                      </template>
+                    </el-dropdown>
+                  </el-tooltip>
                 </div>
-              </div>
-
-              <!-- 新增功能模块 -->
-              <div class="new-features">
-                <div class="feature-title">高级功能</div>
-                <div class="feature-buttons">
-                  <el-button 
-                    size="small" 
-                    type="primary" 
-                    @click.stop="goToAdvancedFeature(project, 'requirements')"
-                  >
-                    <el-icon><Document /></el-icon>
-                    需求管理
-                  </el-button>
-                  <el-button 
-                    size="small" 
-                    type="success" 
-                    @click.stop="goToAdvancedFeature(project, 'ai-diagram')"
-                  >
-                    <el-icon><PieChart /></el-icon>
-                    AI图表生成
-                  </el-button>
-                  <el-button 
-                    size="small" 
-                    type="warning" 
-                    @click.stop="goToAdvancedFeature(project, 'test-suite')"
-                  >
-                    <el-icon><Collection /></el-icon>
-                    测试套件
-                  </el-button>
-                  <el-button 
-                    size="small" 
-                    type="info" 
-                    @click.stop="goToAdvancedFeature(project, 'test-execution')"
-                  >
-                    <el-icon><Timer /></el-icon>
-                    执行历史
-                  </el-button>
-                </div>
-              </div>
-              
-              <div class="project-meta">
-                <span class="create-time">创建时间: {{ formatDate(project.create_time) }}</span>
+                <span class="detail-link" @click.stop="enterProject(project)">
+                  详情
+                  <el-icon><ArrowRight /></el-icon>
+                </span>
               </div>
             </div>
           </el-card>
@@ -240,7 +236,13 @@ import {
   Star,
   PieChart,
   Collection,
-  Timer
+  Timer,
+  Folder,
+  Clock,
+  More,
+  Edit,
+  Delete,
+  ArrowRight
 } from '@element-plus/icons-vue'
 import { projectApi, type Project, type CreateProjectData } from '@/api/aitestrebort/project'
 
@@ -395,6 +397,9 @@ onMounted(() => {
 <style scoped>
 .aitestrebort-project {
   padding: 20px;
+  min-height: calc(100vh - 60px);
+  display: flex;
+  flex-direction: column;
 }
 
 .page-header {
@@ -404,6 +409,7 @@ onMounted(() => {
   margin-bottom: 20px;
   padding-bottom: 20px;
   border-bottom: 1px solid #ebeef5;
+  flex-shrink: 0;
 }
 
 .header-left h2 {
@@ -419,16 +425,23 @@ onMounted(() => {
 
 .search-bar {
   margin-bottom: 20px;
+  flex-shrink: 0;
 }
 
 .project-list {
-  min-height: 400px;
+  flex: 1;
+  min-height: 200px;
+}
+
+.project-list .el-col {
+  margin-bottom: 16px;
 }
 
 .project-card {
-  margin-bottom: 20px;
   cursor: pointer;
   transition: all 0.3s;
+  border-radius: 8px;
+  height: 100%;
 }
 
 .project-card:hover {
@@ -436,85 +449,142 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.project-name {
-  font-weight: 600;
-  color: #303133;
+.project-card :deep(.el-card__body) {
+  padding: 16px;
 }
 
 .project-content {
-  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.project-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+}
+
+.project-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #ffd666 0%, #ffa940 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.project-icon .el-icon {
+  font-size: 20px;
+  color: white;
+}
+
+.project-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.project-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0 0 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .project-description {
-  color: #606266;
-  font-size: 14px;
-  margin-bottom: 15px;
-  min-height: 20px;
+  font-size: 13px;
+  color: #909399;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.4;
+  max-height: 2.8em;
+}
+
+.more-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 4px;
 }
 
 .project-stats {
   display: flex;
-  gap: 20px;
-  margin-bottom: 15px;
+  gap: 16px;
+  padding: 8px 0;
+  border-top: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .stat-item {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
+  color: #606266;
+  font-size: 12px;
+}
+
+.stat-item .el-icon {
+  font-size: 14px;
   color: #909399;
-  font-size: 13px;
 }
 
-.project-meta {
-  color: #c0c4cc;
-  font-size: 12px;
-}
-
-.advanced-features {
-  margin: 15px 0;
-  padding: 15px;
-  background-color: #f8f9fa;
-  border-radius: 6px;
-  border: 1px solid #e9ecef;
-}
-
-.new-features {
-  margin: 15px 0;
-  padding: 15px;
-  background-color: #e8f5e8;
-  border-radius: 6px;
-  border: 1px solid #c3e6c3;
-}
-
-.feature-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #495057;
-  margin-bottom: 10px;
-}
-
-.feature-buttons {
+.quick-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 4px;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.feature-buttons .el-button {
+.quick-actions .action-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.quick-actions .el-button {
+  padding: 4px;
+  font-size: 16px;
+}
+
+.quick-actions .el-button:hover {
+  color: var(--el-color-primary);
+  background-color: var(--el-color-primary-light-9);
+}
+
+.detail-link {
   font-size: 12px;
-  padding: 4px 8px;
-  height: auto;
+  color: #909399;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  transition: color 0.3s;
+}
+
+.detail-link:hover {
+  color: var(--el-color-primary);
+}
+
+.detail-link .el-icon {
+  font-size: 12px;
 }
 
 .pagination {
   display: flex;
   justify-content: center;
   margin-top: 20px;
+  padding: 16px 0;
+  background: white;
+  border-radius: 8px;
+  flex-shrink: 0;
 }
 </style>

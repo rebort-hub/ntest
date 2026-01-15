@@ -3,8 +3,14 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
-        <h1 class="page-title">测试套件管理</h1>
-        <p class="page-description">创建和管理测试套件，支持批量执行测试用例和自动化脚本</p>
+        <el-button @click="goBack" style="margin-right: 16px;">
+          <el-icon><ArrowLeft /></el-icon>
+          返回
+        </el-button>
+        <div>
+          <h1 class="page-title">测试套件管理</h1>
+          <p class="page-description">创建和管理测试套件，支持批量执行测试用例和自动化脚本</p>
+        </div>
       </div>
       <div class="header-right">
         <el-button @click="showCreateDialog = true" type="primary">
@@ -300,7 +306,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Plus, Search, VideoPlay, Clock
+  Plus, Search, VideoPlay, Clock, ArrowLeft
 } from '@element-plus/icons-vue'
 import TestCaseSelector from './components/TestCaseSelector.vue'
 import ScriptSelector from './components/ScriptSelector.vue'
@@ -314,6 +320,16 @@ const projectId = computed(() => Number(route.params.projectId))
 // 响应式数据
 const loading = ref(false)
 const submitting = ref(false)
+
+// 返回方法
+const goBack = () => {
+  const from = route.query.from as string
+  if (from === 'testcase') {
+    router.push(`/aitestrebort/project/${projectId.value}/testcase`)
+  } else {
+    router.push('/aitestrebort/project')
+  }
+}
 const showCreateDialog = ref(false)
 const showDetailDialog = ref(false)
 const showSelectTestCasesDialog = ref(false)
@@ -473,7 +489,13 @@ const executeSuite = async (suite) => {
 }
 
 const viewExecutionHistory = (suite) => {
-  router.push(`/aitestrebort/project/${projectId.value}/test-execution?suiteId=${suite.id}`)
+  router.push({
+    path: `/aitestrebort/project/${projectId.value}/test-execution`,
+    query: { 
+      suiteId: suite.id,
+      from: 'test-suite'
+    }
+  })
 }
 
 const handleSubmit = async () => {
@@ -612,6 +634,8 @@ onMounted(() => {
 
 .header-left {
   flex: 1;
+  display: flex;
+  align-items: center;
 }
 
 .page-title {

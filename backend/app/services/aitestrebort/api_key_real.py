@@ -1,5 +1,5 @@
 ﻿"""
-aitestrebort API密钥管理 - 真实实现
+aitestrebort API密钥管理 
 """
 import secrets
 import logging

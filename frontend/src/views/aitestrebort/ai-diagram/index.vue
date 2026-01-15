@@ -3,8 +3,14 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
-        <h1 class="page-title">AI图表生成</h1>
-        <p class="page-description">基于需求文档和知识库，智能生成各种类型的图表</p>
+        <el-button @click="goBack" style="margin-right: 16px;">
+          <el-icon><ArrowLeft /></el-icon>
+          返回
+        </el-button>
+        <div>
+          <h1 class="page-title">AI图表生成</h1>
+          <p class="page-description">基于需求文档和知识库，智能生成各种类型的图表</p>
+        </div>
       </div>
       <div class="header-right">
         <el-button @click="createTestRequirements" type="success" size="small">
@@ -235,11 +241,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, reactive, onMounted, nextTick, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
-  Collection, Clock, MagicStick, Picture, Document, CopyDocument, Check, Plus
+  Collection, Clock, MagicStick, Picture, Document, CopyDocument, Check, Plus, ArrowLeft
 } from '@element-plus/icons-vue'
 import { 
   renderMermaidDiagram, 
@@ -261,7 +267,22 @@ import type {
 
 // 获取项目ID
 const route = useRoute()
+const router = useRouter()
 const projectId = Number(route.params.projectId)
+
+// 计算返回路径
+const backPath = computed(() => {
+  const from = route.query.from as string
+  if (from === 'testcase') {
+    return `/aitestrebort/project/${projectId}/testcase`
+  }
+  return '/aitestrebort/project'
+})
+
+// 返回方法
+const goBack = () => {
+  router.push(backPath.value)
+}
 
 // 响应式数据
 const generating = ref<boolean>(false)
@@ -730,6 +751,8 @@ onMounted(() => {
 
 .header-left {
   flex: 1;
+  display: flex;
+  align-items: center;
 }
 
 .page-title {

@@ -191,7 +191,7 @@ curl http://localhost:8018/api/health
 docker exec test-platform-backend python -c "
 import asyncio
 from tortoise import Tortoise
-from config import tortoise_orm_conf
+from app.configs.config import tortoise_orm_conf
 
 async def check():
     await Tortoise.init(config=tortoise_orm_conf)
@@ -330,8 +330,11 @@ docker-compose up -d --build
 ### 数据库迁移
 
 ```bash
-# 如果有数据库结构变更
-docker exec -it test-platform-backend python init_database.py --tables
+# 如果有数据库结构变更，应用迁移
+docker exec -it test-platform-backend python -m aerich upgrade
+
+# 或者检查数据库状态
+docker exec -it test-platform-backend python db_manager.py status
 ```
 
 ## 📞 支持
@@ -341,7 +344,7 @@ docker exec -it test-platform-backend python init_database.py --tables
 1. 查看服务日志：`docker-compose logs -f backend`
 2. 检查服务状态：`docker-compose ps`
 3. 运行健康检查：`curl http://localhost:8018/api/health`
-4. 查看数据库状态：`docker exec -it test-platform-backend python test_database_switch.py`
+4. 查看数据库状态：`docker exec -it test-platform-backend python db_manager.py status`
 
 ---
 

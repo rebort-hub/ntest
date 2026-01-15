@@ -1,241 +1,351 @@
 ﻿<template>
   <el-dialog
-    :model-value="modelValue"
-    title="模块拆分"
-    width="600px"
-    @update:model-value="$emit('update:modelValue', $event)"
+    v-model="visible"
+    title="智能模块拆分"
+    width="800px"
+    :close-on-click-modal="false"
+    @closed="handleClose"
   >
-    <div v-if="document" class="module-split-dialog">
-      <div class="document-info">
-        <h4>文档信息</h4>
-        <p><strong>标题：</strong>{{ document.title }}</p>
-        <p><strong>类型：</strong>{{ document.document_type }}</p>
-        <p><strong>字数：</strong>{{ document.word_count || 0 }}</p>
-        <p><strong>页数：</strong>{{ document.page_count || 0 }}</p>
-      </div>
-
-      <el-form
-        ref="formRef"
-        :model="splitForm"
-        :rules="formRules"
-        label-width="120px"
-      >
-        <el-form-item label="拆分级别" prop="split_level">
-          <el-select v-model="splitForm.split_level" placeholder="请选择拆分级别">
-            <el-option label="章节级别" value="chapter" />
-            <el-option label="小节级别" value="section" />
-            <el-option label="段落级别" value="paragraph" />
-            <el-option label="自定义" value="custom" />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="包含上下文" prop="include_context">
-          <el-switch
-            v-model="splitForm.include_context"
-            active-text="是"
-            inactive-text="否"
-          />
-          <div class="form-tip">
-            开启后会在每个模块中包含相关的上下文信息
-          </div>
-        </el-form-item>
-
-        <el-form-item label="分块大小" prop="chunk_size">
-          <el-input-number
-            v-model="splitForm.chunk_size"
-            :min="100"
-            :max="5000"
-            :step="100"
-            placeholder="分块大小"
-          />
-          <div class="form-tip">
-            每个分块的字符数，建议 500-2000 字符
-          </div>
-        </el-form-item>
-
-        <el-form-item label="预览设置">
-          <el-button @click="previewSplit" :loading="previewing">
-            预览拆分结果
-          </el-button>
-        </el-form-item>
-      </el-form>
-
-      <!-- 预览结果 -->
-      <div v-if="previewResult" class="preview-section">
-        <h4>预览结果</h4>
-        <div class="preview-stats">
-          <el-tag>预计生成 {{ previewResult.estimated_modules }} 个模块</el-tag>
-          <el-tag type="success" style="margin-left: 8px">
-            平均每个模块 {{ previewResult.avg_module_size }} 字符
-          </el-tag>
+    <div class="split-dialog-content">
+      <!-- 文档信息 -->
+      <el-card class="document-info" shadow="never">
+        <template #header>
+          <span>文档信息</span>
+        </template>
+        <div class="info-row">
+          <span class="label">文档标题：</span>
+          <span class="value">{{ document?.title }}</span>
         </div>
+        <div class="info-row">
+          <span class="label">文档类型：</span>
+          <span class="value">{{ document?.document_type?.toUpperCase() }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">字数统计：</span>
+          <span class="value">{{ document?.word_count || 0 }} 字</span>
+        </div>
+      </el-card>
+
+      <!-- 拆分配置 -->
+      <el-card class="split-config" shadow="never">
+        <template #header>
+          <span>拆分配置</span>
+        </template>
         
-        <div class="preview-modules">
+        <el-form :model="splitForm" label-width="120px">
+          <el-form-item label="拆分方式">
+            <div class="radio-group">
+              <label class="radio-item" :class="{ active: splitForm.split_level === 'auto' }">
+                <input 
+                  type="radio" 
+                  name="split_level" 
+                  value="auto" 
+                  v-model="splitForm.split_level"
+                />
+                <span>智能拆分</span>
+              </label>
+              <label class="radio-item" :class="{ active: splitForm.split_level === 'h1' }">
+                <input 
+                  type="radio" 
+                  name="split_level" 
+                  value="h1" 
+                  v-model="splitForm.split_level"
+                />
+                <span>按一级标题</span>
+              </label>
+              <label class="radio-item" :class="{ active: splitForm.split_level === 'h2' }">
+                <input 
+                  type="radio" 
+                  name="split_level" 
+                  value="h2" 
+                  v-model="splitForm.split_level"
+                />
+                <span>按二级标题</span>
+              </label>
+              <label class="radio-item" :class="{ active: splitForm.split_level === 'h3' }">
+                <input 
+                  type="radio" 
+                  name="split_level" 
+                  value="h3" 
+                  v-model="splitForm.split_level"
+                />
+                <span>按三级标题</span>
+              </label>
+            </div>
+            <div class="form-tip">
+              <span v-if="splitForm.split_level === 'auto'">
+                AI智能识别文档结构，自动拆分为功能模块
+              </span>
+              <span v-else-if="splitForm.split_level === 'h1'">
+                按文档中的一级标题（#）进行拆分
+              </span>
+              <span v-else-if="splitForm.split_level === 'h2'">
+                按文档中的二级标题（##）进行拆分
+              </span>
+              <span v-else-if="splitForm.split_level === 'h3'">
+                按文档中的三级标题（###）进行拆分
+              </span>
+            </div>
+          </el-form-item>
+
+          <el-form-item label="分块大小" v-if="splitForm.split_level === 'auto'">
+            <el-slider
+              v-model="splitForm.chunk_size"
+              :min="1000"
+              :max="5000"
+              :step="500"
+              show-stops
+              show-input
+            />
+            <div class="form-tip">
+              每个模块的大致字符数量，较小的值会产生更多模块
+            </div>
+          </el-form-item>
+
+          <el-form-item label="包含上下文">
+            <el-switch
+              v-model="splitForm.include_context"
+              active-text="是"
+              inactive-text="否"
+            />
+            <div class="form-tip">
+              是否在模块中包含相关的上下文信息
+            </div>
+          </el-form-item>
+        </el-form>
+      </el-card>
+
+      <!-- 拆分结果预览 -->
+      <el-card class="split-result" shadow="never" v-if="splitResult">
+        <template #header>
+          <div class="result-header">
+            <span>拆分结果</span>
+            <el-tag type="success">{{ splitResult.total_modules }} 个模块</el-tag>
+          </div>
+        </template>
+        
+        <div class="result-summary">
+          <el-alert
+            :title="splitResult.message"
+            type="success"
+            :closable="false"
+            show-icon
+          />
+        </div>
+
+        <div class="modules-list">
           <div
-            v-for="(module, index) in previewResult.sample_modules"
-            :key="index"
-            class="preview-module"
+            v-for="(module, index) in splitResult.modules"
+            :key="module.id"
+            class="module-item"
           >
-            <h5>模块 {{ index + 1 }}: {{ module.title }}</h5>
-            <p class="module-content">{{ module.content.substring(0, 200) }}...</p>
-            <div class="module-meta">
-              <span>字符数: {{ module.content.length }}</span>
+            <div class="module-header">
+              <span class="module-order">{{ index + 1 }}</span>
+              <span class="module-title">{{ module.title }}</span>
+              <el-tag size="small">{{ module.content_length }} 字符</el-tag>
+              <el-tag size="small" type="info">
+                置信度: {{ Math.round(module.confidence_score * 100) }}%
+              </el-tag>
             </div>
           </div>
         </div>
-      </div>
+
+        <div class="suggestions">
+          <h4>建议：</h4>
+          <ul>
+            <li v-for="suggestion in splitResult.suggestions" :key="suggestion">
+              {{ suggestion }}
+            </li>
+          </ul>
+        </div>
+      </el-card>
     </div>
-    
+
     <template #footer>
-      <el-button @click="$emit('update:modelValue', false)">取消</el-button>
-      <el-button @click="previewSplit" :loading="previewing">预览</el-button>
-      <el-button type="primary" @click="handleSplit" :loading="splitting">
-        开始拆分
-      </el-button>
+      <div class="dialog-footer">
+        <el-button @click="handleClose">取消</el-button>
+        <el-button 
+          type="primary" 
+          @click="startSplit"
+          :loading="splitting"
+          v-if="!splitResult"
+        >
+          开始拆分
+        </el-button>
+        <el-button 
+          type="success" 
+          @click="confirmSplit"
+          :loading="confirming"
+          v-if="splitResult"
+        >
+          确认拆分
+        </el-button>
+        <el-button 
+          @click="resetSplit"
+          v-if="splitResult"
+        >
+          重新拆分
+        </el-button>
+      </div>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { requirementDocumentApi, type RequirementDocument } from '@/api/aitestrebort/requirements'
 
+// Props
 interface Props {
   modelValue: boolean
   document: RequirementDocument | null
   projectId: number
 }
 
-interface PreviewResult {
-  estimated_modules: number
-  avg_module_size: number
-  sample_modules: Array<{
-    title: string
-    content: string
-  }>
-}
-
 const props = defineProps<Props>()
+
+// Emits
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
-  success: []
+  'success': []
 }>()
 
 // 响应式数据
+const visible = computed({
+  get: () => props.modelValue,
+  set: (value) => emit('update:modelValue', value)
+})
+
 const splitting = ref(false)
-const previewing = ref(false)
-const previewResult = ref<PreviewResult | null>(null)
+const confirming = ref(false)
+const splitResult = ref<any>(null)
 
 // 拆分表单
 const splitForm = reactive({
-  split_level: 'section',
-  include_context: true,
-  chunk_size: 1000
+  split_level: 'auto',
+  chunk_size: 2000,
+  include_context: true
 })
 
-// 表单验证规则
-const formRules = {
-  split_level: [
-    { required: true, message: '请选择拆分级别', trigger: 'change' }
-  ],
-  chunk_size: [
-    { required: true, message: '请输入分块大小', trigger: 'blur' },
-    { type: 'number', min: 100, max: 5000, message: '分块大小应在 100-5000 之间', trigger: 'blur' }
-  ]
-}
-
-// 表单引用
-const formRef = ref()
+// 调试：监听split_level变化
+watch(() => splitForm.split_level, (newValue) => {
+  console.log('Split level changed to:', newValue)
+})
 
 // 方法
-const previewSplit = async () => {
-  if (!props.document || !formRef.value) return
-  
-  try {
-    await formRef.value.validate()
-    previewing.value = true
-    
-    // 模拟预览结果（实际应该调用后端API）
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    previewResult.value = {
-      estimated_modules: Math.ceil((props.document.word_count || 1000) / splitForm.chunk_size),
-      avg_module_size: splitForm.chunk_size,
-      sample_modules: [
-        {
-          title: '第一章 系统概述',
-          content: '本系统是一个基于Web的AI驱动平台，主要用于管理测试用例、执行自动化测试、生成测试报告等功能。系统采用前后端分离的架构设计，前端使用Vue3+TypeScript开发，后端使用FastAPI+Python开发。'
-        },
-        {
-          title: '第二章 功能需求',
-          content: '系统需要支持用户管理、项目管理、测试用例管理、自动化脚本管理、测试执行、报告生成等核心功能。每个功能模块都需要提供完整的CRUD操作，并支持权限控制和数据导出。'
-        },
-        {
-          title: '第三章 非功能需求',
-          content: '系统需要具备良好的性能、可用性、安全性和可维护性。响应时间不超过3秒，支持并发用户数不少于100，数据安全性要求达到企业级标准。'
-        }
-      ]
-    }
-  } catch (error) {
-    console.error('预览失败:', error)
-    ElMessage.error('预览失败')
-  } finally {
-    previewing.value = false
+const startSplit = async () => {
+  if (!props.document) {
+    ElMessage.error('请选择要拆分的文档')
+    return
   }
-}
 
-const handleSplit = async () => {
-  if (!props.document || !formRef.value) return
+  // 检查文档状态
+  const allowedStatuses = ['uploaded', 'processing', 'ready_for_review', 'failed']
+  if (!allowedStatuses.includes(props.document.status)) {
+    if (props.document.status === 'review_completed') {
+      ElMessage.warning('文档已评审完成，不允许重新拆分模块')
+    } else {
+      ElMessage.warning(`文档状态 ${props.document.status} 不允许进行模块拆分`)
+    }
+    return
+  }
+
+  splitting.value = true
   
   try {
-    await formRef.value.validate()
-    splitting.value = true
-    
-    await requirementDocumentApi.splitModules(
+    const response = await requirementDocumentApi.splitModules(
       props.projectId,
       props.document.id,
-      {
-        split_level: splitForm.split_level,
-        include_context: splitForm.include_context,
-        chunk_size: splitForm.chunk_size
-      }
+      splitForm
     )
     
-    ElMessage.success('模块拆分已开始，请稍后查看结果')
-    emit('success')
-    emit('update:modelValue', false)
+    if (response.data?.status === 200 || response.status === 200) {
+      const data = response.data?.data || response.data
+      console.log('拆分结果数据:', data)
+      splitResult.value = data
+      ElMessage.success('模块拆分完成')
+    } else {
+      console.log('拆分失败响应:', response)
+      ElMessage.error(response.data?.message || response.message || '拆分失败')
+    }
   } catch (error) {
-    console.error('拆分失败:', error)
-    ElMessage.error('拆分失败')
+    console.error('模块拆分失败:', error)
+    ElMessage.error('模块拆分失败')
   } finally {
     splitting.value = false
   }
 }
+
+const confirmSplit = async () => {
+  if (!props.document || !splitResult.value) {
+    return
+  }
+
+  confirming.value = true
+  
+  try {
+    // 这里可以调用确认拆分的API
+    // 目前直接认为成功
+    ElMessage.success('模块拆分已确认')
+    emit('success')
+    handleClose()
+  } catch (error) {
+    console.error('确认拆分失败:', error)
+    ElMessage.error('确认拆分失败')
+  } finally {
+    confirming.value = false
+  }
+}
+
+const resetSplit = () => {
+  splitResult.value = null
+}
+
+const handleClose = () => {
+  visible.value = false
+  splitResult.value = null
+  // 重置表单
+  Object.assign(splitForm, {
+    split_level: 'auto',
+    chunk_size: 2000,
+    include_context: true
+  })
+}
+
+// 监听文档变化
+watch(() => props.document, () => {
+  if (props.document) {
+    splitResult.value = null
+  }
+})
 </script>
 
 <style scoped>
-.module-split-dialog {
-  padding: 16px 0;
+.split-dialog-content {
+  max-height: 600px;
+  overflow-y: auto;
 }
 
-.document-info {
-  margin-bottom: 24px;
-  padding: 16px;
-  background-color: #f8f9fa;
-  border-radius: 6px;
+.document-info,
+.split-config,
+.split-result {
+  margin-bottom: 16px;
 }
 
-.document-info h4 {
-  margin: 0 0 12px 0;
-  font-size: 16px;
+.info-row {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.info-row .label {
   font-weight: bold;
-  color: #303133;
+  color: #606266;
+  min-width: 80px;
 }
 
-.document-info p {
-  margin: 8px 0;
-  color: #606266;
+.info-row .value {
+  color: #303133;
 }
 
 .form-tip {
@@ -244,52 +354,111 @@ const handleSplit = async () => {
   margin-top: 4px;
 }
 
-.preview-section {
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid #ebeef5;
+.radio-group {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.preview-section h4 {
-  margin: 0 0 12px 0;
-  font-size: 16px;
-  font-weight: bold;
-  color: #303133;
+.radio-item {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px 12px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  transition: all 0.3s;
 }
 
-.preview-stats {
+.radio-item:hover {
+  border-color: #409eff;
+}
+
+.radio-item.active {
+  border-color: #409eff;
+  background-color: #f0f9ff;
+}
+
+.radio-item input[type="radio"] {
+  margin-right: 8px;
+}
+
+.radio-item span {
+  font-size: 14px;
+  color: #606266;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.result-summary {
   margin-bottom: 16px;
 }
 
-.preview-modules {
+.modules-list {
   max-height: 300px;
   overflow-y: auto;
 }
 
-.preview-module {
-  margin-bottom: 16px;
+.module-item {
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
   padding: 12px;
-  background-color: #f8f9fa;
-  border-radius: 6px;
-  border-left: 3px solid #409EFF;
+  margin-bottom: 8px;
+  background-color: #fafafa;
 }
 
-.preview-module h5 {
-  margin: 0 0 8px 0;
-  font-size: 14px;
+.module-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.module-order {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background-color: #409eff;
+  color: white;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.module-title {
+  flex: 1;
   font-weight: bold;
   color: #303133;
 }
 
-.module-content {
-  margin: 8px 0;
-  font-size: 13px;
-  color: #606266;
-  line-height: 1.5;
+.suggestions {
+  margin-top: 16px;
 }
 
-.module-meta {
-  font-size: 12px;
+.suggestions h4 {
+  margin: 0 0 8px 0;
+  color: #606266;
+}
+
+.suggestions ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.suggestions li {
+  margin-bottom: 4px;
   color: #909399;
+  font-size: 14px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 </style>

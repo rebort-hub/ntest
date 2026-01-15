@@ -3,6 +3,9 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
+        <div class="header-actions">
+          <el-button @click="goBack" icon="ArrowLeft">返回</el-button>
+        </div>
         <h1 class="page-title">需求管理</h1>
         <p class="page-description">管理项目需求文档，支持文档上传、模块拆分、评审分析等功能</p>
       </div>
@@ -320,7 +323,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Upload, Search, Plus, Document, Edit, Delete
+  Upload, Search, Plus, Document, Edit, Delete, ArrowLeft
 } from '@element-plus/icons-vue'
 import { requirementDocumentApi, requirementApi, type RequirementDocument, type Requirement } from '@/api/aitestrebort/requirements'
 import ModuleSplitDialog from './components/ModuleSplitDialog.vue'
@@ -681,6 +684,15 @@ const handleModuleSplitSuccess = () => {
   loadDocuments()
 }
 
+const goBack = () => {
+  const from = route.query.from as string
+  if (from === 'testcase') {
+    router.push(`/aitestrebort/project/${projectId.value}/testcase`)
+  } else {
+    router.push('/aitestrebort/project')
+  }
+}
+
 // 辅助方法
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('zh-CN')
@@ -699,20 +711,28 @@ const getDocumentTypeText = (type: string) => {
 
 const getStatusType = (status: string) => {
   const types: Record<string, string> = {
-    pending: 'warning',
+    uploaded: 'info',
     processing: 'primary',
-    completed: 'success',
-    failed: 'danger'
+    ready_for_review: 'warning',
+    reviewing: 'primary',
+    review_completed: 'success',
+    failed: 'danger',
+    pending: 'warning',
+    completed: 'success'
   }
   return types[status] || 'info'
 }
 
 const getStatusText = (status: string) => {
   const texts: Record<string, string> = {
-    pending: '待处理',
+    uploaded: '已上传',
     processing: '处理中',
-    completed: '已完成',
-    failed: '失败'
+    ready_for_review: '待评审',
+    reviewing: '评审中',
+    review_completed: '评审通过',
+    failed: '处理失败',
+    pending: '待处理',
+    completed: '已完成'
   }
   return texts[status] || status
 }
@@ -801,6 +821,10 @@ onMounted(() => {
 
 .header-left {
   flex: 1;
+}
+
+.header-actions {
+  margin-bottom: 16px;
 }
 
 .page-title {

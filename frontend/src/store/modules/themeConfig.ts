@@ -191,7 +191,7 @@ const state = (): ThemeConfigState => ({
     // 是否开启色弱模式
     isInvert: false,
     // 是否开启水印
-    isWartermark: false,
+    isWartermark: true,
     // 水印文案
     wartermarkText: 'N-Tester平台',
 

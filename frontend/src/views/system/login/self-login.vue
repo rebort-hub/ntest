@@ -196,7 +196,7 @@ const containerStyle = computed(() => {
     }
   }
   return {
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+    background: 'linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%)'
   }
 })
 
@@ -334,7 +334,7 @@ onMounted(() => {
   height: 100vh;
   overflow: hidden;
   /* 默认渐变背景，如果有配置背景图则会被覆盖 */
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
   display: flex;
   align-items: center;
   justify-content: center;

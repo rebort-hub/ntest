@@ -29,7 +29,7 @@ python -c "
 import asyncio
 import sys
 from tortoise import Tortoise
-from config import tortoise_orm_conf
+from app.configs.config import tortoise_orm_conf
 
 async def check_db():
     try:
@@ -55,6 +55,13 @@ if [ $DB_INITIALIZED -eq 0 ]; then
 else
     echo "🏗️ 数据库未初始化，开始自动初始化..."
     
+    # 初始化 aerich（如果需要）
+    if [ ! -d "migrations/test_platform" ]; then
+        echo "📝 初始化 aerich..."
+        python -m aerich init -t app.configs.config.tortoise_orm_conf
+        python -m aerich init-db
+    fi
+    
     # 运行数据库初始化
     python init_database.py --full
     
@@ -64,6 +71,12 @@ else
         echo "❌ 数据库初始化失败！"
         exit 1
     fi
+fi
+
+# 应用数据库迁移（如果有新的迁移）
+if [ -d "migrations/test_platform" ]; then
+    echo "🔄 检查并应用数据库迁移..."
+    python -m aerich upgrade || echo "⚠️  迁移应用失败或无新迁移"
 fi
 
 # 启动应用

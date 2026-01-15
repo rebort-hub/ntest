@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from ..base_model import BaseModel, fields, pydantic_model_creator
 from app.schemas.enums import ApiCaseSuiteTypeEnum, CaseStatusEnum
-from config import api_suite_list, ui_suite_list
+from app.configs.config import api_suite_list, ui_suite_list
 
 
 class BaseCaseSuite(BaseModel):

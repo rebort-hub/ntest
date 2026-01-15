@@ -4,7 +4,6 @@
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 from datetime import datetime
-from uuid import UUID
 
 
 class RequirementDocumentBase(BaseModel):
@@ -32,7 +31,7 @@ class RequirementDocumentUpdate(BaseModel):
 
 class RequirementDocumentResponse(RequirementDocumentBase):
     """需求文档响应Schema"""
-    id: UUID
+    id: str
     project_id: int
     status: str
     is_latest: bool
@@ -50,13 +49,13 @@ class RequirementModuleBase(BaseModel):
     """需求模块基础Schema"""
     title: str = Field(..., description="模块名称")
     content: str = Field(..., description="模块内容")
-    order: int = Field(default=0, description="排序")
+    order_num: int = Field(default=0, description="排序")
 
 
 class RequirementModuleCreate(RequirementModuleBase):
     """创建需求模块Schema"""
-    document_id: UUID = Field(..., description="所属文档ID")
-    parent_module_id: Optional[UUID] = Field(None, description="父模块ID")
+    document_id: str = Field(..., description="所属文档ID")
+    parent_module_id: Optional[str] = Field(None, description="父模块ID")
     start_page: Optional[int] = Field(None, description="起始页码")
     end_page: Optional[int] = Field(None, description="结束页码")
     start_position: Optional[int] = Field(None, description="起始位置")
@@ -70,14 +69,14 @@ class RequirementModuleUpdate(BaseModel):
     """更新需求模块Schema"""
     title: Optional[str] = Field(None, description="模块名称")
     content: Optional[str] = Field(None, description="模块内容")
-    order: Optional[int] = Field(None, description="排序")
+    order_num: Optional[int] = Field(None, description="排序")
 
 
 class RequirementModuleResponse(RequirementModuleBase):
     """需求模块响应Schema"""
-    id: UUID
-    document_id: UUID
-    parent_module_id: Optional[UUID]
+    id: str
+    document_id: str
+    parent_module_id: Optional[str]
     start_page: Optional[int]
     end_page: Optional[int]
     start_position: Optional[int]
@@ -100,7 +99,7 @@ class ReviewReportBase(BaseModel):
 
 class ReviewReportCreate(ReviewReportBase):
     """创建评审报告Schema"""
-    document_id: UUID = Field(..., description="评审文档ID")
+    document_id: str = Field(..., description="评审文档ID")
 
 
 class ReviewReportUpdate(BaseModel):
@@ -124,8 +123,8 @@ class ReviewReportUpdate(BaseModel):
 
 class ReviewReportResponse(ReviewReportBase):
     """评审报告响应Schema"""
-    id: UUID
-    document_id: UUID
+    id: str
+    document_id: str
     review_date: datetime
     status: str
     overall_rating: Optional[str]
@@ -160,8 +159,8 @@ class ReviewIssueBase(BaseModel):
 
 class ReviewIssueCreate(ReviewIssueBase):
     """创建评审问题Schema"""
-    report_id: UUID = Field(..., description="所属报告ID")
-    module_id: Optional[UUID] = Field(None, description="相关模块ID")
+    report_id: str = Field(..., description="所属报告ID")
+    module_id: Optional[str] = Field(None, description="相关模块ID")
     location: Optional[str] = Field(None, description="问题位置")
     page_number: Optional[int] = Field(None, description="页码")
     section: Optional[str] = Field(None, description="章节")
@@ -178,9 +177,9 @@ class ReviewIssueUpdate(BaseModel):
 
 class ReviewIssueResponse(ReviewIssueBase):
     """评审问题响应Schema"""
-    id: UUID
-    report_id: UUID
-    module_id: Optional[UUID]
+    id: str
+    report_id: str
+    module_id: Optional[str]
     location: Optional[str]
     page_number: Optional[int]
     section: Optional[str]
@@ -202,8 +201,8 @@ class ModuleReviewResultBase(BaseModel):
 
 class ModuleReviewResultCreate(ModuleReviewResultBase):
     """创建模块评审结果Schema"""
-    report_id: UUID = Field(..., description="所属报告ID")
-    module_id: UUID = Field(..., description="评审模块ID")
+    report_id: str = Field(..., description="所属报告ID")
+    module_id: str = Field(..., description="评审模块ID")
     analysis_content: Optional[str] = Field(None, description="分析内容")
     strengths: Optional[str] = Field(None, description="优点")
     weaknesses: Optional[str] = Field(None, description="不足")
@@ -223,9 +222,9 @@ class ModuleReviewResultUpdate(BaseModel):
 
 class ModuleReviewResultResponse(ModuleReviewResultBase):
     """模块评审结果响应Schema"""
-    id: UUID
-    report_id: UUID
-    module_id: UUID
+    id: str
+    report_id: str
+    module_id: str
     analysis_content: Optional[str]
     strengths: Optional[str]
     weaknesses: Optional[str]
@@ -263,7 +262,7 @@ class RequirementUpdate(BaseModel):
 
 class RequirementResponse(RequirementBase):
     """需求响应Schema"""
-    id: UUID
+    id: str
     project_id: int
     stakeholders: List[str]
     creator_id: Optional[int]
@@ -283,21 +282,21 @@ class BatchModuleUpdateRequest(BaseModel):
 
 class DocumentSplitRequest(BaseModel):
     """文档拆分请求Schema"""
-    document_id: UUID = Field(..., description="文档ID")
+    document_id: str = Field(..., description="文档ID")
     split_strategy: str = Field(default="auto", description="拆分策略")
     chunk_size: Optional[int] = Field(None, description="分块大小")
 
 
 class ReviewRequest(BaseModel):
     """评审请求Schema"""
-    document_id: UUID = Field(..., description="文档ID")
+    document_id: Optional[str] = Field(None, description="文档ID")
     review_type: str = Field(default="comprehensive", description="评审类型")
     focus_areas: Optional[List[str]] = Field(None, description="重点关注领域")
 
 
 class ReviewProgressResponse(BaseModel):
     """评审进度响应Schema"""
-    document_id: UUID
+    document_id: str
     status: str
     progress: float = Field(..., description="进度百分比")
     current_step: str = Field(..., description="当前步骤")
@@ -317,19 +316,23 @@ class RequirementSearchRequest(BaseModel):
 
 class RequirementStatistics(BaseModel):
     """需求统计Schema"""
-    total_requirements: int = Field(..., description="需求总数")
-    total_documents: int = Field(..., description="文档总数")
-    total_modules: int = Field(..., description="模块总数")
-    total_reviews: int = Field(..., description="评审总数")
-    requirement_type_distribution: Dict[str, int] = Field(..., description="需求类型分布")
-    requirement_priority_distribution: Dict[str, int] = Field(..., description="需求优先级分布")
-    requirement_status_distribution: Dict[str, int] = Field(..., description="需求状态分布")
-    document_status_distribution: Dict[str, int] = Field(..., description="文档状态分布")
-    review_statistics: Dict[str, Any] = Field(..., description="评审统计信息")
+    total_requirements: int = Field(default=0, description="需求总数")
+    total_documents: int = Field(default=0, description="文档总数")
+    total_modules: int = Field(default=0, description="模块总数")
+    total_reviews: int = Field(default=0, description="评审总数")
+    requirement_type_distribution: Dict[str, int] = Field(default={}, description="需求类型分布")
+    requirement_priority_distribution: Dict[str, int] = Field(default={}, description="需求优先级分布")
+    requirement_status_distribution: Dict[str, int] = Field(default={}, description="需求状态分布")
+    document_status_distribution: Dict[str, int] = Field(default={}, description="文档状态分布")
+    review_statistics: Dict[str, Any] = Field(default={}, description="评审统计信息")
+
+    class Config:
+        from_attributes = True
 
 
 class ProjectStatistics(BaseModel):
     """项目统计Schema"""
+    project_id: int = Field(..., description="项目ID")
     total_knowledge_bases: int = Field(..., description="知识库总数")
     active_knowledge_bases: int = Field(..., description="活跃知识库数")
     inactive_knowledge_bases: int = Field(..., description="非活跃知识库数")
@@ -345,6 +348,12 @@ class ProjectStatistics(BaseModel):
     database_status: str = Field(..., description="数据库状态")
     vector_db_status: str = Field(..., description="向量数据库状态")
     last_updated: str = Field(..., description="最后更新时间")
+    requirement_stats: RequirementStatistics = Field(..., description="需求统计")
+    recent_activities: List[Dict[str, Any]] = Field(default=[], description="最近活动")
+    quality_metrics: Dict[str, Any] = Field(default={}, description="质量指标")
+
+    class Config:
+        from_attributes = True
 
 
 class RequirementDocumentDetail(RequirementDocumentResponse):
@@ -380,3 +389,80 @@ class RequirementUploadRequest(BaseModel):
     file_name: str = Field(..., description="文件名")
     file_size: int = Field(..., description="文件大小")
     file_content: Optional[str] = Field(None, description="文件内容")
+
+
+class ReviewProgressResponse(BaseModel):
+    """评审进度响应Schema"""
+    status: str = Field(..., description="评审状态")
+    progress: int = Field(..., description="进度百分比")
+    message: str = Field(..., description="状态消息")
+    current_step: Optional[str] = Field(None, description="当前步骤")
+    estimated_time: Optional[int] = Field(None, description="预计剩余时间(秒)")
+
+
+class RequirementDocumentDetail(RequirementDocumentResponse):
+    """需求文档详情Schema"""
+    modules: List[RequirementModuleResponse] = Field(default=[], description="模块列表")
+    review_reports: List[ReviewReportResponse] = Field(default=[], description="评审报告列表")
+
+
+class RequirementDocumentListResponse(BaseModel):
+    """需求文档列表响应Schema"""
+    items: List[RequirementDocumentResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+class RequirementListResponse(BaseModel):
+    """需求列表响应Schema"""
+    items: List[RequirementResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+class RequirementSearchRequest(BaseModel):
+    """需求搜索请求Schema"""
+    keyword: Optional[str] = Field(None, description="关键词")
+    type: Optional[str] = Field(None, description="需求类型")
+    priority: Optional[str] = Field(None, description="优先级")
+    status: Optional[str] = Field(None, description="状态")
+    page: int = Field(default=1, description="页码")
+    page_size: int = Field(default=20, description="每页大小")
+
+
+class RequirementUploadRequest(BaseModel):
+    """需求上传请求Schema"""
+    title: str = Field(..., description="文档标题")
+    description: Optional[str] = Field(None, description="文档描述")
+    document_type: str = Field(..., description="文档类型")
+    # file 字段在FastAPI中通过UploadFile处理，不在Schema中定义
+
+
+# 文档拆分相关Schema
+class DocumentSplitRequest(BaseModel):
+    """文档拆分请求Schema"""
+    split_level: str = Field(default="auto", description="拆分级别")
+    chunk_size: Optional[int] = Field(default=2000, description="分块大小")
+    include_context: bool = Field(default=True, description="包含上下文")
+
+
+class ModuleSplitResult(BaseModel):
+    """模块拆分结果Schema"""
+    id: str = Field(..., description="模块ID")
+    title: str = Field(..., description="模块标题")
+    content_length: int = Field(..., description="内容长度")
+    order: int = Field(..., description="排序")
+    confidence_score: float = Field(..., description="置信度")
+
+
+class DocumentSplitResponse(BaseModel):
+    """文档拆分响应Schema"""
+    message: str = Field(..., description="拆分消息")
+    document_id: str = Field(..., description="文档ID")
+    total_modules: int = Field(..., description="模块总数")
+    modules: List[ModuleSplitResult] = Field(..., description="模块列表")
+    suggestions: List[str] = Field(default=[], description="建议列表")

@@ -46,3 +46,6 @@ router.add_post_route("/projects/{project_id}/test-suites/{suite_id}/execute", t
 router.add_get_route("/projects/{project_id}/test-executions", testcase_service.get_test_executions, summary="获取测试执行记录")
 router.add_get_route("/projects/{project_id}/test-executions/{execution_id}", testcase_service.get_execution_detail, summary="获取执行记录详情")
 router.add_put_route("/projects/{project_id}/test-executions/{execution_id}/cancel", testcase_service.cancel_test_execution, summary="取消测试执行")
+
+# 测试用例导出
+router.add_api_route("/projects/{project_id}/testcases/export/xmind", testcase_service.export_testcases_to_xmind, methods=["GET"], response_model=None, summary="导出测试用例为XMind格式")

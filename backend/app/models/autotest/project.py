@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from ..base_model import BaseModel, fields, pydantic_model_creator
-from config import main_server_host
+from app.configs.config import main_server_host
 from utils.parse.parse import parse_list_to_dict, update_dict_to_list, parse_dict_to_list
 
 

@@ -1,5 +1,5 @@
 ﻿"""
-aitestrebort 知识库管理服务 - 增强版
+aitestrebort 知识库管理服务
 包含RAG功能
 """
 import os

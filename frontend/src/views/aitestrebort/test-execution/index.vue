@@ -3,8 +3,14 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
-        <h1 class="page-title">测试执行历史</h1>
-        <p class="page-description">查看和管理测试套件的执行历史记录</p>
+        <el-button @click="goBack" style="margin-right: 16px;">
+          <el-icon><ArrowLeft /></el-icon>
+          返回
+        </el-button>
+        <div>
+          <h1 class="page-title">测试执行历史</h1>
+          <p class="page-description">查看和管理测试套件的执行历史记录</p>
+        </div>
       </div>
       <div class="header-right">
         <el-button @click="refreshData">
@@ -270,13 +276,29 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Refresh, Download, Search
+  Refresh, Download, Search, ArrowLeft
 } from '@element-plus/icons-vue'
 
 // 获取项目ID
 const route = useRoute()
 const router = useRouter()
 const projectId = computed(() => Number(route.params.projectId))
+
+// 计算返回路径
+const backPath = computed(() => {
+  const from = route.query.from as string
+  if (from === 'testcase') {
+    return `/aitestrebort/project/${projectId.value}/testcase`
+  } else if (from === 'test-suite') {
+    return `/aitestrebort/project/${projectId.value}/test-suite`
+  }
+  return '/aitestrebort/project'
+})
+
+// 返回方法
+const goBack = () => {
+  router.push(backPath.value)
+}
 
 // 响应式数据
 const loading = ref(false)
@@ -561,6 +583,8 @@ onMounted(() => {
 
 .header-left {
   flex: 1;
+  display: flex;
+  align-items: center;
 }
 
 .page-title {

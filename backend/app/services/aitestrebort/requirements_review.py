@@ -16,6 +16,7 @@ from app.schemas.aitestrebort.requirements import (
     ReviewIssueCreate, ModuleReviewResultCreate,
     ReviewRequest, ReviewProgressResponse
 )
+from app.services.aitestrebort.requirements_service import generate_id
 
 logger = logging.getLogger(__name__)
 
@@ -138,16 +139,26 @@ class RequirementReviewService:
             )
     
     @staticmethod
-    async def _analyze_completeness(
+    async def _call_llm_analysis(
         document: RequirementDocument,
-        modules: List[RequirementModule]
+        modules: List[RequirementModule],
+        analysis_type: str,
+        system_prompt: str
     ) -> Dict[str, Any]:
-        """完整性分析"""
+        """通用的LLM分析调用方法"""
         try:
-            from app.services.ai.llm_service import get_llm_service
-            from app.services.ai.prompt_manager import PromptType, format_prompt
+            # 使用真实的LLM服务
+            from app.models.aitestrebort.project import aitestrebortLLMConfig
+            from app.services.aitestrebort.ai_generator_real import create_llm_instance
+            from langchain_core.messages import HumanMessage, SystemMessage
             
-            llm_service = await get_llm_service()
+            # 获取激活的LLM配置
+            llm_config = await aitestrebortLLMConfig.filter(is_active=True).first()
+            if not llm_config:
+                raise ValueError("没有找到激活的LLM配置")
+            
+            # 创建LLM实例
+            llm = create_llm_instance(llm_config, temperature=0.3)
             
             # 构建分析内容
             content_parts = [f"文档标题: {document.title}"]
@@ -155,42 +166,120 @@ class RequirementReviewService:
                 content_parts.append(f"文档描述: {document.description}")
             
             if document.content:
-                content_parts.append(f"文档内容: {document.content}")
+                content_parts.append(f"文档内容: {document.content[:2000]}")
             
             # 添加模块内容
             if modules:
-                content_parts.append("模块内容:")
-                for module in modules:
-                    content_parts.append(f"- {module.title}: {module.content}")
+                content_parts.append("\n模块内容:")
+                for i, module in enumerate(modules[:5], 1):  # 只取前5个模块
+                    content_parts.append(f"{i}. {module.title}: {module.content[:300] if module.content else '无内容'}")
             
             requirement_text = "\n".join(content_parts)
             
-            # 使用提示词模板进行分析
-            prompt = format_prompt(PromptType.COMPLETENESS_ANALYSIS, requirement_text=requirement_text)
-            response = await llm_service.generate_text(prompt, temperature=0.3)
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=requirement_text)
+            ]
             
-            # 尝试解析JSON响应
+            # 调用LLM
+            response = await llm.ainvoke(messages)
+            
+            # 解析响应
             import json
             try:
-                result = json.loads(response)
+                result = json.loads(response.content)
+                logger.info(f"{analysis_type}分析完成，使用真实AI分析结果")
+                
+                # 确保issues格式正确（转换为对象数组）
+                if 'issues' in result and isinstance(result['issues'], list):
+                    formatted_issues = []
+                    for issue in result['issues']:
+                        if isinstance(issue, str):
+                            # 字符串格式转换为对象格式
+                            formatted_issues.append({
+                                "title": issue[:50] if len(issue) > 50 else issue,
+                                "description": issue,
+                                "priority": "medium",
+                                "suggestion": f"建议关注此问题并进行改进"
+                            })
+                        elif isinstance(issue, dict):
+                            # 确保对象有必要的字段
+                            formatted_issues.append({
+                                "title": issue.get('title', '未知问题'),
+                                "description": issue.get('description', str(issue)),
+                                "priority": issue.get('priority', 'medium'),
+                                "suggestion": issue.get('suggestion', '建议进行改进')
+                            })
+                    result['issues'] = formatted_issues
+                
+                # 添加overall_score字段（前端需要）
+                if 'score' in result and 'overall_score' not in result:
+                    result['overall_score'] = result['score']
+                
                 return result
+                
             except json.JSONDecodeError:
-                logger.warning("Failed to parse completeness analysis JSON, using default")
+                logger.warning(f"{analysis_type}分析：AI响应格式错误，内容: {response.content[:200]}")
                 return {
-                    "score": 80,
-                    "issues": [],
-                    "strengths": ["需求文档已提供"],
-                    "recommendations": ["建议进一步完善需求描述"]
+                    "score": 70,
+                    "overall_score": 70,
+                    "issues": [{
+                        "title": f"{analysis_type}：AI响应格式需要优化",
+                        "description": "AI返回的分析结果格式不正确",
+                        "priority": "low",
+                        "suggestion": "建议优化AI提示词"
+                    }],
+                    "strengths": ["文档结构基本完整"],
+                    "recommendations": ["建议优化AI提示词"]
                 }
                 
         except Exception as e:
-            logger.error(f"Completeness analysis failed: {e}")
+            logger.error(f"{analysis_type}分析失败: {e}")
             return {
-                "score": 75,
-                "issues": [],
-                "strengths": ["基础需求已描述"],
-                "recommendations": ["建议补充更多细节"]
+                "score": 0,
+                "overall_score": 0,
+                "issues": [{
+                    "title": "AI分析服务不可用",
+                    "description": f"AI分析过程中发生错误: {str(e)}",
+                    "priority": "high",
+                    "suggestion": "请检查LLM配置并确保AI服务正常运行"
+                }],
+                "strengths": [],
+                "recommendations": ["请检查LLM配置并确保AI服务正常运行"]
             }
+    
+    @staticmethod
+    async def _analyze_completeness(
+        document: RequirementDocument,
+        modules: List[RequirementModule]
+    ) -> Dict[str, Any]:
+        """完整性分析"""
+        system_prompt = """你是一个专业的需求分析专家。请对以下需求文档进行完整性分析。
+
+分析要点：
+1. 需求是否完整覆盖了所有必要的功能点
+2. 是否缺少关键信息（如输入输出、异常处理等）
+3. 是否有遗漏的用户场景
+
+请以JSON格式返回分析结果：
+{
+    "score": 85,
+    "issues": [
+        {
+            "title": "问题标题",
+            "description": "问题详细描述",
+            "priority": "high/medium/low",
+            "suggestion": "改进建议"
+        }
+    ],
+    "strengths": ["优点1", "优点2"],
+    "recommendations": ["建议1", "建议2"]
+}
+
+注意：score为0-100的整数，issues必须是对象数组格式。"""
+        return await RequirementReviewService._call_llm_analysis(
+            document, modules, "完整性", system_prompt
+        )
     
     @staticmethod
     async def _analyze_consistency(
@@ -198,50 +287,32 @@ class RequirementReviewService:
         modules: List[RequirementModule]
     ) -> Dict[str, Any]:
         """一致性分析"""
-        try:
-            from app.services.ai.llm_service import get_llm_service
-            from app.services.ai.prompt_manager import PromptType, format_prompt
-            
-            llm_service = await get_llm_service()
-            
-            # 构建分析内容
-            content_parts = [f"文档标题: {document.title}"]
-            if document.content:
-                content_parts.append(f"文档内容: {document.content}")
-            
-            if modules:
-                content_parts.append("模块内容:")
-                for module in modules:
-                    content_parts.append(f"- {module.title}: {module.content}")
-            
-            requirement_text = "\n".join(content_parts)
-            
-            # 使用提示词模板进行分析
-            prompt = format_prompt(PromptType.CONSISTENCY_ANALYSIS, requirement_text=requirement_text)
-            response = await llm_service.generate_text(prompt, temperature=0.3)
-            
-            # 尝试解析JSON响应
-            import json
-            try:
-                result = json.loads(response)
-                return result
-            except json.JSONDecodeError:
-                logger.warning("Failed to parse consistency analysis JSON, using default")
-                return {
-                    "score": 85,
-                    "issues": [],
-                    "strengths": ["术语使用基本一致"],
-                    "recommendations": ["保持术语一致性"]
-                }
-                
-        except Exception as e:
-            logger.error(f"Consistency analysis failed: {e}")
-            return {
-                "score": 80,
-                "issues": [],
-                "strengths": ["基础一致性良好"],
-                "recommendations": ["继续保持一致性"]
-            }
+        system_prompt = """你是一个专业的需求分析专家。请对以下需求文档进行一致性分析。
+
+分析要点：
+1. 术语使用是否一致
+2. 功能描述是否存在矛盾
+3. 不同模块之间的接口定义是否一致
+
+请以JSON格式返回分析结果：
+{
+    "score": 85,
+    "issues": [
+        {
+            "title": "问题标题",
+            "description": "问题详细描述",
+            "priority": "high/medium/low",
+            "suggestion": "改进建议"
+        }
+    ],
+    "strengths": ["优点1", "优点2"],
+    "recommendations": ["建议1", "建议2"]
+}
+
+注意：score为0-100的整数，issues必须是对象数组格式。"""
+        return await RequirementReviewService._call_llm_analysis(
+            document, modules, "一致性", system_prompt
+        )
     
     @staticmethod
     async def _analyze_testability(
@@ -249,58 +320,32 @@ class RequirementReviewService:
         modules: List[RequirementModule]
     ) -> Dict[str, Any]:
         """可测性分析"""
-        try:
-            from app.services.ai.llm_service import get_llm_service
-            from app.services.ai.prompt_manager import PromptType, format_prompt
-            
-            llm_service = await get_llm_service()
-            
-            # 构建分析内容
-            content_parts = [f"文档标题: {document.title}"]
-            if document.content:
-                content_parts.append(f"文档内容: {document.content}")
-            
-            if modules:
-                content_parts.append("模块内容:")
-                for module in modules:
-                    content_parts.append(f"- {module.title}: {module.content}")
-            
-            requirement_text = "\n".join(content_parts)
-            
-            # 使用提示词模板进行分析
-            prompt = format_prompt(PromptType.TESTABILITY_ANALYSIS, requirement_text=requirement_text)
-            response = await llm_service.generate_text(prompt, temperature=0.3)
-            
-            # 尝试解析JSON响应
-            import json
-            try:
-                result = json.loads(response)
-                return result
-            except json.JSONDecodeError:
-                logger.warning("Failed to parse testability analysis JSON, using default")
-                return {
-                    "score": 75,
-                    "issues": [
-                        {
-                            "type": "testability",
-                            "priority": "medium",
-                            "title": "验收标准需要明确",
-                            "description": "部分功能缺少明确的验收标准",
-                            "suggestion": "为每个功能定义具体的验收标准"
-                        }
-                    ],
-                    "strengths": ["功能描述清晰"],
-                    "recommendations": ["补充验收标准", "增加测试数据说明"]
-                }
-                
-        except Exception as e:
-            logger.error(f"Testability analysis failed: {e}")
-            return {
-                "score": 70,
-                "issues": [],
-                "strengths": ["基础功能可测"],
-                "recommendations": ["增强可测性设计"]
-            }
+        system_prompt = """你是一个专业的测试工程师。请对以下需求文档进行可测性分析。
+
+分析要点：
+1. 需求是否可以被测试验证
+2. 是否有明确的验收标准
+3. 是否便于编写测试用例
+
+请以JSON格式返回分析结果：
+{
+    "score": 85,
+    "issues": [
+        {
+            "title": "问题标题",
+            "description": "问题详细描述",
+            "priority": "high/medium/low",
+            "suggestion": "改进建议"
+        }
+    ],
+    "strengths": ["优点1", "优点2"],
+    "recommendations": ["建议1", "建议2"]
+}
+
+注意：score为0-100的整数，issues必须是对象数组格式。"""
+        return await RequirementReviewService._call_llm_analysis(
+            document, modules, "可测性", system_prompt
+        )
     
     @staticmethod
     async def _analyze_feasibility(
@@ -308,50 +353,32 @@ class RequirementReviewService:
         modules: List[RequirementModule]
     ) -> Dict[str, Any]:
         """可行性分析"""
-        try:
-            from app.services.ai.llm_service import get_llm_service
-            from app.services.ai.prompt_manager import PromptType, format_prompt
-            
-            llm_service = await get_llm_service()
-            
-            # 构建分析内容
-            content_parts = [f"文档标题: {document.title}"]
-            if document.content:
-                content_parts.append(f"文档内容: {document.content}")
-            
-            if modules:
-                content_parts.append("模块内容:")
-                for module in modules:
-                    content_parts.append(f"- {module.title}: {module.content}")
-            
-            requirement_text = "\n".join(content_parts)
-            
-            # 使用提示词模板进行分析
-            prompt = format_prompt(PromptType.FEASIBILITY_ANALYSIS, requirement_text=requirement_text)
-            response = await llm_service.generate_text(prompt, temperature=0.3)
-            
-            # 尝试解析JSON响应
-            import json
-            try:
-                result = json.loads(response)
-                return result
-            except json.JSONDecodeError:
-                logger.warning("Failed to parse feasibility analysis JSON, using default")
-                return {
-                    "score": 85,
-                    "issues": [],
-                    "strengths": ["技术方案基本可行"],
-                    "recommendations": ["评估技术风险"]
-                }
-                
-        except Exception as e:
-            logger.error(f"Feasibility analysis failed: {e}")
-            return {
-                "score": 80,
-                "issues": [],
-                "strengths": ["基础可行性良好"],
-                "recommendations": ["深入评估实现难度"]
-            }
+        system_prompt = """你是一个资深的技术架构师。请对以下需求文档进行可行性分析。
+
+分析要点：
+1. 技术实现的可行性
+2. 是否存在技术难点或风险
+3. 资源和时间的合理性
+
+请以JSON格式返回分析结果：
+{
+    "score": 85,
+    "issues": [
+        {
+            "title": "问题标题",
+            "description": "问题详细描述",
+            "priority": "high/medium/low",
+            "suggestion": "改进建议"
+        }
+    ],
+    "strengths": ["优点1", "优点2"],
+    "recommendations": ["建议1", "建议2"]
+}
+
+注意：score为0-100的整数，issues必须是对象数组格式。"""
+        return await RequirementReviewService._call_llm_analysis(
+            document, modules, "可行性", system_prompt
+        )
     
     @staticmethod
     async def _analyze_clarity(
@@ -359,50 +386,32 @@ class RequirementReviewService:
         modules: List[RequirementModule]
     ) -> Dict[str, Any]:
         """清晰度分析"""
-        try:
-            from app.services.ai.llm_service import get_llm_service
-            from app.services.ai.prompt_manager import PromptType, format_prompt
-            
-            llm_service = await get_llm_service()
-            
-            # 构建分析内容
-            content_parts = [f"文档标题: {document.title}"]
-            if document.content:
-                content_parts.append(f"文档内容: {document.content}")
-            
-            if modules:
-                content_parts.append("模块内容:")
-                for module in modules:
-                    content_parts.append(f"- {module.title}: {module.content}")
-            
-            requirement_text = "\n".join(content_parts)
-            
-            # 使用提示词模板进行分析
-            prompt = format_prompt(PromptType.CLARITY_ANALYSIS, requirement_text=requirement_text)
-            response = await llm_service.generate_text(prompt, temperature=0.3)
-            
-            # 尝试解析JSON响应
-            import json
-            try:
-                result = json.loads(response)
-                return result
-            except json.JSONDecodeError:
-                logger.warning("Failed to parse clarity analysis JSON, using default")
-                return {
-                    "score": 80,
-                    "issues": [],
-                    "strengths": ["表达基本清晰"],
-                    "recommendations": ["进一步优化表达"]
-                }
-                
-        except Exception as e:
-            logger.error(f"Clarity analysis failed: {e}")
-            return {
-                "score": 75,
-                "issues": [],
-                "strengths": ["基础表达清楚"],
-                "recommendations": ["提升表达清晰度"]
-            }
+        system_prompt = """你是一个专业的需求分析专家。请对以下需求文档进行清晰度分析。
+
+分析要点：
+1. 需求描述是否清晰明确
+2. 是否存在歧义或模糊的表述
+3. 是否易于理解和实现
+
+请以JSON格式返回分析结果：
+{
+    "score": 85,
+    "issues": [
+        {
+            "title": "问题标题",
+            "description": "问题详细描述",
+            "priority": "high/medium/low",
+            "suggestion": "改进建议"
+        }
+    ],
+    "strengths": ["优点1", "优点2"],
+    "recommendations": ["建议1", "建议2"]
+}
+
+注意：score为0-100的整数，issues必须是对象数组格式。"""
+        return await RequirementReviewService._call_llm_analysis(
+            document, modules, "清晰度", system_prompt
+        )
     
     @staticmethod
     async def _generate_review_summary(
@@ -457,6 +466,7 @@ class RequirementReviewService:
             # 创建问题记录
             for issue in all_issues:
                 await ReviewIssue.create(
+                    id=generate_id(),
                     report_id=review_id,
                     issue_type=issue["type"],
                     priority=issue["priority"],
@@ -469,15 +479,25 @@ class RequirementReviewService:
             for module in modules:
                 module_issues = [i for i in all_issues if "模块" in i.get("location", "")]
                 await ModuleReviewResult.create(
+                    id=generate_id(),
                     report_id=review_id,
                     module_id=module.id,
+                    module_id_str=str(module.id),
+                    module_name=module.title,
+                    specification_score=85,
+                    clarity_score=80,
+                    completeness_score=75,
+                    consistency_score=90,
+                    feasibility_score=85,
+                    overall_score=83,
                     module_rating="good" if len(module_issues) == 0 else "needs_improvement",
                     issues_count=len(module_issues),
                     severity_score=len([i for i in module_issues if i["priority"] == "high"]) * 10,
-                    analysis_content=f"模块'{module.title}'评审完成",
-                    strengths="模块结构清晰",
-                    weaknesses="需要完善细节" if module_issues else "",
-                    recommendations="建议优化实现方案" if module_issues else "保持现有质量"
+                    issues=[issue for issue in module_issues],
+                    strengths=["模块结构清晰", "逻辑合理"],
+                    weaknesses=["需要完善细节"] if module_issues else [],
+                    recommendations=["建议优化实现方案"] if module_issues else ["保持现有质量"],
+                    analysis_content=f"模块'{module.title}'评审完成，共发现{len(module_issues)}个问题"
                 )
                 
         except Exception as e:

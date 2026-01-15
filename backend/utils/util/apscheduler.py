@@ -8,7 +8,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler as _AsyncIOScheduler
 from tortoise import Tortoise
 from loguru import logger as loguru_logger
 
-from config import main_server_host
+from app.configs.config import main_server_host
 from utils.parse.parse_cron import parse_cron
 from utils.util.file_util import LOG_ADDRESS
 

@@ -5,7 +5,7 @@ import io
 import platform
 import shutil
 
-from config import basedir
+from app.configs.config import basedir
 from utils.variables.content_type import CONTENT_TYPE
 
 # 各模块的路径

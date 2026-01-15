@@ -1,8 +1,16 @@
 ﻿<template>
   <div class="agent-execution">
     <el-card class="page-header">
-      <h2>Agent智能执行</h2>
-      <p>基于LangGraph的多步骤智能推理和任务执行系统</p>
+      <div class="header-content">
+        <el-button @click="goBack" style="margin-right: 16px;">
+          <el-icon><ArrowLeft /></el-icon>
+          返回
+        </el-button>
+        <div>
+          <h2>Agent智能执行</h2>
+          <p>基于LangGraph的多步骤智能推理和任务执行系统</p>
+        </div>
+      </div>
     </el-card>
 
     <el-row :gutter="20">
@@ -226,10 +234,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Loading } from '@element-plus/icons-vue'
-import { useRoute } from 'vue-router'
+import { Loading, ArrowLeft } from '@element-plus/icons-vue'
+import { useRoute, useRouter } from 'vue-router'
 import { advancedFeaturesApi } from '@/api/aitestrebort/advanced-features'
 import type { 
   AgentExecutionRequest, 
@@ -238,7 +246,22 @@ import type {
 } from '@/api/aitestrebort/advanced-features'
 
 const route = useRoute()
+const router = useRouter()
 const projectId = Number(route.params.projectId)
+
+// 计算返回路径
+const backPath = computed(() => {
+  const from = route.query.from as string
+  if (from === 'testcase') {
+    return `/aitestrebort/project/${projectId}/testcase`
+  }
+  return '/aitestrebort/project'
+})
+
+// 返回方法
+const goBack = () => {
+  router.push(backPath.value)
+}
 
 // 响应式数据
 const executing = ref(false)
@@ -456,6 +479,11 @@ onMounted(() => {
 
 .page-header {
   margin-bottom: 20px;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
 }
 
 .page-header h2 {

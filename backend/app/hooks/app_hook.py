@@ -1,7 +1,7 @@
 ﻿from tortoise import Tortoise
 from tortoise.contrib.fastapi import register_tortoise
 
-import config
+from app.configs import config
 from utils.logs.log import logger
 from utils.message.send_report import send_server_status
 

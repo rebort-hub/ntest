@@ -251,7 +251,7 @@ const themeConfig = reactive({
   showTabs: false, // 标签页显示状态，默认关闭
   isGrayscale: false,
   isInvert: false,
-  isWartermark: false,
+  isWartermark: true,
   wartermarkText: 'N-Tester平台',
 });
 

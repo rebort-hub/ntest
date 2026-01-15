@@ -1,8 +1,16 @@
 ﻿<template>
   <div class="quality-assessment">
     <el-card class="page-header">
-      <h2>质量评估系统</h2>
-      <p>基于多维度指标对测试用例、需求文档等内容进行智能质量评估</p>
+      <div class="header-content">
+        <el-button @click="goBack" style="margin-right: 16px;">
+          <el-icon><ArrowLeft /></el-icon>
+          返回
+        </el-button>
+        <div>
+          <h2>质量评估系统</h2>
+          <p>基于多维度指标对测试用例、需求文档等内容进行智能质量评估</p>
+        </div>
+      </div>
     </el-card>
 
     <el-row :gutter="20">
@@ -279,8 +287,8 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Warning } from '@element-plus/icons-vue'
-import { useRoute } from 'vue-router'
+import { Warning, ArrowLeft } from '@element-plus/icons-vue'
+import { useRoute, useRouter } from 'vue-router'
 import { advancedFeaturesApi } from '@/api/aitestrebort/advanced-features'
 import type { 
   QualityAssessmentRequest,
@@ -289,7 +297,22 @@ import type {
 } from '@/api/aitestrebort/advanced-features'
 
 const route = useRoute()
+const router = useRouter()
 const projectId = Number(route.params.projectId)
+
+// 计算返回路径
+const backPath = computed(() => {
+  const from = route.query.from as string
+  if (from === 'testcase') {
+    return `/aitestrebort/project/${projectId}/testcase`
+  }
+  return '/aitestrebort/project'
+})
+
+// 返回方法
+const goBack = () => {
+  router.push(backPath.value)
+}
 
 // 响应式数据
 const assessmentLoading = ref(false)
@@ -537,6 +560,11 @@ onMounted(() => {
 
 .page-header {
   margin-bottom: 20px;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
 }
 
 .page-header h2 {

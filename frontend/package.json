@@ -17,6 +17,8 @@
     "@element-plus/icons": "0.0.11",
     "@fingerprintjs/fingerprintjs": "^5.0.1",
     "@icon-park/vue-next": "1.4.2",
+    "@logicflow/core": "^2.1.8",
+    "@logicflow/extension": "^2.1.10",
     "@types/marked": "^5.0.2",
     "@vueuse/core": "8.9.4",
     "ace-builds": "1.36.3",

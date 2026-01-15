@@ -3,7 +3,7 @@ from selenium.webdriver.common.keys import Keys
 
 from ...models.autotest.model_factory import ApiCase, ApiStep, AppCase, AppStep, UiCase, UiStep
 from ...schemas.autotest import step as schema
-from config import ui_action_mapping_list, ui_assert_mapping_list, ui_extract_mapping_list
+from app.configs.config import ui_action_mapping_list, ui_assert_mapping_list, ui_extract_mapping_list
 
 async def get_step_list(request: Request, form: schema.GetStepListForm = Depends()):
     case_model, step_model = ApiCase, ApiStep

@@ -3,7 +3,7 @@ import httpx
 
 from ..base_model import BaseModel, fields, pydantic_model_creator
 from app.schemas.enums import SendReportTypeEnum, ReceiveTypeEnum, DataStatusEnum
-from config import job_server_host
+from app.configs.config import job_server_host
 
 
 class BaseTask(BaseModel):

@@ -47,9 +47,9 @@ import appLink from './Link.vue'
 // 导入 Element Plus 图标 - 使用确定存在的图标
 import {
   Setting, HomeFilled, User, UserFilled, DataAnalysis, 
-  Document, Folder, Calendar, Warning, Key,CreditCard,
-  Tools, Connection, Bell, Menu as MenuIcon,FolderOpened,Refrigerator,
-  Operation, Monitor, List, Grid, Microphone
+  Document, Folder, Calendar, Warning, Key, CreditCard,Box,
+  Tools, Connection, Bell, Menu as MenuIcon, FolderOpened, Refrigerator,
+  Operation, Monitor, List, Grid, Microphone, Share, Histogram
 } from '@element-plus/icons-vue'
 import { isBackMenu } from '@/config'
 
@@ -68,9 +68,9 @@ export default defineComponent({
   components: {
     appLink,
     Setting, HomeFilled, User, UserFilled, DataAnalysis, 
-    Document, Folder, Calendar, Warning, Key, 
-    Tools, Connection, Bell, MenuIcon,
-    Operation, Monitor, List, Grid, Microphone
+    Document, Folder, Calendar, Warning, Key, CreditCard,
+    Tools, Connection, Bell, MenuIcon,Box,
+    Operation, Monitor, List, Grid, Microphone, Share, Histogram
   },
   setup(props) {
     const menu = props.menu
@@ -164,7 +164,14 @@ export default defineComponent({
         'Microphone': 'Microphone',
         'FolderOpened':'FolderOpened',
         'Refrigerator':'Refrigerator',
-        
+        'Share':'Share',
+        'Link':'Link',
+        'Box':'Box',
+        'Connection':'Connection',
+
+        // 流程图管理
+        'flowChart': 'Histogram',
+
         // 其他
         'api': 'Connection',
         'android': 'Monitor',

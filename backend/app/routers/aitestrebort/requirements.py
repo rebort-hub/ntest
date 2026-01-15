@@ -8,6 +8,7 @@ import logging
 
 from app.routers.base_view import APIRouter
 from app.services.aitestrebort.requirements_service import RequirementService
+from app.models.aitestrebort.requirements import RequirementModule
 from app.schemas.aitestrebort.requirements import (
     RequirementDocumentCreate, RequirementDocumentUpdate, RequirementDocumentResponse,
     RequirementDocumentDetail, RequirementDocumentListResponse,
@@ -15,7 +16,8 @@ from app.schemas.aitestrebort.requirements import (
     RequirementListResponse, RequirementSearchRequest,
     RequirementStatistics, ProjectStatistics,
     RequirementUploadRequest, DocumentSplitRequest,
-    ReviewRequest, ReviewReportResponse, ReviewProgressResponse
+    ReviewRequest, ReviewReportResponse, ReviewProgressResponse,
+    ReviewIssueResponse, ReviewIssueUpdate
 )
 
 logger = logging.getLogger(__name__)
@@ -211,14 +213,32 @@ async def get_requirement_document(
     """获取需求文档详情"""
     try:
         service = get_requirement_service()
-        document = await service.get_requirement_document(document_id)
+        document = await service.get_requirement_document(str(document_id))
         
         # 检查项目权限
         if document.project_id != project_id:
             return request.app.error(msg="无权限访问此文档", code=403)
         
-        result = RequirementDocumentDetail.model_validate(document.__dict__)
-        return request.app.get_success(data=result.model_dump())
+        # 直接构建返回数据，确保包含所有字段
+        result = {
+            "id": str(document.id),
+            "project_id": document.project_id,
+            "title": document.title,
+            "description": document.description,
+            "document_type": document.document_type,
+            "content": document.content,  # 确保包含content字段
+            "status": document.status,
+            "version": document.version,
+            "is_latest": document.is_latest,
+            "file_path": document.file_path,
+            "uploader_id": document.uploader_id,
+            "uploaded_at": document.uploaded_at.isoformat() if document.uploaded_at else None,
+            "updated_at": document.updated_at.isoformat() if document.updated_at else None,
+            "word_count": document.word_count,
+            "page_count": document.page_count
+        }
+        
+        return request.app.get_success(data=result)
         
     except Exception as e:
         logger.error(f"获取需求文档详情失败: {e}")
@@ -235,7 +255,7 @@ async def update_requirement_document(
     try:
         service = get_requirement_service()
         # 检查文档是否属于该项目
-        document = await service.get_requirement_document(document_id)
+        document = await service.get_requirement_document(str(document_id))
         if document.project_id != project_id:
             raise HTTPException(status_code=403, detail="无权限访问此文档")
         
@@ -259,7 +279,7 @@ async def delete_requirement_document(
     try:
         service = get_requirement_service()
         # 检查文档是否属于该项目
-        document = await service.get_requirement_document(document_id)
+        document = await service.get_requirement_document(str(document_id))
         if document.project_id != project_id:
             return request.app.error(msg="无权限访问此文档", code=403)
         
@@ -292,7 +312,11 @@ async def create_requirement(
             user_name="测试用户"  # TODO: 从认证中获取用户名
         )
         
-        result = RequirementResponse.model_validate(requirement.__dict__)
+        # 确保UUID转换为字符串
+        req_dict = requirement.__dict__.copy()
+        if 'id' in req_dict and req_dict['id'] is not None:
+            req_dict['id'] = str(req_dict['id'])
+        result = RequirementResponse.model_validate(req_dict)
         return request.app.post_success(data=result.model_dump())
         
     except Exception as e:
@@ -325,7 +349,15 @@ async def get_requirements(
         
         requirements, total = await service.get_requirements(project_id, search_params)
         
-        items = [RequirementResponse.model_validate(req.__dict__) for req in requirements]
+        # 将需求对象转换为响应模型，确保UUID转换为字符串
+        items = []
+        for req in requirements:
+            req_dict = req.__dict__.copy()
+            # 确保id字段是字符串类型
+            if 'id' in req_dict and req_dict['id'] is not None:
+                req_dict['id'] = str(req_dict['id'])
+            items.append(RequirementResponse.model_validate(req_dict))
+        
         pages = (total + page_size - 1) // page_size
         
         result = RequirementListResponse(
@@ -358,7 +390,11 @@ async def get_requirement(
         if requirement.project_id != project_id:
             return request.app.error(msg="无权限访问此需求", code=403)
         
-        result = RequirementResponse.model_validate(requirement.__dict__)
+        # 确保UUID转换为字符串
+        req_dict = requirement.__dict__.copy()
+        if 'id' in req_dict and req_dict['id'] is not None:
+            req_dict['id'] = str(req_dict['id'])
+        result = RequirementResponse.model_validate(req_dict)
         return request.app.get_success(data=result.model_dump())
         
     except Exception as e:
@@ -382,7 +418,12 @@ async def update_requirement(
             return request.app.error(msg="无权限访问此需求", code=403)
         
         updated_requirement = await service.update_requirement(requirement_id, update_data)
-        result = RequirementResponse.model_validate(updated_requirement.__dict__)
+        
+        # 确保UUID转换为字符串
+        req_dict = updated_requirement.__dict__.copy()
+        if 'id' in req_dict and req_dict['id'] is not None:
+            req_dict['id'] = str(req_dict['id'])
+        result = RequirementResponse.model_validate(req_dict)
         return request.app.success(msg="需求更新成功", data=result.model_dump())
         
     except Exception as e:
@@ -476,6 +517,7 @@ async def get_project_statistics(
 
 @router.post("/projects/{project_id}/documents/{document_id}/split-modules")
 async def split_document_modules(
+    request: Request,
     project_id: int,
     document_id: uuid.UUID,
     split_request: DocumentSplitRequest
@@ -484,22 +526,89 @@ async def split_document_modules(
     try:
         service = get_requirement_service()
         # 检查文档是否属于该项目
-        document = await service.get_requirement_document(document_id)
+        document = await service.get_requirement_document(str(document_id))
         if document.project_id != project_id:
-            raise HTTPException(status_code=403, detail="无权限访问此文档")
+            return request.app.error(msg="无权限访问此文档", code=403)
         
-        # TODO: 实现模块拆分逻辑
-        return {
-            "message": "模块拆分功能开发中",
+        # 执行模块拆分
+        modules = await service.split_document_modules(
+            document_id=document_id,
+            split_options=split_request.model_dump()
+        )
+        
+        # 构建返回结果
+        result = {
+            "message": "模块拆分成功",
             "document_id": str(document_id),
-            "split_options": split_request.model_dump()
+            "total_modules": len(modules),
+            "modules": [
+                {
+                    "id": str(module.id),
+                    "title": module.title,
+                    "content_length": len(module.content) if module.content else 0,
+                    "order": module.order_num,
+                    "confidence_score": module.confidence_score
+                }
+                for module in modules
+            ],
+            "suggestions": [
+                "请检查模块拆分是否合理",
+                "如果不满意可以选择其他拆分级别重新拆分",
+                "可以手动调整模块边界和内容",
+                "确认无误后可开始评审分析"
+            ]
         }
         
-    except HTTPException:
-        raise
+        return request.app.post_success(data=result)
+        
     except Exception as e:
         logger.error(f"模块拆分失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return request.app.error(msg=f"模块拆分失败: {str(e)}")
+
+
+@router.get("/projects/{project_id}/documents/{document_id}/modules")
+async def get_document_modules(
+    request: Request,
+    project_id: int,
+    document_id: uuid.UUID
+):
+    """获取文档的模块列表"""
+    try:
+        service = get_requirement_service()
+        # 检查文档是否属于该项目
+        document = await service.get_requirement_document(str(document_id))
+        if document.project_id != project_id:
+            return request.app.error(msg="无权限访问此文档", code=403)
+        
+        # 获取模块列表
+        modules = await RequirementModule.filter(document_id=document_id).order_by('order_num').all()
+        
+        # 构建返回结果
+        result = {
+            "document_id": str(document_id),
+            "total_modules": len(modules),
+            "modules": [
+                {
+                    "id": str(module.id),
+                    "title": module.title,
+                    "content": module.content,
+                    "content_length": len(module.content) if module.content else 0,
+                    "order_num": module.order_num,
+                    "confidence_score": module.confidence_score,
+                    "start_page": module.start_page,
+                    "end_page": module.end_page,
+                    "is_auto_generated": module.is_auto_generated,
+                    "created_at": module.created_at.isoformat() if module.created_at else None
+                }
+                for module in modules
+            ]
+        }
+        
+        return request.app.get_success(data=result)
+        
+    except Exception as e:
+        logger.error(f"获取模块列表失败: {e}")
+        return request.app.error(msg=f"获取模块列表失败: {str(e)}")
 
 
 @router.post("/projects/{project_id}/documents/{document_id}/start-review")
@@ -513,13 +622,13 @@ async def start_document_review(
     try:
         service = get_requirement_service()
         # 检查文档是否属于该项目
-        document = await service.get_requirement_document(document_id)
+        document = await service.get_requirement_document(str(document_id))
         if document.project_id != project_id:
             raise HTTPException(status_code=403, detail="无权限访问此文档")
         
         # 开始评审
         review_report = await service.start_document_review(
-            document_id=document_id,
+            document_id=str(document_id),  # 转换为字符串
             review_type=review_data.review_type if review_data else "comprehensive",
             focus_areas=review_data.focus_areas if review_data else None,
             user_id=1  # TODO: 从认证中获取用户ID
@@ -609,3 +718,40 @@ async def get_review_progress(
     except Exception as e:
         logger.error(f"获取评审进度失败: {e}")
         return request.app.error(msg=f"获取评审进度失败: {str(e)}")
+
+
+@router.get("/reviews/{review_id}/issues")
+async def get_review_issues(
+    request: Request,
+    review_id: uuid.UUID
+):
+    """获取评审问题列表"""
+    try:
+        service = get_requirement_service()
+        issues = await service.get_review_issues(review_id)
+        
+        result = [ReviewIssueResponse.model_validate(issue.__dict__) for issue in issues]
+        return request.app.get_success(data=[item.model_dump() for item in result])
+        
+    except Exception as e:
+        logger.error(f"获取评审问题列表失败: {e}")
+        return request.app.error(msg=f"获取评审问题列表失败: {str(e)}")
+
+
+@router.put("/issues/{issue_id}")
+async def update_issue(
+    request: Request,
+    issue_id: uuid.UUID,
+    issue_data: ReviewIssueUpdate
+):
+    """更新问题状态"""
+    try:
+        service = get_requirement_service()
+        issue = await service.update_issue(issue_id, issue_data.model_dump(exclude_unset=True))
+        
+        result = ReviewIssueResponse.model_validate(issue.__dict__)
+        return request.app.get_success(data=result.model_dump())
+        
+    except Exception as e:
+        logger.error(f"更新问题状态失败: {e}")
+        return request.app.error(msg=f"更新问题状态失败: {str(e)}")

@@ -1,6 +1,9 @@
 ﻿<template>
   <div class="requirement-review">
     <div class="page-header">
+      <div class="header-actions">
+        <el-button @click="goBack" icon="ArrowLeft">返回需求管理</el-button>
+      </div>
       <h2>需求评审</h2>
       <p>AI驱动的需求文档智能评审系统</p>
     </div>
@@ -75,18 +78,18 @@
       <el-form :model="reviewConfig" label-width="120px">
         <el-form-item label="评审类型">
           <el-radio-group v-model="reviewConfig.review_type">
-            <el-radio value="comprehensive">全面评审</el-radio>
-            <el-radio value="direct">直接评审</el-radio>
+            <el-radio label="comprehensive">全面评审</el-radio>
+            <el-radio label="direct">直接评审</el-radio>
           </el-radio-group>
         </el-form-item>
 
         <el-form-item label="重点关注" v-if="reviewConfig.review_type === 'comprehensive'">
           <el-checkbox-group v-model="reviewConfig.focus_areas">
-            <el-checkbox value="completeness">完整性</el-checkbox>
-            <el-checkbox value="consistency">一致性</el-checkbox>
-            <el-checkbox value="testability">可测性</el-checkbox>
-            <el-checkbox value="feasibility">可行性</el-checkbox>
-            <el-checkbox value="clarity">清晰度</el-checkbox>
+            <el-checkbox label="completeness">完整性</el-checkbox>
+            <el-checkbox label="consistency">一致性</el-checkbox>
+            <el-checkbox label="testability">可测性</el-checkbox>
+            <el-checkbox label="feasibility">可行性</el-checkbox>
+            <el-checkbox label="clarity">清晰度</el-checkbox>
           </el-checkbox-group>
         </el-form-item>
 
@@ -153,10 +156,14 @@
         v-loading="resultsLoading"
         @row-click="viewReviewDetail"
       >
-        <el-table-column prop="document_title" label="文档标题" min-width="200" />
-        <el-table-column prop="review_date" label="评审时间" width="180">
+        <el-table-column label="文档标题" min-width="200">
           <template #default="{ row }">
-            {{ formatDateTime(row.review_date) }}
+            {{ getDocumentTitle(row.document_id) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="created_at" label="评审时间" width="180">
+          <template #default="{ row }">
+            {{ formatDateTime(row.created_at) }}
           </template>
         </el-table-column>
         <el-table-column prop="overall_rating" label="总体评价" width="120">
@@ -190,14 +197,27 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="total_issues" label="问题数" width="100">
+        <el-table-column label="问题数" width="120">
           <template #default="{ row }">
-            <el-badge 
-              :value="row.total_issues" 
-              :type="row.total_issues > 0 ? 'danger' : 'success'"
-            >
-              <span>{{ row.total_issues }}</span>
-            </el-badge>
+            <div class="issues-display">
+              <el-tag 
+                :type="row.total_issues > 0 ? 'danger' : 'success'"
+                size="small"
+              >
+                总计: {{ row.total_issues }}
+              </el-tag>
+              <div v-if="row.total_issues > 0" class="issue-breakdown">
+                <el-tag type="danger" size="small" v-if="row.high_priority_issues > 0">
+                  高: {{ row.high_priority_issues }}
+                </el-tag>
+                <el-tag type="warning" size="small" v-if="row.medium_priority_issues > 0">
+                  中: {{ row.medium_priority_issues }}
+                </el-tag>
+                <el-tag type="info" size="small" v-if="row.low_priority_issues > 0">
+                  低: {{ row.low_priority_issues }}
+                </el-tag>
+              </div>
+            </div>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
@@ -225,11 +245,16 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Refresh } from '@element-plus/icons-vue'
+import { Refresh, ArrowLeft } from '@element-plus/icons-vue'
 import ReviewDetailDialog from './components/ReviewDetailDialog.vue'
-import { requirementReviewApi } from '@/api/aitestrebort/requirements'
+import { requirementReviewApi, requirementDocumentApi } from '@/api/aitestrebort/requirements'
 import { formatDateTime, formatTime } from '@/utils/format'
+
+// 路由
+const route = useRoute()
+const router = useRouter()
 
 // 响应式数据
 const documents = ref([])
@@ -250,8 +275,7 @@ const reviewConfig = reactive({
 
 // 计算属性
 const projectId = computed(() => {
-  // 从路由或store获取项目ID
-  return 1 // 临时硬编码
+  return parseInt(route.params.projectId) || 1
 })
 
 // 生命周期
@@ -265,8 +289,8 @@ onMounted(() => {
 const loadDocuments = async () => {
   documentsLoading.value = true
   try {
-    const response = await requirementReviewApi.getDocuments(projectId.value)
-    documents.value = response.data || []
+    const response = await requirementDocumentApi.getDocuments(projectId.value)
+    documents.value = response.data?.items || []
   } catch (error) {
     ElMessage.error('加载文档列表失败: ' + error.message)
   } finally {
@@ -278,7 +302,7 @@ const loadReviewResults = async () => {
   resultsLoading.value = true
   try {
     const response = await requirementReviewApi.getReviewResults(projectId.value)
-    reviewResults.value = response.data || []
+    reviewResults.value = response.data?.items || []
   } catch (error) {
     ElMessage.error('加载评审结果失败: ' + error.message)
   } finally {
@@ -291,6 +315,12 @@ const handleDocumentSelection = (selection) => {
 }
 
 const startReview = async (document) => {
+  // 检查文档状态
+  if (!canStartReview(document.status)) {
+    ElMessage.warning(getStatusMessage(document.status))
+    return
+  }
+
   try {
     await ElMessageBox.confirm(
       `确定要开始评审文档"${document.title}"吗？`,
@@ -302,7 +332,7 @@ const startReview = async (document) => {
       }
     )
 
-    const response = await requirementReviewApi.startReview(
+    const response = await requirementDocumentApi.startReview(
       projectId.value,
       document.id,
       { review_type: 'comprehensive' }
@@ -323,7 +353,18 @@ const startReview = async (document) => {
 
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('开始评审失败: ' + error.message)
+      // 提取更友好的错误消息
+      let errorMessage = '开始评审失败'
+      
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
+      ElMessage.error(errorMessage)
     }
   }
 }
@@ -334,17 +375,28 @@ const batchStartReview = async () => {
     return
   }
 
+  // 检查所有选中文档的状态
+  const invalidDocuments = selectedDocuments.value.filter(doc => !canStartReview(doc.status))
+  if (invalidDocuments.length > 0) {
+    const invalidTitles = invalidDocuments.map(doc => doc.title).join('、')
+    ElMessage.warning(`以下文档状态不允许评审：${invalidTitles}`)
+    return
+  }
+
   reviewStarting.value = true
   try {
     for (const document of selectedDocuments.value) {
-      const response = await requirementReviewApi.startReview({
-        document_id: document.id,
-        review_type: reviewConfig.review_type,
-        focus_areas: reviewConfig.focus_areas
-      })
+      const response = await requirementDocumentApi.startReview(
+        projectId.value,
+        document.id,
+        {
+          review_type: reviewConfig.review_type,
+          focus_areas: reviewConfig.focus_areas
+        }
+      )
 
       activeReviews.value.push({
-        review_id: response.data.review_id,
+        review_id: response.data.id || response.data.review_id,
         document_id: document.id,
         document_title: document.title,
         status: 'reviewing',
@@ -358,7 +410,18 @@ const batchStartReview = async () => {
     selectedDocuments.value = []
 
   } catch (error) {
-    ElMessage.error('批量评审失败: ' + error.message)
+    // 提取更友好的错误消息
+    let errorMessage = '批量评审失败'
+    
+    if (error.response?.data?.detail) {
+      errorMessage = error.response.data.detail
+    } else if (error.response?.data?.message) {
+      errorMessage = error.response.data.message
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+    
+    ElMessage.error(errorMessage)
   } finally {
     reviewStarting.value = false
   }
@@ -370,6 +433,12 @@ const startProgressPolling = () => {
 
     for (const review of activeReviews.value) {
       if (review.status === 'completed' || review.status === 'failed') continue
+      
+      // 检查review_id是否有效
+      if (!review.review_id || review.review_id === 'undefined') {
+        console.warn('Invalid review_id:', review.review_id)
+        continue
+      }
 
       try {
         const response = await requirementReviewApi.getReviewProgress(review.review_id)
@@ -399,8 +468,8 @@ const startProgressPolling = () => {
 }
 
 const viewDocument = (document) => {
-  // 跳转到文档详情页面
-  window.open(`/aitestrebort/requirements/documents/${document.id}`, '_blank')
+  // 使用内嵌路由跳转到文档详情页面
+  router.push(`/aitestrebort/project/${projectId.value}/requirements/${document.id}`)
 }
 
 const viewReviewDetail = (review) => {
@@ -412,8 +481,34 @@ const refreshDocuments = () => {
   loadDocuments()
 }
 
+const goBack = () => {
+  router.push(`/aitestrebort/project/${projectId.value}/requirements`)
+}
+
 const refreshResults = () => {
   loadReviewResults()
+}
+
+const getDocumentTitle = (documentId) => {
+  const document = documents.value.find(doc => doc.id === documentId)
+  return document ? document.title : '未知文档'
+}
+
+const canStartReview = (status) => {
+  return ['ready_for_review'].includes(status)
+}
+
+const getStatusMessage = (status) => {
+  const messages = {
+    'uploaded': '文档已上传，请先进行模块拆分后再开始评审',
+    'processing': '文档正在处理中，请稍后再试',
+    'module_split': '文档已拆分模块，请等待准备评审',
+    'user_reviewing': '文档正在用户审核中，请稍后再试',
+    'reviewing': '文档正在评审中，请稍后再试',
+    'review_completed': '文档已完成评审，无需重复评审',
+    'failed': '文档处理失败，请重新上传'
+  }
+  return messages[status] || `文档状态 ${status} 不允许开始评审`
 }
 
 // 辅助方法
@@ -444,6 +539,8 @@ const getStatusText = (status) => {
   const texts = {
     uploaded: '已上传',
     processing: '处理中',
+    module_split: '已拆分',
+    user_reviewing: '用户审核中',
     ready_for_review: '待评审',
     reviewing: '评审中',
     review_completed: '评审完成',
@@ -502,6 +599,10 @@ const getRatingText = (rating) => {
 
 .page-header {
   margin-bottom: 20px;
+}
+
+.header-actions {
+  margin-bottom: 16px;
 }
 
 .page-header h2 {
@@ -586,5 +687,21 @@ const getRatingText = (rating) => {
   width: 30px;
   text-align: right;
   font-weight: 500;
+}
+
+.issues-display {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.issue-breakdown {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.issue-breakdown .el-tag {
+  font-size: 10px;
 }
 </style>

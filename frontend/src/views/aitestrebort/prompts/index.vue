@@ -53,74 +53,75 @@
         <el-col 
           v-for="prompt in filteredPrompts" 
           :key="prompt.id" 
-          :span="8" 
+          :span="6" 
           style="margin-bottom: 16px"
         >
           <el-card class="prompt-card" shadow="hover">
-            <template #header>
-              <div class="card-header">
-                <div class="prompt-info">
-                  <h3 class="prompt-name">{{ prompt.name }}</h3>
-                  <div class="prompt-meta">
-                    <el-tag :type="getTypeTagType(prompt.prompt_type)" size="small">
-                      {{ getTypeLabel(prompt.prompt_type) }}
-                    </el-tag>
-                    <el-tag v-if="prompt.is_default" type="success" size="small">
-                      默认
-                    </el-tag>
-                    <el-tag :type="prompt.is_active ? 'success' : 'danger'" size="small">
-                      {{ prompt.is_active ? '启用' : '禁用' }}
-                    </el-tag>
-                  </div>
-                </div>
-                <div class="card-actions">
-                  <el-dropdown @command="(command) => handleCommand(command, prompt)">
-                    <el-button type="text" size="small">
-                      <el-icon><MoreFilled /></el-icon>
-                    </el-button>
-                    <template #dropdown>
-                      <el-dropdown-menu>
-                        <el-dropdown-item command="edit">编辑</el-dropdown-item>
-                        <el-dropdown-item command="duplicate">复制</el-dropdown-item>
-                        <el-dropdown-item 
-                          v-if="!prompt.is_default && prompt.prompt_type === 'general'"
-                          command="setDefault"
-                        >
-                          设为默认
-                        </el-dropdown-item>
-                        <el-dropdown-item 
-                          v-if="prompt.is_default"
-                          command="clearDefault"
-                        >
-                          取消默认
-                        </el-dropdown-item>
-                        <el-dropdown-item command="delete" divided>删除</el-dropdown-item>
-                      </el-dropdown-menu>
-                    </template>
-                  </el-dropdown>
-                </div>
-              </div>
-            </template>
-            
-            <div class="prompt-content">
-              <p v-if="prompt.description" class="prompt-description">
-                {{ prompt.description }}
-              </p>
-              <div class="prompt-preview">
-                {{ truncateContent(prompt.content) }}
-              </div>
+            <div class="card-icon">
+              <el-icon :size="40" color="#409EFF">
+                <Document />
+              </el-icon>
             </div>
             
-            <template #footer>
-              <div class="prompt-footer">
-                <span class="created-time">
-                  创建于 {{ formatDate(prompt.created_at) }}
-                </span>
-                <span class="updated-time">
-                  更新于 {{ formatDate(prompt.updated_at) }}
-                </span>
+            <div class="card-content">
+              <h3 class="prompt-name">{{ prompt.name }}</h3>
+              
+              <div class="prompt-meta">
+                <el-tag :type="getTypeTagType(prompt.prompt_type)" size="small">
+                  {{ getTypeLabel(prompt.prompt_type) }}
+                </el-tag>
+                <el-tag v-if="prompt.is_default" type="success" size="small">
+                  默认
+                </el-tag>
               </div>
-            </template>
+              
+              <p v-if="prompt.description" class="prompt-description">
+                {{ truncateContent(prompt.description, 50) }}
+              </p>
+              
+              <div class="card-footer">
+                <span class="status-tag">
+                  <el-tag :type="prompt.is_active ? 'success' : 'info'" size="small">
+                    {{ prompt.is_active ? '启用' : '禁用' }}
+                  </el-tag>
+                </span>
+                <el-dropdown @command="(command) => handleCommand(command, prompt)" trigger="click">
+                  <el-button type="text" size="small" class="more-btn">
+                    <el-icon><MoreFilled /></el-icon>
+                  </el-button>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item command="edit">
+                        <el-icon><Edit /></el-icon>
+                        编辑
+                      </el-dropdown-item>
+                      <el-dropdown-item command="duplicate">
+                        <el-icon><CopyDocument /></el-icon>
+                        复制
+                      </el-dropdown-item>
+                      <el-dropdown-item 
+                        v-if="!prompt.is_default && prompt.prompt_type === 'general'"
+                        command="setDefault"
+                      >
+                        <el-icon><Star /></el-icon>
+                        设为默认
+                      </el-dropdown-item>
+                      <el-dropdown-item 
+                        v-if="prompt.is_default"
+                        command="clearDefault"
+                      >
+                        <el-icon><CircleClose /></el-icon>
+                        取消默认
+                      </el-dropdown-item>
+                      <el-dropdown-item command="delete" divided>
+                        <el-icon><Delete /></el-icon>
+                        删除
+                      </el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </div>
+            </div>
           </el-card>
         </el-col>
       </el-row>
@@ -211,7 +212,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Search, MoreFilled } from '@element-plus/icons-vue'
+import { Plus, Search, MoreFilled, Document, Edit, Delete, CopyDocument, Star, CircleClose } from '@element-plus/icons-vue'
 import { globalApi, type GlobalPrompt } from '@/api/aitestrebort/global'
 import { projectApi } from '@/api/aitestrebort/project'
 import { useRoute } from 'vue-router'
@@ -546,22 +547,29 @@ onMounted(async () => {
 }
 
 .prompt-card {
-  height: 100%;
-  transition: transform 0.2s;
+  height: 220px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
 }
 
 .prompt-card:hover {
   transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+.card-icon {
+  text-align: center;
+  padding: 20px 0 10px;
 }
 
-.prompt-info {
+.card-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px 16px;
 }
 
 .prompt-name {
@@ -571,45 +579,46 @@ onMounted(async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: #303133;
 }
 
 .prompt-meta {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
-}
-
-.card-actions {
-  margin-left: 8px;
-}
-
-.prompt-content {
-  min-height: 100px;
+  margin-bottom: 8px;
 }
 
 .prompt-description {
-  margin: 0 0 12px 0;
-  color: #606266;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.prompt-preview {
-  padding: 12px;
-  background-color: #f5f7fa;
-  border-radius: 4px;
-  font-size: 13px;
-  line-height: 1.6;
+  margin: 0;
   color: #909399;
-  white-space: pre-wrap;
-  word-break: break-word;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  flex: 1;
 }
 
-.prompt-footer {
+.card-footer {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
-  color: #909399;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #ebeef5;
+}
+
+.status-tag {
+  display: flex;
+  align-items: center;
+}
+
+.more-btn {
+  padding: 4px;
+  font-size: 16px;
 }
 
 .empty-state {
@@ -618,15 +627,24 @@ onMounted(async () => {
 }
 
 /* 响应式设计 */
+@media (max-width: 1600px) {
+  .prompt-list :deep(.el-col-6) {
+    max-width: 33.333333% !important;
+    flex: 0 0 33.333333% !important;
+  }
+}
+
 @media (max-width: 1200px) {
-  .prompt-list :deep(.el-col) {
-    width: 50% !important;
+  .prompt-list :deep(.el-col-6) {
+    max-width: 50% !important;
+    flex: 0 0 50% !important;
   }
 }
 
 @media (max-width: 768px) {
-  .prompt-list :deep(.el-col) {
-    width: 100% !important;
+  .prompt-list :deep(.el-col-6) {
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
   }
 }
 </style>

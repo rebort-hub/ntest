@@ -3,6 +3,10 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
+        <el-button @click="$router.push(`/aitestrebort/project/${projectId}/testcase`)" style="margin-right: 16px;">
+          <el-icon><ArrowLeft /></el-icon>
+          返回
+        </el-button>
         <el-breadcrumb separator="/">
           <el-breadcrumb-item @click="$router.push('/aitestrebort/project')">项目管理</el-breadcrumb-item>
           <el-breadcrumb-item @click="$router.push(`/aitestrebort/project/${projectId}/testcase`)">{{ projectName }}</el-breadcrumb-item>
@@ -370,7 +374,8 @@ import {
   Star,
   Folder,
   Select,
-  PieChart
+  PieChart,
+  ArrowLeft
 } from '@element-plus/icons-vue'
 import { aiGeneratorApi, type AIGenerateRequest, type TestCaseSuggestion, type CoverageAnalysis, type RequirementSource } from '@/api/aitestrebort/ai-generator'
 import { testcaseApi, type TestCaseModule, type CreateTestCaseData } from '@/api/aitestrebort/testcase'
@@ -878,6 +883,11 @@ onMounted(() => {
   margin-bottom: 20px;
   padding-bottom: 20px;
   border-bottom: 1px solid #ebeef5;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
 }
 
 .card-header {

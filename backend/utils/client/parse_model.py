@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from utils.util.file_util import FileUtil
 from utils.util.json_util import JsonUtil
-from config import assert_mapping, ui_assert_mapping_dict
+from app.configs.config import assert_mapping, ui_assert_mapping_dict
 from utils.client.test_runner.parser import extract_functions, parse_function, extract_variables
 
 

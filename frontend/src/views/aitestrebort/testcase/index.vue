@@ -3,6 +3,15 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
+        <el-button 
+          text 
+          @click="$router.push('/aitestrebort/project')"
+          class="back-button"
+        >
+          <el-icon><ArrowLeft /></el-icon>
+          返回
+        </el-button>
+        <el-divider direction="vertical" />
         <el-breadcrumb separator="/">
           <el-breadcrumb-item @click="$router.push('/aitestrebort/project')">项目管理</el-breadcrumb-item>
           <el-breadcrumb-item>{{ projectName }}</el-breadcrumb-item>
@@ -177,6 +186,10 @@
             <el-button type="success" @click="exportToExcel" :loading="exporting">
               <el-icon><Download /></el-icon>
               导出Excel
+            </el-button>
+            <el-button type="primary" @click="exportToXMind" :loading="exportingXMind">
+              <el-icon><Download /></el-icon>
+              导出XMind
             </el-button>
           </div>
 
@@ -487,7 +500,8 @@ import {
   EditPen,
   Download,
   PieChart,
-  Timer
+  Timer,
+  ArrowLeft
 } from '@element-plus/icons-vue'
 import { testcaseApi, type TestCase, type TestCaseModule, type CreateTestCaseData, type CreateModuleData } from '@/api/aitestrebort/testcase'
 import { projectApi } from '@/api/aitestrebort/project'
@@ -530,6 +544,7 @@ const loadProjectDetail = async () => {
 const loading = ref(false)
 const submitting = ref(false)
 const exporting = ref(false)
+const exportingXMind = ref(false)
 const showCreateDialog = ref(false)
 const showModuleDialog = ref(false)
 const showAIGenerateDialog = ref(false)
@@ -662,7 +677,11 @@ const handleSearch = () => {
 }
 
 const handleAdvancedFeature = (command: string) => {
-  router.push(`/aitestrebort/project/${projectId.value}/${command}`)
+  // 添加来源参数，标识从测试用例页面跳转
+  router.push({
+    path: `/aitestrebort/project/${projectId.value}/${command}`,
+    query: { from: 'testcase' }
+  })
 }
 
 const handleModuleClick = (module: TestCaseModule) => {
@@ -1081,6 +1100,60 @@ const exportToExcel = async () => {
   }
 }
 
+// XMind导出功能
+const exportToXMind = async () => {
+  if (testcases.value.length === 0) {
+    ElMessage.warning('没有数据可以导出')
+    return
+  }
+  
+  exportingXMind.value = true
+  
+  try {
+    // 调用后端API导出XMind，直接获取文件流
+    const response = await fetch(`/api/aitestrebort/projects/${projectId.value}/testcases/export/xmind`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      }
+    })
+    
+    if (!response.ok) {
+      throw new Error('导出失败')
+    }
+    
+    // 获取文件流并创建Blob
+    const blob = await response.blob()
+    
+    // 从响应头获取文件名，如果没有则使用默认名称
+    const contentDisposition = response.headers.get('content-disposition')
+    let filename = `${projectName.value}_testcases.xmind`
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1].replace(/['"]/g, '')
+      }
+    }
+    
+    // 创建下载链接
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    
+    ElMessage.success('XMind文件导出成功')
+  } catch (error) {
+    console.error('导出XMind失败:', error)
+    ElMessage.error('导出XMind失败')
+  } finally {
+    exportingXMind.value = false
+  }
+}
+
 // 清理Markdown标记的辅助函数
 const cleanMarkdown = (text: string): string => {
   if (!text) return ''
@@ -1154,6 +1227,27 @@ onMounted(() => {
   margin-bottom: 20px;
   padding-bottom: 20px;
   border-bottom: 1px solid #ebeef5;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.back-button {
+  font-size: 14px;
+  color: #606266;
+  padding: 8px 12px;
+}
+
+.back-button:hover {
+  color: var(--el-color-primary);
+  background-color: var(--el-color-primary-light-9);
+}
+
+.back-button .el-icon {
+  margin-right: 4px;
 }
 
 .module-tree-card {

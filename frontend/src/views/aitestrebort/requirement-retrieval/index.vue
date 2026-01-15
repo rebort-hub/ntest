@@ -1,8 +1,16 @@
 ﻿<template>
   <div class="requirement-retrieval">
     <el-card class="page-header">
-      <h2>智能需求检索</h2>
-      <p>基于知识库的需求文档检索和上下文感知生成系统</p>
+      <div class="header-content">
+        <el-button @click="goBack" style="margin-right: 16px;">
+          <el-icon><ArrowLeft /></el-icon>
+          返回
+        </el-button>
+        <div>
+          <h2>智能需求检索</h2>
+          <p>基于知识库的需求文档检索和上下文感知生成系统</p>
+        </div>
+      </div>
     </el-card>
 
     <el-row :gutter="20">
@@ -386,9 +394,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { ArrowLeft } from '@element-plus/icons-vue'
 import { advancedFeaturesApi } from '@/api/aitestrebort/advanced-features'
 import type { 
   RequirementRetrievalRequest,
@@ -398,7 +407,22 @@ import type {
 } from '@/api/aitestrebort/advanced-features'
 
 const route = useRoute()
+const router = useRouter()
 const projectId = Number(route.params.projectId)
+
+// 计算返回路径
+const backPath = computed(() => {
+  const from = route.query.from as string
+  if (from === 'testcase') {
+    return `/aitestrebort/project/${projectId}/testcase`
+  }
+  return '/aitestrebort/project'
+})
+
+// 返回方法
+const goBack = () => {
+  router.push(backPath.value)
+}
 
 // 响应式数据
 const searchLoading = ref(false)
@@ -571,6 +595,11 @@ onMounted(() => {
 
 .page-header {
   margin-bottom: 20px;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
 }
 
 .page-header h2 {

@@ -5,7 +5,7 @@
 from fastapi import APIRouter, HTTPException
 from tortoise import Tortoise
 from app.tools.db_compatibility import DatabaseCompatibility
-from config import tortoise_orm_conf
+from app.configs.config import tortoise_orm_conf
 
 router = APIRouter()
 

@@ -56,7 +56,7 @@ class DocumentStatus(str, Enum):
 
 class RequirementDocument(Model):
     """需求文档模型"""
-    id = fields.UUIDField(pk=True)
+    id = fields.CharField(max_length=36, pk=True)
     project_id = fields.IntField(description="项目ID")
     title = fields.CharField(max_length=200, description="文档标题")
     description = fields.TextField(null=True, description="文档描述")
@@ -70,12 +70,7 @@ class RequirementDocument(Model):
     # 版本管理
     version = fields.CharField(max_length=20, default="1.0", description="版本号")
     is_latest = fields.BooleanField(default=True, description="是否最新版本")
-    parent_document = fields.ForeignKeyField(
-        'test_platform.RequirementDocument', 
-        null=True, 
-        related_name='child_documents',
-        description="父文档"
-    )
+    parent_document_id = fields.CharField(max_length=36, null=True, description="父文档ID")
     
     # 元数据
     uploader_id = fields.IntField(null=True, description="上传人ID")
@@ -93,7 +88,7 @@ class RequirementDocument(Model):
 
 class RequirementModule(Model):
     """需求模块模型"""
-    id = fields.UUIDField(pk=True)
+    id = fields.CharField(max_length=36, pk=True)
     document = fields.ForeignKeyField(
         'test_platform.RequirementDocument',
         related_name='modules',
@@ -109,13 +104,8 @@ class RequirementModule(Model):
     end_position = fields.IntField(null=True, description="结束位置")
     
     # 排序和分组
-    order = fields.IntField(default=0, description="排序")
-    parent_module = fields.ForeignKeyField(
-        'test_platform.RequirementModule',
-        null=True,
-        related_name='sub_modules',
-        description="父模块"
-    )
+    order_num = fields.IntField(default=0, description="排序", db_column="order_num")
+    parent_module_id = fields.CharField(max_length=36, null=True, description="父模块ID")
     
     # AI分析信息
     is_auto_generated = fields.BooleanField(default=True, description="AI自动生成")
@@ -133,7 +123,7 @@ class RequirementModule(Model):
 
 class Requirement(Model):
     """需求模型 - 手动创建的需求"""
-    id = fields.UUIDField(pk=True)
+    id = fields.CharField(max_length=36, pk=True)
     project_id = fields.IntField(description="项目ID")
     title = fields.CharField(max_length=200, description="需求标题")
     description = fields.TextField(description="需求描述")
@@ -159,12 +149,8 @@ class Requirement(Model):
 
 class ReviewReport(Model):
     """评审报告模型"""
-    id = fields.UUIDField(pk=True)
-    document = fields.ForeignKeyField(
-        'test_platform.RequirementDocument',
-        related_name='review_reports',
-        description="评审文档"
-    )
+    id = fields.CharField(max_length=36, pk=True)
+    document_id = fields.CharField(max_length=36, description="评审文档ID")
     
     # 评审基本信息
     review_date = fields.DatetimeField(auto_now_add=True, description="评审时间")
@@ -203,18 +189,9 @@ class ReviewReport(Model):
 
 class ReviewIssue(Model):
     """评审问题模型"""
-    id = fields.UUIDField(pk=True)
-    report = fields.ForeignKeyField(
-        'test_platform.ReviewReport',
-        related_name='issues',
-        description="所属报告"
-    )
-    module = fields.ForeignKeyField(
-        'test_platform.RequirementModule',
-        null=True,
-        related_name='issues',
-        description="相关模块"
-    )
+    id = fields.CharField(max_length=36, pk=True)
+    report_id = fields.CharField(max_length=36, description="所属报告ID")
+    module_id = fields.CharField(max_length=36, null=True, description="相关模块ID")
     
     # 问题信息
     issue_type = fields.CharField(max_length=20, description="问题类型")
@@ -243,28 +220,35 @@ class ReviewIssue(Model):
 
 class ModuleReviewResult(Model):
     """模块评审结果模型"""
-    id = fields.UUIDField(pk=True)
-    report = fields.ForeignKeyField(
-        'test_platform.ReviewReport',
-        related_name='module_results',
-        description="所属报告"
-    )
-    module = fields.ForeignKeyField(
-        'test_platform.RequirementModule',
-        related_name='review_results',
-        description="评审模块"
-    )
+    id = fields.CharField(max_length=36, pk=True)
+    report_id = fields.CharField(max_length=36, description="所属报告ID")
+    module_id = fields.CharField(max_length=36, description="评审模块ID")
+    
+    # 模块基本信息
+    module_id_str = fields.CharField(max_length=100, null=True, description="模块ID字符串")
+    module_name = fields.CharField(max_length=200, null=True, description="模块名称")
+    
+    # 评审分数
+    specification_score = fields.IntField(default=0, description="规格说明评分")
+    clarity_score = fields.IntField(default=0, description="清晰度评分")
+    completeness_score = fields.IntField(default=0, description="完整性评分")
+    consistency_score = fields.IntField(default=0, description="一致性评分")
+    feasibility_score = fields.IntField(default=0, description="可行性评分")
+    overall_score = fields.IntField(default=0, description="总体评分")
     
     # 评审结果
     module_rating = fields.CharField(max_length=20, null=True, description="模块评价")
     issues_count = fields.IntField(default=0, description="问题数量")
     severity_score = fields.IntField(default=0, description="严重程度评分")
     
-    # 详细分析
+    # 详细分析 (JSON字段存储列表)
+    issues = fields.JSONField(default=list, description="问题列表")
+    strengths = fields.JSONField(default=list, description="优点列表")
+    weaknesses = fields.JSONField(default=list, description="不足列表")
+    recommendations = fields.JSONField(default=list, description="改进建议列表")
+    
+    # 文本分析内容
     analysis_content = fields.TextField(null=True, description="分析内容")
-    strengths = fields.TextField(null=True, description="优点")
-    weaknesses = fields.TextField(null=True, description="不足")
-    recommendations = fields.TextField(null=True, description="改进建议")
     
     # 元数据
     created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")

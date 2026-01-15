@@ -21,7 +21,7 @@ from ...models.autotest.model_factory import ApiProject as Project, ApiReport, A
     UiReport, UiReportCase, UiReportStep, AppReport, AppReportCase, AppReportStep
 from utils.util.file_util import FileUtil
 from utils.message.send_report import send_business_stage_count
-from config import job_server_host
+from app.configs.config import job_server_host
 
 
 class JobFuncs:

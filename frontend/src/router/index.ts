@@ -24,6 +24,7 @@ import Assist from './modules/assist'
 import TestManage from './modules/manage'
 import Config from './modules/config'
 import WHartTest from './modules/aitestrebort'
+import Flowchart from './modules/flowchart'
 
 import Debug from './modules/debug'
 import System from './modules/system'
@@ -36,7 +37,7 @@ import Watermark from "@/utils/watermark";
  **/
 let modules = reactive([
     ...Default, ...Dashboard, ...ApiTest, ...UiTest, ...AppTest, ...Script, ...Tools, ...Assist, ...TestManage,
-    ...Config, ...WHartTest, ...System, ...Debug
+    ...Config, ...WHartTest, ...Flowchart, ...System, ...Debug
 ])
 
 const router = createRouter({

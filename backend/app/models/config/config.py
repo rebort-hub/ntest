@@ -1,7 +1,7 @@
 from selenium.webdriver.common.keys import Keys
 
 from ..base_model import fields, pydantic_model_creator, NumFiled
-from config import data_type_mapping, skip_if_type_mapping, run_model, extracts_mapping, assert_mapping_list, \
+from app.configs.config import data_type_mapping, skip_if_type_mapping, run_model, extracts_mapping, assert_mapping_list, \
     http_method, api_suite_list, ui_suite_list, run_type, ui_assert_mapping_list, ui_extract_mapping_list, \
     ui_action_mapping_list, browser_name, app_key_code, server_os_mapping, phone_os_mapping, \
     make_user_info_mapping, make_user_language_mapping, test_type
