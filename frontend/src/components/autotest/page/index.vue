@@ -80,21 +80,23 @@
               </template>
             </el-table-column>
 
-            <el-table-column fixed="right" prop="desc" align="center" label="操作" width="160">
+            <el-table-column fixed="right" prop="desc" align="center" label="操作" width="320">
               <template #default="scope">
-                <el-button type="text" size="small" style="margin: 0; padding: 2px" @click="showEditDrawer('edit', scope.row)">修改</el-button>
-                <el-popconfirm title="复制此页面并生成新的页面?" @confirm="copyPage(scope.row)">
-                  <template #reference>
-                    <el-button style="margin: 0; padding: 2px" type="text" size="small">复制</el-button>
-                  </template>
-                </el-popconfirm>
-                <el-button type="text" size="small" style="margin: 0; padding: 2px" @click="showEditDrawer('element-list', scope.row)">元素列表</el-button>
-<!--                <el-button type="text" size="small" style="margin: 0; padding: 2px" @click="showUploadDrawer(scope.row)">导入元素</el-button>-->
-                <el-popconfirm width="250px" :title="`确定删除【${ scope.row.name }】?`" @confirm="deleteData(scope.row)">
-                  <template #reference>
-                    <el-button style="margin: 0; padding: 2px;color: red" type="text" size="small">删除</el-button>
-                  </template>
-                </el-popconfirm>
+                <div class="action-buttons">
+                  <el-button size="small" @click="showEditDrawer('edit', scope.row)">修改</el-button>
+                  <el-popconfirm title="复制此页面并生成新的页面?" @confirm="copyPage(scope.row)">
+                    <template #reference>
+                      <el-button size="small" type="success">复制</el-button>
+                    </template>
+                  </el-popconfirm>
+                  <el-button size="small" type="info" @click="showEditDrawer('element-list', scope.row)">元素列表</el-button>
+  <!--                <el-button size="small" @click="showUploadDrawer(scope.row)">导入元素</el-button>-->
+                  <el-popconfirm width="250px" :title="`确定删除【${ scope.row.name }】?`" @confirm="deleteData(scope.row)">
+                    <template #reference>
+                      <el-button size="small" type="danger">删除</el-button>
+                    </template>
+                  </el-popconfirm>
+                </div>
               </template>
             </el-table-column>
           </el-table>
@@ -298,5 +300,19 @@ const treeIsChoice = (message: any) => {
 </script>
 
 <style scoped lang="scss">
-
+// 操作按钮样式
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  
+  .el-button {
+    margin: 0;
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+}
 </style>

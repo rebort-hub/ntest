@@ -1,8 +1,8 @@
-import axios, {AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse} from 'axios'
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import store from '@/store'
 import router from '@/router/index'
-import {ElMessage} from 'element-plus'
-import {refreshTokenDir} from "@/api/system/user";
+import { ElMessage } from 'element-plus'
+import { refreshTokenDir } from "@/api/system/user";
 
 // 是否正在刷新的标记
 let isRefreshing = false
@@ -12,7 +12,7 @@ let retryRequestList: any[] = []
 
 // 当access-token过期时，用refresh-token获取新的token
 const refreshToken = () => {
-    const newService: AxiosInstance = axios.create({baseURL: '', timeout: 500})
+    const newService: AxiosInstance = axios.create({ baseURL: '', timeout: 500 })
     newService.interceptors.request.use(
         // @ts-ignore
         (config: AxiosRequestConfig) => {
@@ -29,7 +29,7 @@ const service: AxiosInstance = axios.create({
     timeout: 60000  // 毫秒
 })
 
-const getRequestId = () =>{
+const getRequestId = () => {
     // 13位毫秒时间戳 + 6位随机数 = 19位
     const randomSuffix = Math.floor(Math.random() * 1000)
         .toString().padStart(6, '0');
@@ -118,13 +118,13 @@ service.interceptors.response.use(
                 // 业务逻辑相关
                 // @ts-ignore
                 if (response.config.method !== 'get') {  // 非获取的接口，显示响应信息
-                    if (responseBody.status >= 500) {
+                    if (responseBody.status >= 500 || responseBody.status === 'error') {
                         ElMessage.error(responseBody.message)
-                        return
-                    } else if (responseBody.status >= 400) {
-                        if (typeof responseBody.message === 'object'){ // 脚本保存，脚本语法错误
+                        return responseBody  // 返回响应体，避免触发错误拦截器
+                    } else if (responseBody.status >= 400 || responseBody.status === 'fail') {
+                        if (typeof responseBody.message === 'object') { // 脚本保存，脚本语法错误
                             ElMessage.warning(`${responseBody.message.msg}\n${responseBody.message.result}`)
-                        }else {
+                        } else {
                             // @ts-ignore
                             if (response.config.url.indexOf('/oauth/') === -1 &&
                                 response.config.url.indexOf('/saml/') === -1) { // 不显示OAuth配置和SAML配置的错误消息
@@ -132,15 +132,25 @@ service.interceptors.response.use(
                             }
                         }
                         return responseBody
-                    } else {
+                    } else if (responseBody.status === 'success' || responseBody.status < 400) {
                         // @ts-ignore
-                        if (response.config.url.indexOf('download') === -1 && 
+                        if (response.config.url.indexOf('download') === -1 &&
                             response.config.url.indexOf('/steps') === -1 &&
                             response.config.url.indexOf('/requirements/') === -1 &&
-                            response.config.url.indexOf('/knowledge/') === -1 &&
+                            response.config.url.indexOf('/advanced/') === -1 &&
                             response.config.url.indexOf('/oauth/') === -1 &&
-                            response.config.url.indexOf('/saml/') === -1) { // 不显示测试步骤操作、需求管理、知识库、OAuth配置和SAML配置的成功消息
-                            ElMessage.success(responseBody.message)
+                            response.config.url.indexOf('/saml/') === -1) { // 不显示测试步骤操作、需求管理、高级功能、OAuth配置和SAML配置的成功消息
+                            // 对于知识库操作，只在特定情况下显示消息
+                            if (response.config.url.indexOf('/knowledge/') !== -1) {
+                                // 知识库相关操作：只显示创建、更新、删除的成功消息，不显示查询的消息
+                                if (response.config.method === 'post' || 
+                                    response.config.method === 'put' || 
+                                    response.config.method === 'delete') {
+                                    ElMessage.success(responseBody.message)
+                                }
+                            } else {
+                                ElMessage.success(responseBody.message)
+                            }
                         }
                         return responseBody
                     }
@@ -152,7 +162,7 @@ service.interceptors.response.use(
     (error: AxiosError) => {
         const badMessage: any = error.message || error
         const code = parseInt(badMessage.toString().replace('Error: Request failed with status code ', ''))
-        showError({code, message: badMessage})
+        showError({ code, message: badMessage })
         return Promise.reject(error)
     }
 )

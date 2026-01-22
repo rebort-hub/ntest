@@ -29,15 +29,46 @@ def create_llm_instance(llm_config: 'aitestrebortLLMConfig', temperature: float 
     """
     model_identifier = llm_config.model_name or "gpt-3.5-turbo"
     
+    # 清理API密钥，移除可能的Bearer前缀
+    api_key = llm_config.api_key
+    original_key_length = len(api_key) if api_key else 0
+    if api_key and api_key.startswith("Bearer "):
+        api_key = api_key[7:].strip()  # 移除"Bearer "前缀
+        logger.warning(f"API密钥包含'Bearer '前缀，已自动移除。原长度: {original_key_length}, 新长度: {len(api_key)}")
+    
+    # 记录API密钥的前后几位（用于调试）
+    if api_key:
+        masked_key = f"{api_key[:4]}...{api_key[-4:]}" if len(api_key) > 8 else "****"
+        logger.info(f"使用API密钥: {masked_key} (长度: {len(api_key)})")
+    
+    # 清理base_url，移除可能的端点路径
+    base_url = llm_config.base_url
+    original_base_url = base_url
+    if base_url:
+        # 移除常见的端点路径
+        endpoints_to_remove = ['/chat/completions', '/v1/chat/completions', '/completions']
+        for endpoint in endpoints_to_remove:
+            if base_url.endswith(endpoint):
+                base_url = base_url[:-len(endpoint)]
+                logger.warning(f"base_url包含端点路径'{endpoint}'，已自动移除。原URL: {original_base_url}, 新URL: {base_url}")
+                break
+        
+        # 确保base_url以/v1结尾（OpenAI兼容API通常需要）
+        # DeepSeek也需要/v1路径
+        if not base_url.endswith('/v1') and not base_url.endswith('/compatible-mode/v1'):
+            base_url = base_url.rstrip('/') + '/v1'
+            logger.info(f"base_url已自动添加/v1路径: {original_base_url} -> {base_url}")
+    
     llm_kwargs = {
         "model": model_identifier,
         "temperature": temperature,
-        "api_key": llm_config.api_key,
-        "base_url": llm_config.base_url
+        "api_key": api_key,
+        "base_url": base_url
     }
     
+    logger.info(f"创建LLM实例 - 模型: {model_identifier}, base_url: {base_url}, 温度: {temperature}")
+    
     llm = ChatOpenAI(**llm_kwargs)
-    logger.info(f"Initialized OpenAI-compatible LLM with model: {model_identifier}, base_url: {llm_config.base_url}")
     
     return llm
 

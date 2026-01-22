@@ -166,9 +166,11 @@ python switch_database.py postgresql # 切换到 PostgreSQL
 # 数据库初始化
 
 推荐直接使用 aerich 命令：
-1. 首次初始化: 
+1. 首次初始化依次执行: 
    python -m aerich init -t app.configs.config.tortoise_orm_conf
    python -m aerich init-db
+   python db_manager.py setup
+
 
 2. 模型变更后:
    python -m aerich migrate --name 描述

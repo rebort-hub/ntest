@@ -1,4 +1,20 @@
 [data-theme="dark"] {
+  // 深色模式下的CSS变量重定义
+  --system-page-background: #1e1e1e;
+  --system-page-color: #e0e0e0;
+  --system-page-tip-color: rgba(255, 255, 255, 0.45);
+  --system-page-border-color: #3a3a3a;
+  
+  --system-container-background: #121212;
+  --system-container-main-background: #1e1e1e;
+  
+  --system-header-background: #1e1e1e;
+  --system-header-text-color: #e0e0e0;
+  --system-header-breadcrumb-text-color: #b0b0b0;
+  --system-header-item-hover-color: rgba(255,255,255,.06);
+  --system-header-border-color: #3a3a3a;
+  --system-header-tab-background: #1e1e1e;
+  
   // 通用
   p, h1, h2, h3, h4, h5, h6, article {
     color: var(--system-page-color);
@@ -18,6 +34,85 @@
       border-color: var(--system-page-border-color);
     }
   }
+  
+  // 弹窗样式修复
+  .el-dialog {
+    background-color: var(--system-page-background);
+    border: 1px solid var(--system-page-border-color);
+    border-radius: 8px;
+    overflow: hidden; // 关键：防止内容溢出圆角
+    
+    .el-dialog__header {
+      background-color: var(--system-page-background);
+      border-bottom: 1px solid var(--system-page-border-color);
+      margin: 0;
+      padding: 16px 20px;
+      border-radius: 8px 8px 0 0; // 顶部圆角
+    }
+    
+    .el-dialog__title {
+      color: var(--system-page-color);
+    }
+    
+    .el-dialog__headerbtn .el-dialog__close {
+      color: var(--system-page-color);
+      &:hover {
+        color: var(--system-primary-color);
+      }
+    }
+    
+    .el-dialog__body {
+      background-color: var(--system-page-background);
+      color: var(--system-page-color);
+      padding: 20px;
+    }
+    
+    .el-dialog__footer {
+      background-color: var(--system-page-background);
+      border-top: 1px solid var(--system-page-border-color);
+      padding: 12px 20px;
+      border-radius: 0 0 8px 8px; // 底部圆角
+    }
+  }
+  
+  // 标签页样式修复
+  .el-tabs {
+    .el-tabs__header {
+      background-color: var(--system-page-background);
+    }
+    
+    .el-tabs__nav {
+      background-color: var(--system-page-background);
+    }
+    
+    .el-tabs__item {
+      color: var(--system-page-color);
+      &:hover {
+        color: var(--system-primary-color);
+      }
+      &.is-active {
+        color: var(--system-primary-color);
+      }
+    }
+    
+    .el-tabs__content {
+      background-color: var(--system-page-background);
+    }
+  }
+  
+  // 表单样式修复
+  .el-form-item__label {
+    color: var(--system-page-color);
+  }
+  
+  .el-input__inner,
+  .el-textarea__inner,
+  .el-select .el-input__inner {
+    background-color: var(--system-page-background);
+    color: var(--system-page-color);
+    border-color: var(--system-page-border-color);
+  }
+  
   // 页面内部样式修改
   
 }

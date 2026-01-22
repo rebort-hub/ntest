@@ -3,11 +3,11 @@
     <el-dialog 
         v-model="drawerIsShow" 
         :title="formData.id ? '修改定时任务' : '新增定时任务'" 
-        width="85%"
+        width="70%"
         :close-on-click-modal="false"
         :close-on-press-escape="false"
         destroy-on-close
-        top="2vh"
+        top="10vh"
         class="task-dialog">
 
       <el-form
@@ -337,7 +337,7 @@ import {computed, onBeforeUnmount, onMounted, ref} from "vue";
 import {Help, Plus} from "@icon-park/vue-next";
 import jsonEditorView from '@/components/editor/json-editor.vue'
 import selectCaseView from './select-case.vue'
-import addWebhookView from '@/views/config/notify/webhook/add-drawer.vue'
+import addWebhookView from '@/views/config/notify/webhook/add-dialog.vue'
 import {GetConfigByCode, GetConfigList} from "@/api/config/config-value";
 import {bus, busEvent} from "@/utils/bus-events";
 import {GetRunEnvList} from "@/api/config/run-env";
@@ -787,9 +787,9 @@ const changeData = (runConf: any) => {
 :deep(.task-dialog) {
   .el-dialog {
     border-radius: 8px;
-    max-height: 96vh;
-    margin-top: 2vh !important;
-    margin-bottom: 2vh;
+    max-height: 65vh;
+    margin-top: 10vh !important;
+    margin-bottom: 10vh;
     display: flex;
     flex-direction: column;
   }
@@ -804,6 +804,25 @@ const changeData = (runConf: any) => {
     padding: 20px;
     flex: 1;
     overflow: auto;
+    
+    // 自定义滚动条样式
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+      
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
   }
   
   .el-dialog__footer {

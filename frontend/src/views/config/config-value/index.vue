@@ -141,14 +141,14 @@
       />
     </div>
 
-    <EditDrawer :config-type-list="configTypeList"></EditDrawer>
+    <EditDialog :config-type-list="configTypeList"></EditDialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import {onMounted, ref, computed, onBeforeUnmount} from "vue";
 import Pagination from '@/components/pagination.vue'
-import EditDrawer from './drawer.vue'
+import EditDialog from './edit-dialog.vue'
 
 import {GetConfigTypeList} from "@/api/config/config-type";
 import {GetUserList} from "@/api/system/user";

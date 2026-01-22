@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <el-dialog
     :model-value="modelValue"
     :title="document?.title || '文档详情'"
@@ -44,17 +44,10 @@
       <div v-if="document.status === 'completed'" class="document-content">
         <div class="content-header">
           <h4>文档内容</h4>
-          <div class="content-actions">
-            <el-switch
-              v-model="showChunks"
-              active-text="显示分块"
-              inactive-text="显示原文"
-            />
-          </div>
         </div>
         
         <!-- 原文内容 -->
-        <div v-if="!showChunks" class="original-content">
+        <div class="original-content">
           <el-input
             v-model="documentContent"
             type="textarea"
@@ -62,40 +55,6 @@
             readonly
             placeholder="正在加载文档内容..."
           />
-        </div>
-        
-        <!-- 分块内容 -->
-        <div v-else class="chunks-content">
-          <div v-if="chunksLoading" class="loading-container">
-            <el-skeleton :rows="3" animated />
-          </div>
-          <div v-else>
-            <div class="chunks-header">
-              <span>共 {{ chunks.length }} 个分块</span>
-              <el-pagination
-                v-if="chunks.length > chunkPageSize"
-                v-model:current-page="chunkPage"
-                :page-size="chunkPageSize"
-                :total="chunks.length"
-                layout="prev, pager, next"
-                small
-              />
-            </div>
-            
-            <div class="chunks-list">
-              <div
-                v-for="chunk in paginatedChunks"
-                :key="chunk.id"
-                class="chunk-item"
-              >
-                <div class="chunk-header">
-                  <span class="chunk-index">分块 #{{ chunk.chunk_index + 1 }}</span>
-                  <span v-if="chunk.page_number" class="chunk-page">页码: {{ chunk.page_number }}</span>
-                </div>
-                <div class="chunk-content">{{ chunk.content }}</div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -131,13 +90,7 @@ interface Document {
   uploader_name?: string
   uploaded_at: string
   processed_at?: string
-}
-
-interface DocumentChunk {
-  id: string
-  chunk_index: number
-  content: string
-  page_number?: number
+  content?: string
 }
 
 const props = defineProps<Props>()
@@ -147,20 +100,10 @@ const emit = defineEmits<{
 
 // 响应式数据
 const loading = ref(false)
-const chunksLoading = ref(false)
 const document = ref<Document | null>(null)
 const documentContent = ref('')
-const chunks = ref<DocumentChunk[]>([])
-const showChunks = ref(false)
-const chunkPage = ref(1)
-const chunkPageSize = ref(5)
 
-// 计算属性
-const paginatedChunks = computed(() => {
-  const start = (chunkPage.value - 1) * chunkPageSize.value
-  const end = start + chunkPageSize.value
-  return chunks.value.slice(start, end)
-})
+// 计算属性已移除
 
 // 方法
 const getTypeLabel = (type: string) => {
@@ -216,17 +159,12 @@ const fetchDocumentDetail = async () => {
     const response = await knowledgeEnhancedApi.document.getDocumentContent(
       props.projectId,
       props.knowledgeBaseId,
-      props.documentId,
-      { include_chunks: true }
+      props.documentId
     )
     
     if (response.data) {
       document.value = response.data
       documentContent.value = response.data.content || ''
-      
-      if (response.data.chunks?.items) {
-        chunks.value = response.data.chunks.items
-      }
     }
   } catch (error) {
     console.error('获取文档详情失败:', error)
@@ -251,9 +189,6 @@ watch(() => props.modelValue, (visible) => {
     // 重置数据
     document.value = null
     documentContent.value = ''
-    chunks.value = []
-    showChunks.value = false
-    chunkPage.value = 1
   }
 })
 </script>
@@ -297,51 +232,5 @@ watch(() => props.modelValue, (visible) => {
 
 .original-content {
   margin-bottom: 20px;
-}
-
-.chunks-content {
-  margin-bottom: 20px;
-}
-
-.chunks-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  font-size: 14px;
-  color: #606266;
-}
-
-.chunks-list {
-  space-y: 12px;
-}
-
-.chunk-item {
-  margin-bottom: 12px;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  border-left: 3px solid #409eff;
-}
-
-.chunk-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  font-size: 12px;
-  color: #909399;
-}
-
-.chunk-index {
-  font-weight: 500;
-  color: #409eff;
-}
-
-.chunk-content {
-  font-size: 13px;
-  line-height: 1.6;
-  color: #303133;
-  white-space: pre-wrap;
 }
 </style>

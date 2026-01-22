@@ -182,57 +182,43 @@
           prop="desc"
           align="center"
           label="操作"
-          width="150">
+          width="240">
         <template #default="scope">
-<!--          <el-popconfirm title="确定把此报告的运行结果通知到对应任务的报告接收人吗？" @confirm="notifyReport(scope.row)">-->
-<!--            <template #reference>-->
-<!--              <el-button-->
-<!--                  v-show="scope.row.process === 3 && scope.row.status === 2 && scope.row.run_type === 'task' && scope.row.notified === false"-->
-<!--                  type="text"-->
-<!--                  size="small"-->
-<!--                  style="margin: 0; padding: 2px"-->
-<!--              >通知-->
-<!--              </el-button>-->
-<!--            </template>-->
-<!--          </el-popconfirm>-->
+          <div class="action-buttons">
+            <el-button
+                v-show="scope.row.process === 3 && scope.row.status === 2 && scope.row.run_type === 'task' && scope.row.notified === false"
+                size="small"
+                type="warning"
+                @click="showNotifyDialog(scope.row)"
+            >通知
+            </el-button>
 
-          <el-button
-              v-show="scope.row.process === 3 && scope.row.status === 2 && scope.row.run_type === 'task' && scope.row.notified === false"
-              type="text"
-              size="small"
-              style="margin: 0; padding: 2px"
-              @click.native="showNotifyDialog(scope.row)"
-          >通知
-          </el-button>
+            <el-button
+                v-show="scope.row.run_type !== 'api' || isAdmin"
+                size="small"
+                type="primary"
+                @click="showReRunDialog(scope.row)"
+            >重跑
+            </el-button>
 
-          <el-button
-              v-show="scope.row.run_type !== 'api' || isAdmin"
-              type="text"
-              size="small"
-              style="margin: 0; padding: 2px"
-              @click.native="showReRunDialog(scope.row)"
-          >重跑
-          </el-button>
-
-          <!--查看报告-->
-          <el-button
-              type="text"
-              size="small"
-              style="margin: 0; padding: 2px"
-              @click.native="openReportById(scope.row.id)"
-          >查看
-          </el-button>
-          <el-popconfirm :title="`确定删除【${ scope.row.name }】?`" @confirm="deleteData(scope.row)">
-            <template #reference>
-              <el-button
-                  v-show="scope.row.status !== 1"
-                  style="margin: 0; padding: 2px;color: red"
-                  type="text"
-                  size="small"
-              >删除
-              </el-button>
-            </template>
-          </el-popconfirm>
+            <el-button
+                size="small"
+                type="info"
+                @click="openReportById(scope.row.id)"
+            >查看
+            </el-button>
+            
+            <el-popconfirm :title="`确定删除【${ scope.row.name }】?`" @confirm="deleteData(scope.row)">
+              <template #reference>
+                <el-button
+                    v-show="scope.row.status !== 1"
+                    size="small"
+                    type="danger"
+                >删除
+                </el-button>
+              </template>
+            </el-popconfirm>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -312,8 +298,6 @@
       </template>
     </el-dialog>
 
-    <SelectRunEnv :test-type="testType"></SelectRunEnv>
-    <ShowRunProcess :test-type="testType"></ShowRunProcess>
   </div>
 </template>
 
@@ -335,8 +319,6 @@ import {
 import {reportStatusMappingContent, reportStatusMappingTagType, reportTriggerTypeMappingContent} from "../mapping";
 import {GetRunEnvList} from "@/api/config/run-env";
 import {GetConfigByCode} from "@/api/config/config-value";
-import SelectRunEnv from "@/components/select-run-env.vue";
-import ShowRunProcess from "@/components/show-run-process.vue";
 import {GetCase, RunCase} from "@/api/autotest/case";
 import {GetServerList} from "@/api/autotest/device-server";
 import {GetPhoneList} from "@/api/autotest/device-phone";
@@ -667,6 +649,21 @@ const getProjectAndRunEnvList = (projectId: number) => {
 </script>
 
 <style scoped lang="scss">
+// 操作按钮样式
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  
+  .el-button {
+    margin: 0;
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+}
 
 //.first-col {
 //  width: 20% !important;

@@ -37,6 +37,7 @@
     "vue-clipboard3": "2.0.0",
     "vue-draggable-plus": "0.3.5",
     "vue-router": "4.4.5",
+    "vue-simple-uploader": "^1.0.3",
     "vue3-ace-editor": "2.2.4",
     "vue3-json-viewer": "2.2.2",
     "vuedraggable": "2.24.3",

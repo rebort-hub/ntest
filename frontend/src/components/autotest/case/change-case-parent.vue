@@ -1,12 +1,19 @@
 ﻿<template>
-  <div>
-    <el-drawer v-model="drawerIsShow" title="修改用例归属" size="40%">
-      <el-form
-          size="small"
-          label-width="70px"
-          ref="ruleFormRef"
-          :model="formData"
-          :rules="formRules">
+  <el-dialog
+    v-model="drawerIsShow"
+    title="修改用例归属"
+    width="500px"
+    :close-on-click-modal="false"
+    destroy-on-close
+    custom-class="change-case-parent-dialog"
+  >
+    <el-form
+      size="small"
+      label-width="70px"
+      ref="ruleFormRef"
+      :model="formData"
+      :rules="formRules"
+    >
 
         <el-form-item :label="`${testType === 'api' ? '服务' : testType === 'ui' ? '项目' : 'app'}`" size="small">
           <el-select
@@ -34,22 +41,22 @@
               clearable
           />
         </el-form-item>
-      </el-form>
+    </el-form>
 
-      <template #footer>
-        <div slot="footer" class="dialog-footer">
-          <el-button size="small" @click="drawerIsShow = false"> {{ '取消' }}</el-button>
-          <el-button
-              type="primary"
-              size="small"
-              :loading="submitButtonIsLoading"
-              @click="submit"
-          >保存</el-button>
-        </div>
-      </template>
-
-    </el-drawer>
-  </div>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button size="small" @click="drawerIsShow = false">取消</el-button>
+        <el-button
+          type="primary"
+          size="small"
+          :loading="submitButtonIsLoading"
+          @click="submit"
+        >
+          保存
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
 </template>
 
 <script lang="ts" setup>
@@ -158,7 +165,30 @@ const submit = () => {
 
 </script>
 
-
 <style scoped lang="scss">
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+</style>
 
+<style lang="scss">
+.change-case-parent-dialog {
+  border-radius: 8px;
+  
+  .el-dialog__header {
+    border-bottom: 1px solid #ebeef5;
+    padding: 20px 20px 15px;
+  }
+  
+  .el-dialog__body {
+    padding: 20px;
+  }
+  
+  .el-dialog__footer {
+    border-top: 1px solid #ebeef5;
+    padding: 15px 20px;
+  }
+}
 </style>

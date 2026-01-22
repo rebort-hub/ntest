@@ -1,62 +1,79 @@
 <template>
   <div>
-    <el-drawer v-model="drawerIsShow" title="新增元素" size="90%">
+    <el-dialog 
+        v-model="drawerIsShow" 
+        title="新增元素" 
+        width="900px"
+        :close-on-click-modal="false"
+        :close-on-press-escape="false"
+        destroy-on-close
+        top="3vh"
+        class="add-element-dialog">
 
-      <el-table ref="dataTable" :data="formData.element_list" stripe size="small" row-key="id">
+      <el-form ref="ruleFormRef" :model="formData" label-width="120px" size="small">
+        <div v-for="(item, index) in formData.element_list" :key="item.id" class="element-form-item">
+          <div class="element-header">
+            <span class="element-title">元素 {{ index + 1 }}</span>
+            <div class="element-actions">
+              <el-tooltip content="添加元素" placement="top">
+                <el-button
+                    v-show="index === 0 || index === formData.element_list.length - 1"
+                    type="primary"
+                    :icon="Plus"
+                    circle
+                    size="small"
+                    @click="addRow"
+                />
+              </el-tooltip>
+              <el-tooltip content="复制元素" placement="top">
+                <el-button
+                    type="info"
+                    :icon="Copy"
+                    circle
+                    size="small"
+                    @click="copyRow(item)"
+                />
+              </el-tooltip>
+              <el-tooltip content="删除元素" placement="top">
+                <el-button
+                    v-show="isShowDelButton(index)"
+                    type="danger"
+                    :icon="Minus"
+                    circle
+                    size="small"
+                    @click="delRow(index)"
+                />
+              </el-tooltip>
+              <el-tooltip content="清除数据" placement="top">
+                <el-button
+                    v-show="formData.element_list.length === 1"
+                    type="warning"
+                    :icon="Clear"
+                    circle
+                    size="small"
+                    @click="clearData()"
+                />
+              </el-tooltip>
+            </div>
+          </div>
 
-        <el-table-column label="排序" width="40" align="center">
-          <template #header>
-            <el-tooltip class="item" effect="dark" placement="top-start">
-              <template #content>
-                <div>可拖拽数据前的图标进行自定义排序</div>
-              </template>
-              <span style="color: #409EFF"><Help></Help></span>
-            </el-tooltip>
-          </template>
-          <template #default="scope">
-            <el-button
-                text
-                @dragstart="handleDragStart($event, scope.row, scope.$index)"
-                @dragover="handleDragOver($event, scope.$index)"
-                @drop="handleDrop($event, scope.$index)"
-                @dragend="handleDragEnd"
-                draggable="true"
-                class="drag-button"
-                :data-index="scope.$index"
-            >
-              <SortThree></SortThree>
-            </el-button>
-          </template>
-        </el-table-column>
+          <el-form-item 
+              label="元素名称" 
+              :prop="`element_list.${index}.name`" 
+              :rules="[{ required: true, message: '请输入元素名称', trigger: 'blur' }]">
+            <el-input v-model="item.name" placeholder="请输入元素名称" clearable />
+          </el-form-item>
 
-        <el-table-column label="序号" header-align="center" width="40">
-          <template #default="scope">
-            <div>{{ scope.$index + 1 }}</div>
-          </template>
-        </el-table-column>
-
-        <el-table-column header-align="center" min-width="20%">
-          <template #header>
-            <span><span style="color: red">*</span>元素名</span>
-          </template>
-          <template #default="scope">
-            <el-input v-model="scope.row.name" size="small" type="textarea" :rows="1" />
-          </template>
-        </el-table-column>
-
-        <el-table-column header-align="center" min-width="15%">
-          <template #header>
-            <span><span style="color: red">*</span>定位方式</span>
-          </template>
-          <template #default="scope">
+          <el-form-item 
+              label="定位方式" 
+              :prop="`element_list.${index}.by`" 
+              :rules="[{ required: true, message: '请选择定位方式', trigger: 'change' }]">
             <el-select
-                v-model="scope.row.by"
+                v-model="item.by"
                 filterable
-                default-first-option
                 clearable
-                size="small"
-                style="width:100%"
                 placeholder="请选择定位方式"
+                style="width: 100%"
             >
               <el-option
                   v-for="option in busEvent.data.findElementOptionList"
@@ -65,115 +82,69 @@
                   :value="option.value"
               />
             </el-select>
-          </template>
-        </el-table-column>
+          </el-form-item>
 
-        <el-table-column header-align="center" min-width="30%">
-          <template #header>
-            <span><span style="color: red">*</span>元素表达式</span>
-          </template>
-          <template #default="scope">
+          <el-form-item 
+              label="元素表达式" 
+              :prop="`element_list.${index}.element`" 
+              :rules="[{ required: true, message: '请输入元素表达式', trigger: 'blur' }]">
             <el-input
-                v-model="scope.row.element"
-                size="small"
+                v-model="item.element"
                 type="textarea"
-                :rows="1"
+                :rows="2"
                 :placeholder="
-                  scope.row.by === 'bounds' ? '如元素坐标范围为[918,1079][1080,1205]，则填写: [[918,1079], [1080,1205]]' :
-                  scope.row.by === 'coordinate' ? '请填写具体坐标: (x, y)' : '元素表达式'
+                  item.by === 'bounds' ? '如元素坐标范围为[918,1079][1080,1205]，则填写: [[918,1079], [1080,1205]]' :
+                  item.by === 'coordinate' ? '请填写具体坐标: (x, y)' : '请输入元素表达式'
                 "
+                clearable
             />
-          </template>
-        </el-table-column>
+          </el-form-item>
 
-
-        <el-table-column v-if="testType==='app'" header-align="center" min-width="20%">
-          <template #header>
-              <span><span style="color: red">*</span>参照设备
-                <el-popover class="el_popover_class" placement="top-start" trigger="hover" content="元素定位时参照的设备，用于坐标定位时计算元素的具体位置">
-                <template #reference>
+          <el-form-item 
+              v-if="testType==='app'" 
+              label="参照设备" 
+              :prop="`element_list.${index}.template_device`" 
+              :rules="[{ required: true, message: '请选择参照设备', trigger: 'change' }]">
+            <template #label>
+              <span>参照设备
+                <el-tooltip class="item" effect="dark" placement="top-start" content="元素定位时参照的设备，用于坐标定位时计算元素的具体位置">
                   <span style="margin-left:5px;color: #409EFF"><Help></Help></span>
-                </template>
-                </el-popover>
+                </el-tooltip>
               </span>
-          </template>
-          <template #default="scope">
+            </template>
             <el-select
-                v-model="scope.row.template_device"
-                :disabled="scope.row.by !== 'bounds'"
+                v-model="item.template_device"
+                :disabled="item.by !== 'bounds'"
                 filterable
-                size="small"
+                placeholder="请选择元素定位时参照的设备"
                 style="width: 100%"
-                placeholder="请选则元素定位时参照的设备"
             >
               <el-option
-                  v-for="script in deviceList"
-                  :key="script.id"
-                  :label="script.name"
-                  :value="script.id"
+                  v-for="device in deviceList"
+                  :key="device.id"
+                  :label="device.name"
+                  :value="device.id"
               />
             </el-select>
-          </template>
-        </el-table-column>
+          </el-form-item>
 
-        <el-table-column header-align="center" min-width="15%">
-          <template #header>
-            <span>元素描述</span>
-          </template>
-          <template #default="scope">
-            <el-input v-model="scope.row.desc" size="small" type="textarea" :rows="1" />
-          </template>
-        </el-table-column>
+          <el-form-item label="元素描述" :prop="`element_list.${index}.desc`">
+            <el-input 
+                v-model="item.desc" 
+                type="textarea" 
+                :rows="2" 
+                placeholder="请填写元素描述、用途说明等"
+                clearable
+            />
+          </el-form-item>
 
-
-        <el-table-column fixed="right"  align="center" label="操作" width="90">
-          <template #default="scope">
-            <el-tooltip class="item" effect="dark" placement="top-end" content="添加一行">
-              <el-button
-                  v-show="scope.$index === 0 || scope.$index === formData.element_list.length - 1"
-                  type="text"
-                  size="small"
-                  style="margin: 2px; padding: 0"
-                  @click.native="addRow"
-              ><Plus></Plus></el-button>
-            </el-tooltip>
-
-            <el-tooltip class="item" effect="dark" placement="top-end" content="复制当前行">
-              <el-button
-                  type="text"
-                  size="small"
-                  style="margin: 2px; padding: 0"
-                  @click.native="copyRow(scope.row)"
-              ><Copy></Copy></el-button>
-            </el-tooltip>
-
-            <el-tooltip class="item" effect="dark" placement="top-end" content="删除当前行">
-              <el-button
-                  v-show="isShowDelButton(scope.$index)"
-                  type="text"
-                  size="small"
-                  style="color: red;margin: 2px; padding: 0"
-                  @click.native="delRow(scope.$index)"
-              ><Minus></Minus></el-button>
-            </el-tooltip>
-
-            <el-tooltip class="item" effect="dark" placement="top-end" content="清除数据">
-              <el-button
-                  v-show="formData.element_list.length === 1"
-                  type="text"
-                  size="small"
-                  style="color: red;margin: 2px; padding: 0"
-                  @click.native="clearData()"
-              ><Clear></Clear></el-button>
-            </el-tooltip>
-          </template>
-        </el-table-column>
-
-      </el-table>
+          <el-divider v-if="index < formData.element_list.length - 1" />
+        </div>
+      </el-form>
 
       <template #footer>
-        <div slot="footer" class="dialog-footer">
-          <el-button size="small" @click="drawerIsShow = false"> {{ '取消' }}</el-button>
+        <div class="dialog-footer">
+          <el-button size="small" @click="drawerIsShow = false">取消</el-button>
           <el-button
               type="primary"
               size="small"
@@ -183,19 +154,18 @@
         </div>
       </template>
 
-    </el-drawer>
+    </el-dialog>
   </div>
 </template>
 
 <script lang="ts" setup>
 
 import {onBeforeUnmount, onMounted, ref} from "vue";
-import {Help, SortThree} from "@icon-park/vue-next";
+import {Help, Clear, Copy, Minus, Plus} from "@icon-park/vue-next";
 import {bus, busEvent} from "@/utils/bus-events";
 import {ElMessage} from "element-plus";
 import {GetProject} from "@/api/autotest/project";
 import {PostElement} from "@/api/autotest/element";
-import {Clear, Copy, Minus, Plus} from "@icon-park/vue-next";
 
 const props = defineProps({
   testType: {
@@ -238,8 +208,6 @@ const getProject = () => {
 
 const drawerIsShow = ref(false)
 const templateDevice = ref()
-const oldIndex = ref(); // 当前拖拽项的索引
-const dragRow = ref();   // 当前拖拽的行数据
 const waitTimeOut = props.testType === 'app' ? 10 : 5
 const submitButtonIsLoading = ref(false)
 const ruleFormRef = ref(null)
@@ -257,11 +225,7 @@ const formData = ref({
     wait_time_out: waitTimeOut
   }]
 })
-const formRules = {
-  name: [
-    {required: true, message: '请输入页面名字', trigger: 'blur'}
-  ]
-}
+
 const resetForm = () => {
   formData.value = {
     project_id: undefined,
@@ -291,7 +255,7 @@ const getNewData = () => {
     name: null,
     by: null,
     element: null,
-    template_device: templateDevice,
+    template_device: templateDevice.value,
     desc: null,
     wait_time_out: waitTimeOut
   }
@@ -301,7 +265,7 @@ const addRow = () => {
   formData.value.element_list.push(getNewData())
 }
 
-const copyRow = (row: {id: string, key: null, value: null, remark: null, data_type: null}) => {
+const copyRow = (row: any) => {
   let newData = JSON.parse(JSON.stringify(row))
   newData.id = `${Date.now()}`
   formData.value.element_list.push(newData)
@@ -311,7 +275,6 @@ const isShowDelButton = (index: number) => {
   return !(formData.value.element_list.length === 1 && index === 0)
 }
 
-// 删除一行
 const delRow = (index: number) => {
   formData.value.element_list.splice(index, 1)
 }
@@ -320,36 +283,6 @@ const clearData = () => {
   formData.value.element_list[0] = getNewData()
 }
 
-// 记录拖拽前的数据顺序
-const handleDragStart = (event, row, index) => {
-  oldIndex.value = index;
-  dragRow.value = row;
-  event.dataTransfer.effectAllowed = "move";
-  event.dataTransfer.setData("text/html", event.target);
-  event.target.classList.add('drag-dragging');
-};
-
-const handleDragOver = (event, index) => {
-  event.preventDefault();  // 必须调用这个方法才能使 drop 生效
-};
-
-const handleDragEnd = (event) => {
-  // 恢复拖拽操作的样式
-  event.target.classList.remove('drag-dragging');
-};
-
-const handleDrop = (event, newIndex) => {
-  event.preventDefault();
-  const updatedData = [...formData.value.element_list];
-  // // 移除当前拖拽的行数据
-  updatedData.splice(oldIndex.value, 1);
-  // // 插入拖拽的行数据到目标索引位置
-  updatedData.splice(newIndex, 0, dragRow.value);
-  formData.value.element_list = updatedData;
-  // 恢复样式
-  event.target.classList.remove('drag-dragging');
-};
-
 const validateDataList = () => {
   if (formData.value.element_list.length < 1){
     ElMessage.warning('请填写元素信息')
@@ -357,28 +290,210 @@ const validateDataList = () => {
   }
   formData.value.element_list.forEach((item, index) => {
     if (!item.name|| !item.by || !item.element){
-      ElMessage.warning(`第 ${index + 1} 行, 请完善数据`)
-      throw new Error(`第 ${index + 1} 行, 请完善数据`);
+      ElMessage.warning(`第 ${index + 1} 个元素, 请完善数据`)
+      throw new Error(`第 ${index + 1} 个元素, 请完善数据`);
     }
   })
 }
 
 const addData = () => {
-  validateDataList()
-  submitButtonIsLoading.value = true
-  PostElement(props.testType, formData.value).then(response => {
-    submitButtonIsLoading.value = false
-    if (response) {
-      sendEvent()
-      drawerIsShow.value = false
+  ruleFormRef.value.validate((valid) => {
+    if (valid) {
+      validateDataList()
+      submitButtonIsLoading.value = true
+      PostElement(props.testType, formData.value).then(response => {
+        submitButtonIsLoading.value = false
+        if (response) {
+          sendEvent()
+          drawerIsShow.value = false
+        }
+      })
+    } else {
+      ElMessage.warning('请完善表单信息')
     }
   })
 }
-
 
 </script>
 
 
 <style scoped lang="scss">
+// 新增元素弹窗样式
+:deep(.add-element-dialog) {
+  .el-dialog {
+    border-radius: 8px;
+    max-height: 92vh;
+    margin-top: 3vh !important;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .el-dialog__header {
+    border-bottom: 1px solid #ebeef5;
+    padding: 20px 20px 15px;
+    flex-shrink: 0;
+  }
+  
+  .el-dialog__body {
+    padding: 20px;
+    flex: 1;
+    overflow-y: auto;
+    max-height: calc(92vh - 140px);
+    
+    // 自定义滚动条样式
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+      
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
+  }
+  
+  .el-dialog__footer {
+    border-top: 1px solid #ebeef5;
+    padding: 15px 20px;
+    flex-shrink: 0;
+  }
+}
 
+// 元素表单项样式
+.element-form-item {
+  margin-bottom: 20px;
+  
+  .element-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #409EFF;
+    
+    .element-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #409EFF;
+    }
+    
+    .element-actions {
+      display: flex;
+      gap: 8px;
+      
+      .el-button {
+        &.is-circle {
+          width: 32px;
+          height: 32px;
+          padding: 0;
+        }
+      }
+    }
+  }
+  
+  .el-form-item {
+    margin-bottom: 18px;
+  }
+}
+
+// 分隔线样式
+.el-divider {
+  margin: 30px 0;
+  border-top: 2px dashed #e4e7ed;
+}
+
+// 底部按钮样式
+.dialog-footer {
+  text-align: right;
+  
+  .el-button {
+    margin-left: 10px;
+    min-width: 80px;
+  }
+}
+
+// 表单样式优化
+:deep(.el-form) {
+  .el-form-item__label {
+    font-weight: 500;
+    color: #606266;
+  }
+  
+  .el-input__wrapper {
+    transition: all 0.3s;
+    
+    &:hover {
+      box-shadow: 0 0 0 1px #c0c4cc inset;
+    }
+    
+    &.is-focus {
+      box-shadow: 0 0 0 1px #409eff inset;
+    }
+  }
+  
+  .el-textarea__inner {
+    transition: all 0.3s;
+    
+    &:hover {
+      border-color: #c0c4cc;
+    }
+    
+    &:focus {
+      border-color: #409eff;
+    }
+  }
+  
+  .el-select {
+    width: 100%;
+  }
+}
+
+// 响应式适配
+@media (max-width: 1200px) {
+  :deep(.add-element-dialog) {
+    .el-dialog {
+      width: 90% !important;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  :deep(.add-element-dialog) {
+    .el-dialog {
+      width: 95% !important;
+      margin-top: 2vh !important;
+    }
+    
+    .el-dialog__body {
+      padding: 15px;
+    }
+  }
+  
+  .element-form-item {
+    .element-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      
+      .element-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+    }
+  }
+  
+  :deep(.el-form) {
+    .el-form-item__label {
+      font-size: 14px;
+    }
+  }
+}
 </style>

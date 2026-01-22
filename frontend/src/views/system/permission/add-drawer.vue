@@ -3,164 +3,122 @@
     <el-dialog 
       v-model="dialogIsShow" 
       title="新增权限" 
-      width="90%" 
+      width="800px" 
       :close-on-click-modal="false"
       :close-on-press-escape="false"
-      class="custom-dialog"
+      destroy-on-close
+      top="3vh"
+      class="add-permission-dialog"
     >
-      <div class="dialog-content">
-        <el-form
-            ref="ruleFormRef"
-            :model="formData">
+      <el-form ref="ruleFormRef" :model="formData" label-width="100px" size="small">
+        <div v-for="(item, index) in formData.data_list" :key="item.id" class="permission-form-item">
+          <div class="permission-header">
+            <span class="permission-title">权限 {{ index + 1 }}</span>
+            <div class="permission-actions">
+              <el-tooltip content="添加权限" placement="top">
+                <el-button
+                    v-show="index === 0 || index === formData.data_list.length - 1"
+                    type="primary"
+                    :icon="Plus"
+                    circle
+                    size="small"
+                    @click="addRow"
+                />
+              </el-tooltip>
+              <el-tooltip content="复制权限" placement="top">
+                <el-button
+                    type="info"
+                    :icon="Copy"
+                    circle
+                    size="small"
+                    @click="copyRow(item)"
+                />
+              </el-tooltip>
+              <el-tooltip content="删除权限" placement="top">
+                <el-button
+                    v-show="isShowDelButton(index)"
+                    type="danger"
+                    :icon="Minus"
+                    circle
+                    size="small"
+                    @click="delRow(index)"
+                />
+              </el-tooltip>
+              <el-tooltip content="清除数据" placement="top">
+                <el-button
+                    v-show="formData.data_list.length === 1"
+                    type="warning"
+                    :icon="Clear"
+                    circle
+                    size="small"
+                    @click="clearData()"
+                />
+              </el-tooltip>
+            </div>
+          </div>
 
-          <el-form-item prop="data_list" class="is-required" size="small">
-            <el-table
-                :data="formData.data_list"
-                style="width: 100%"
-                stripe
-                :height="tableHeight"
-                row-key="id">
-
-              <el-table-column label="排序" width="40" align="center">
-                <template #header>
-                  <el-tooltip class="item" effect="dark" placement="top-start">
-                    <template #content>
-                      <div>可拖拽数据前的图标进行自定义排序</div>
-                    </template>
-                    <span style="color: #409EFF"><Help></Help></span>
-                  </el-tooltip>
-                </template>
-                <template #default="scope">
-                  <el-button
-                      text
-                      @dragstart="handleDragStart($event, scope.row, scope.$index)"
-                      @dragover="handleDragOver($event, scope.$index)"
-                      @drop="handleDrop($event, scope.$index)"
-                      @dragend="handleDragEnd"
-                      draggable="true"
-                      class="drag-button"
-                      :data-index="scope.$index"
-                  >
-                    <SortThree></SortThree>
-                  </el-button>
-                </template>
-              </el-table-column>
-
-              <el-table-column label="序号" header-align="center" width="40">
-                <template #default="scope">
-                  <div>{{ scope.$index + 1 }}</div>
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="source_type" align="center" min-width="12%">
-                <template slot="header" #header="scope">
-                  <span><span style="color: red">*</span>权限类型</span>
-                </template>
-                <template #default="scope">
-                  <el-select v-model="scope.row.source_type" placeholder="权限类型" style="width:100%"
-                             @change="initSourceType">
-                    <el-option v-for="(value, key) in sourceTypeDict" :key="key" :label="value" :value="key"/>
-                  </el-select>
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="source_class" align="center" min-width="12%">
-                <template slot="header" #header="scope">
-                  <span><span style="color: red">*</span>权限分类</span>
-                </template>
-                <template #default="scope">
-                  <el-select v-model="scope.row.source_class" placeholder="权限分类" style="width:100%">
-                    <el-option
-                        v-show="scope.row.source_type === 'api'"
-                        v-for="source in apiSourceClass"
-                        :key="source.key"
-                        :label="source.value"
-                        :value="source.key"
-                    />
-                    <el-option
-                        v-show="scope.row.source_type === 'front'"
-                        v-for="source in frontSourceClass"
-                        :key="source.key"
-                        :label="source.value"
-                        :value="source.key"
-                    />
-                  </el-select>
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="name" align="center" min-width="12%">
-                <template slot="header" #header="scope">
-                  <span><span style="color: red">*</span>权限名</span>
-                </template>
-                <template #default="scope">
-                  <el-input v-model="scope.row.name" size="small"/>
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="source_addr" align="center" min-width="12%">
-                <template slot="header" #header="scope">
-                  <span><span style="color: red">*</span>权限地址</span>
-                </template>
-                <template #default="scope">
-                  <el-input v-model="scope.row.source_addr" size="small"/>
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="desc" align="center" min-width="15%">
-                <template slot="header" #header="scope">
-                  <span>备注</span>
-                </template>
-                <template #default="scope">
-                  <el-input v-model="scope.row.desc" type="textarea" autosize size="small"/>
-                </template>
-              </el-table-column>
-
-              <el-table-column fixed="right" align="center" label="操作" width="90">
-                <template #default="scope">
-                  <el-tooltip class="item" effect="dark" placement="top-end" content="添加一行">
-                    <el-button
-                        v-show="scope.$index === 0 || scope.$index === formData.data_list.length - 1"
-                        type="text"
-                        size="small"
-                        style="margin: 2px; padding: 0"
-                        @click.native="addRow"
-                    ><Plus></Plus></el-button>
-                  </el-tooltip>
-
-                  <el-tooltip class="item" effect="dark" placement="top-end" content="复制当前行">
-                    <el-button
-                        type="text"
-                        size="small"
-                        style="margin: 2px; padding: 0"
-                        @click.native="copyRow(scope.row)"
-                    ><Copy></Copy></el-button>
-                  </el-tooltip>
-
-                  <el-tooltip class="item" effect="dark" placement="top-end" content="删除当前行">
-                    <el-button
-                        v-show="isShowDelButton(scope.$index)"
-                        type="text"
-                        size="small"
-                        style="color: red;margin: 2px; padding: 0"
-                        @click.native="delRow(scope.$index)"
-                    ><Minus></Minus></el-button>
-                  </el-tooltip>
-
-                  <el-tooltip class="item" effect="dark" placement="top-end" content="清除数据">
-                    <el-button
-                        v-show="formData.data_list.length === 1"
-                        type="text"
-                        size="small"
-                        style="color: red;margin: 2px; padding: 0"
-                        @click.native="clearData()"
-                    ><Clear></Clear></el-button>
-                  </el-tooltip>
-                </template>
-              </el-table-column>
-            </el-table>
+          <el-form-item 
+              label="权限类型" 
+              :prop="`data_list.${index}.source_type`" 
+              :rules="[{ required: true, message: '请选择权限类型', trigger: 'change' }]">
+            <el-select 
+                v-model="item.source_type" 
+                placeholder="请选择权限类型"
+                @change="initSourceType(item)"
+                style="width: 100%">
+              <el-option v-for="(value, key) in sourceTypeDict" :key="key" :label="value" :value="key"/>
+            </el-select>
           </el-form-item>
-        </el-form>
-      </div>
+
+          <el-form-item 
+              label="权限分类" 
+              :prop="`data_list.${index}.source_class`" 
+              :rules="[{ required: true, message: '请选择权限分类', trigger: 'change' }]">
+            <el-select v-model="item.source_class" placeholder="请选择权限分类" style="width: 100%">
+              <el-option
+                  v-show="item.source_type === 'api'"
+                  v-for="source in apiSourceClass"
+                  :key="source.key"
+                  :label="source.value"
+                  :value="source.key"
+              />
+              <el-option
+                  v-show="item.source_type === 'front'"
+                  v-for="source in frontSourceClass"
+                  :key="source.key"
+                  :label="source.value"
+                  :value="source.key"
+              />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item 
+              label="权限名称" 
+              :prop="`data_list.${index}.name`" 
+              :rules="[{ required: true, message: '请输入权限名称', trigger: 'blur' }]">
+            <el-input v-model="item.name" placeholder="请输入权限名称" clearable />
+          </el-form-item>
+
+          <el-form-item 
+              label="权限地址" 
+              :prop="`data_list.${index}.source_addr`" 
+              :rules="[{ required: true, message: '请输入权限地址', trigger: 'blur' }]">
+            <el-input v-model="item.source_addr" placeholder="请输入权限地址" clearable />
+          </el-form-item>
+
+          <el-form-item label="备注" :prop="`data_list.${index}.desc`">
+            <el-input 
+                v-model="item.desc" 
+                type="textarea" 
+                :rows="2" 
+                placeholder="请填写备注说明"
+                clearable
+            />
+          </el-form-item>
+
+          <el-divider v-if="index < formData.data_list.length - 1" />
+        </div>
+      </el-form>
 
       <template #footer>
         <div class="dialog-footer">
@@ -374,50 +332,87 @@ const handleDrop = (event, newIndex) => {
 
 
 <style scoped lang="scss">
-.custom-dialog {
-  border-radius: 8px;
-  
-  :deep(.el-dialog__header) {
-    border-bottom: 1px solid #e4e7ed;
-    padding: 16px 20px;
+:deep(.add-permission-dialog) {
+  .el-dialog {
+    border-radius: 8px;
+    max-height: 90vh;
+    margin-top: 3vh !important;
+    display: flex;
+    flex-direction: column;
   }
   
-  :deep(.el-dialog__body) {
+  .el-dialog__header {
+    border-bottom: 1px solid #ebeef5;
+    padding: 20px 20px 15px;
+    flex-shrink: 0;
+  }
+  
+  .el-dialog__body {
     padding: 20px;
+    flex: 1;
+    overflow-y: auto;
+    max-height: calc(90vh - 140px);
+    
+    // 自定义滚动条样式
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+      
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
   }
   
-  :deep(.el-dialog__footer) {
-    border-top: 1px solid #e4e7ed;
-    padding: 12px 20px;
+  .el-dialog__footer {
+    border-top: 1px solid #ebeef5;
+    padding: 15px 20px;
+    flex-shrink: 0;
   }
 }
 
-.dialog-content {
-  max-height: 60vh;
-  overflow-y: auto;
+.permission-form-item {
+  margin-bottom: 20px;
+  
+  .permission-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: #f5f7fa;
+    border-radius: 4px;
+    
+    .permission-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: #303133;
+    }
+    
+    .permission-actions {
+      display: flex;
+      gap: 8px;
+    }
+  }
 }
 
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 12px;
 }
 
-.drag-button {
-  cursor: move;
-  padding: 4px;
-}
-
-.drag-dragging {
-  opacity: 0.5;
-}
-
-@media (max-width: 768px) {
-  .custom-dialog {
-    :deep(.el-dialog) {
-      width: 95% !important;
-      margin: 5vh auto;
-    }
-  }
+.el-divider {
+  margin: 24px 0;
 }
 </style>
+

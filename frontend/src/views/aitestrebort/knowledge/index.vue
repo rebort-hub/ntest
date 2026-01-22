@@ -120,6 +120,7 @@
       <div v-if="selectedKnowledgeBase" class="detail-panel-full">
         <KnowledgeBaseDetail
           :knowledge-base="selectedKnowledgeBase"
+          :project-id="projectId"
           @refresh="loadKnowledgeBases"
           @close="selectedKnowledgeBase = null"
         />
@@ -288,8 +289,15 @@ const loadKnowledgeBases = async () => {
     )
     
     if (response.data) {
-      knowledgeBases.value = response.data
-      total.value = response.data.length
+      // 处理分页响应
+      if (response.data.items) {
+        knowledgeBases.value = response.data.items
+        total.value = response.data.total
+      } else {
+        // 兼容旧格式（没有分页）
+        knowledgeBases.value = response.data
+        total.value = response.data.length
+      }
     }
   } catch (error) {
     console.error('获取知识库列表失败:', error)
@@ -357,7 +365,7 @@ const deleteKnowledgeBase = async (knowledgeBase: KnowledgeBase) => {
       knowledgeBase.id
     )
     
-    ElMessage.success('知识库删除成功')
+    // 响应拦截器会显示成功消息
     await loadKnowledgeBases()
     
     // 如果删除的是当前选中的知识库，清除选中状态
@@ -381,25 +389,26 @@ const handleSubmit = async () => {
     submitting.value = true
     
     if (editingKnowledgeBase.value) {
-      await knowledgeEnhancedApi.knowledgeBase.updateKnowledgeBase(
+      const response = await knowledgeEnhancedApi.knowledgeBase.updateKnowledgeBase(
         projectId.value,
         editingKnowledgeBase.value.id,
         knowledgeBaseForm
       )
-      ElMessage.success('知识库更新成功')
+      // 如果没有抛出异常，说明成功了
+      showCreateDialog.value = false
+      await loadKnowledgeBases()
     } else {
-      await knowledgeEnhancedApi.knowledgeBase.createKnowledgeBase(
+      const response = await knowledgeEnhancedApi.knowledgeBase.createKnowledgeBase(
         projectId.value,
         knowledgeBaseForm
       )
-      ElMessage.success('知识库创建成功')
+      // 如果没有抛出异常，说明成功了
+      showCreateDialog.value = false
+      await loadKnowledgeBases()
     }
-    
-    showCreateDialog.value = false
-    await loadKnowledgeBases()
   } catch (error) {
     console.error('提交失败:', error)
-    ElMessage.error('操作失败')
+    // 响应拦截器已经处理了错误提示
   } finally {
     submitting.value = false
   }
@@ -456,6 +465,25 @@ const showSystemStatus = async () => {
     const response = await knowledgeEnhancedApi.system.getSystemStatus()
     if (response.data) {
       const status = response.data
+      
+      // 根据状态确定颜色和文本
+      let statusColor = 'green'
+      let statusText = '正常'
+      
+      if (status.system_status === 'warning') {
+        statusColor = 'orange'
+        statusText = '警告'
+      } else if (status.system_status === 'error') {
+        statusColor = 'red'
+        statusText = '异常'
+      }
+      
+      // 构建状态消息
+      let statusMessage = ''
+      if (status.status_message) {
+        statusMessage = `<p><strong>状态详情：</strong><span style="color: ${statusColor}">${status.status_message}</span></p>`
+      }
+      
       ElMessageBox.alert(
         `
         <div style="text-align: left;">
@@ -464,7 +492,8 @@ const showSystemStatus = async () => {
           <p><strong>总文档数：</strong>${status.total_documents || 0}</p>
           <p><strong>处理中文档：</strong>${status.processing_documents || 0}</p>
           <p><strong>总分块数：</strong>${status.total_chunks || 0}</p>
-          <p><strong>系统状态：</strong><span style="color: ${status.system_status === 'healthy' ? 'green' : 'red'}">${status.system_status === 'healthy' ? '正常' : '异常'}</span></p>
+          <p><strong>系统状态：</strong><span style="color: ${statusColor}">${statusText}</span></p>
+          ${statusMessage}
         </div>
         `,
         '系统状态',

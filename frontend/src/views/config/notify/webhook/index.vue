@@ -99,7 +99,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column fixed="right" show-overflow-tooltip prop="desc" align="center" label="操作" width="220">
+        <el-table-column fixed="right" show-overflow-tooltip prop="desc" align="center" label="操作" width="280">
           <template #default="scope">
             <div class="action-buttons">
               <el-button type="warning" size="small" @click.native="showEditDrawer(scope.row, 'edit')">
@@ -118,6 +118,14 @@
                   </el-button>
                 </template>
               </el-popconfirm>
+              <el-popconfirm width="250px" title="确定要删除此webhook吗？" @confirm="deleteWebHook(scope.row.id)">
+                <template #reference>
+                  <el-button type="danger" size="small">
+                    <el-icon><Delete /></el-icon>
+                    删除
+                  </el-button>
+                </template>
+              </el-popconfirm>
             </div>
           </template>
         </el-table-column>
@@ -131,20 +139,20 @@
       />
     </div>
 
-    <EditDrawer></EditDrawer>
-    <AddDrawer></AddDrawer>
+    <EditDialog></EditDialog>
+    <AddDialog></AddDialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import {onMounted, ref, computed, onBeforeUnmount} from "vue";
 import Pagination from '@/components/pagination.vue'
-import EditDrawer from './edit-drawer.vue'
-import AddDrawer from './add-drawer.vue'
+import EditDialog from './edit-dialog.vue'
+import AddDialog from './add-dialog.vue'
 
-import {GetWebHookList, DebugWebHook, ChangeWebHookSort} from "@/api/config/webhook";
+import {GetWebHookList, DebugWebHook, ChangeWebHookSort, DeleteWebHook} from "@/api/config/webhook";
 import {bus, busEvent} from "@/utils/bus-events";
-import {Help, SortThree, Edit, CopyOne, Connection} from "@icon-park/vue-next";
+import {Help, SortThree, Edit, CopyOne, Connection, Delete} from "@icon-park/vue-next";
 
 const tableIsLoading = ref(false)
 const tableDataList = ref([])
@@ -202,6 +210,16 @@ const debugWebHook = (webhookId: number) => {
   tableIsLoading.value = true
   DebugWebHook({id: webhookId}).then(response => {
     tableIsLoading.value = false
+  })
+}
+
+const deleteWebHook = (webhookId: number) => {
+  tableIsLoading.value = true
+  DeleteWebHook({id: webhookId}).then(response => {
+    tableIsLoading.value = false
+    if (response) {
+      getTableDataList()
+    }
   })
 }
 

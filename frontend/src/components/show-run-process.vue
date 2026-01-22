@@ -5,7 +5,9 @@
         title="测试执行进度"
         v-model="processIsShow"
         :close-on-click-modal="false"
+        :destroy-on-close="true"
         append-to-body
+        @close="handleClose"
     >
       <div style="margin-left: 20px; margin-right: 20px">
         <div style="text-align: center; margin-bottom: 5px">
@@ -332,6 +334,13 @@ const onShowDrawerEvent = (message: any) => {
     processIsShow.value = true
     getReport(message.batch_id)
   }
+}
+
+const handleClose = () => {
+  processIsShow.value = false
+  reportCaseId.value = undefined
+  reportCaseDataList.value = []
+  reportStepDataList.value = []
 }
 
 const showStepData = (stepDataId) => {

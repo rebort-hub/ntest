@@ -1,21 +1,34 @@
 <template>
   <div>
-    <el-drawer v-model="drawerIsShow" :title="formData.id ? '修改权限' : '复制权限'" size="60%">
-
+    <el-dialog 
+      v-model="drawerIsShow" 
+      :title="formData.id ? '修改权限' : '复制权限'" 
+      width="600px" 
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      destroy-on-close
+      top="10vh"
+      class="edit-permission-dialog"
+    >
       <el-form
           ref="ruleFormRef"
           :model="formData"
           :rules="formRules"
-          label-width="80px">
+          label-width="100px"
+          size="small">
 
-        <el-form-item label="权限类型" prop="source_type" class="is-required" size="small">
-          <el-select v-model="formData.source_type" placeholder="权限类型" style="width:100%" @change="initSourceType">
+        <el-form-item label="权限类型" prop="source_type">
+          <el-select 
+              v-model="formData.source_type" 
+              placeholder="请选择权限类型" 
+              style="width:100%" 
+              @change="initSourceType">
             <el-option v-for="(value, key) in sourceTypeDict" :key="key" :label="value" :value="key"/>
           </el-select>
         </el-form-item>
 
-        <el-form-item label="权限分类" class="is-required" size="small">
-          <el-select v-model="formData.source_class" placeholder="权限分类" style="width:100%">
+        <el-form-item label="权限分类" prop="source_class">
+          <el-select v-model="formData.source_class" placeholder="请选择权限分类" style="width:100%">
             <el-option
                 v-for="source in sourceClass"
                 :key="source.key"
@@ -25,34 +38,40 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="权限名" prop="name" class="is-required" size="small">
-          <el-input v-model="formData.name" size="small"/>
+        <el-form-item label="权限名称" prop="name">
+          <el-input v-model="formData.name" placeholder="请输入权限名称" clearable />
         </el-form-item>
 
-        <el-form-item label="权限地址" prop="source_addr" class="is-required" size="small">
-          <el-input v-model="formData.source_addr" size="small"/>
+        <el-form-item label="权限地址" prop="source_addr">
+          <el-input v-model="formData.source_addr" placeholder="请输入权限地址" clearable />
         </el-form-item>
 
-        <el-form-item label="备注" prop="desc" size="small">
-          <el-input v-model="formData.desc" type="textarea" autosize size="small"/>
+        <el-form-item label="备注" prop="desc">
+          <el-input 
+              v-model="formData.desc" 
+              type="textarea" 
+              :rows="3" 
+              placeholder="请填写备注说明"
+              clearable
+          />
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <div slot="footer" class="dialog-footer">
-          <el-button size="small" @click="drawerIsShow = false"> {{ '取消' }}</el-button>
+        <div class="dialog-footer">
+          <el-button size="small" @click="drawerIsShow = false">取消</el-button>
           <el-button
               type="primary"
               size="small"
               :loading="submitButtonIsLoading"
               @click="submitForm"
           >
-            {{ '保存' }}
+            保存
           </el-button>
         </div>
       </template>
 
-    </el-drawer>
+    </el-dialog>
   </div>
 </template>
 
@@ -120,13 +139,13 @@ const formData = ref({
 
 const formRules = {
   source_type: [
-    {required: true, message: '请选择权限类型', trigger: 'blur'}
+    {required: true, message: '请选择权限类型', trigger: 'change'}
   ],
   source_class: [
-    {required: true, message: '请选择权限分类', trigger: 'blur'}
+    {required: true, message: '请选择权限分类', trigger: 'change'}
   ],
   name: [
-    {required: true, message: '请输入权限名', trigger: 'blur'}
+    {required: true, message: '请输入权限名称', trigger: 'blur'}
   ],
   source_addr: [
     {required: true, message: '请输入权限地址', trigger: 'blur'}
@@ -202,7 +221,30 @@ const changeData = () => {
 
 </script>
 
-
 <style scoped lang="scss">
+:deep(.edit-permission-dialog) {
+  .el-dialog {
+    border-radius: 8px;
+  }
+  
+  .el-dialog__header {
+    border-bottom: 1px solid #ebeef5;
+    padding: 20px 20px 15px;
+  }
+  
+  .el-dialog__body {
+    padding: 20px;
+  }
+  
+  .el-dialog__footer {
+    border-top: 1px solid #ebeef5;
+    padding: 15px 20px;
+  }
+}
 
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
 </style>

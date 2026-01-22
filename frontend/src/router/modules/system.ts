@@ -50,21 +50,14 @@ const route: Route[] = [
         meta: { title: '系统错误记录', icon: 'alarm' }
       },
       {
-        path: 'platform',
-        component: createNameComponent(() => import('@/views/system/platform/index.vue')),
-        meta: { title: '平台使用分析', hideTabs: false, icon: 'chartHistogram' },
-        children: [
-          {
-            path: 'overview',
-            component: createNameComponent( () => import('@/views/system/platform/overview/index.vue')),
-            meta: { title: '数据总览', icon: 'chartHistogramOne' }
-          },
-          {
-            path: 'analyse',
-            component: createNameComponent( () => import('@/views/system/platform/analyse/index.vue')),
-            meta: { title: '业务线分析', icon: 'chartProportion' }
-          }
-        ]
+        path: 'platform-overview',
+        component: createNameComponent(() => import('@/views/system/platform/overview/index.vue')),
+        meta: { title: '数据总览', icon: 'chartHistogramOne' }
+      },
+      {
+        path: 'platform-analyse',
+        component: createNameComponent(() => import('@/views/system/platform/analyse/index.vue')),
+        meta: { title: '业务线分析', icon: 'chartProportion' }
       },
     ]
   }

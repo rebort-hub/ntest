@@ -2,16 +2,108 @@
   <!-- 选择环境和运行模式 -->
   <el-dialog
       title="设置运行参数"
-      append-to-body
       v-model="dialogIsShow"
       :close-on-click-modal="false"
-      width="75%"
+      :modal="true"
+      :append-to-body="true"
+      :lock-scroll="true"
+      :destroy-on-close="true"
+      :width="testType === 'app' ? '900px' : '800px'"
+      class="run-env-dialog"
+      @close="handleClose"
   >
-    <div v-show="runName" style="text-align: center; margin-bottom: 20px" class="el-collapse-item-title">
+    <div v-show="runName" class="run-title">
       运行【{{ runName }}】
     </div>
-    <el-scrollbar class="aside_scroll" :style="{height: `${envScrollHeight}`}">
-      <el-collapse v-model="defaultSettingItems">
+    <div class="dialog-content">
+      <!-- App自动化使用Tab切换方式 -->
+      <div v-if="testType === 'app'" class="app-tabs-container">
+        <el-tabs v-model="appActiveTab" type="border-card">
+          <el-tab-pane label="选择环境" name="selectRunEnv">
+            <div style="padding: 10px">
+              <runEnvCheckbox ref="runEnvCheckboxRef" :run-env-list="runEnvList" :default-env="defaultEnv" :get-item="'code'" />
+            </div>
+          </el-tab-pane>
+          
+          <el-tab-pane label="APP执行参数设置" name="selectDevice">
+            <div class="app-device-settings" style="padding: 10px">
+              <div style="margin-top: 10px">
+                <label>是否重置APP本地缓存： </label>
+              </div>
+              <div style="margin-top: 10px">
+                <label>
+                <span style="color: red">
+                  重置历史运行APP记录的信息，如登录信息、地址信息等 <br>
+                </span>
+                </label>
+              </div>
+              <div style="margin-top: 10px">
+                <el-radio v-model="noReset" :label="false">重置</el-radio>
+                <el-radio v-model="noReset" :label="true">不重置</el-radio>
+              </div>
+
+              <div style="margin-top: 30px">
+                <label>运行终端： </label>
+              </div>
+              <div style="margin-top: 10px">
+                <label>
+                <span style="color: red">
+                  运行服务器: 要连接哪个终端的appium服务器进行app自动化测试 <br>
+                  运行手机: 该设备运行自动化测试的手机型号 <br>
+                  注：请确保N-Tester平台与选中的appium服务器网络通畅、appium服务器已启动、手机已连接到该服务器<br>
+                </span>
+                </label>
+              </div>
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <div style="margin-top: 10px">
+                    <label>运行服务器：</label>
+                    <el-select
+                        v-model="runServer"
+                        filterable
+                        default-first-option
+                        placeholder="请选择运行服务器"
+                        style="width: 85%"
+                        size="small"
+                    >
+                      <el-option
+                          v-for="server in runServerList"
+                          :key="server.id"
+                          :label="`${server.name}   (最近一次访问：${appiumServerRequestStatusMappingContent[server.status]})`"
+                          :value="server.id"
+                      />
+                    </el-select>
+                  </div>
+                </el-col>
+
+                <el-col :span="12">
+                  <div style="margin-top: 10px">
+                    <label>运行手机：</label>
+                    <el-select
+                        v-model="runPhone"
+                        filterable
+                        default-first-option
+                        placeholder="请选择运行手机"
+                        style="width: 85%"
+                        size="small"
+                    >
+                      <el-option
+                          v-for="phone in runPhoneList"
+                          :key="phone.id"
+                          :label="phone.name"
+                          :value="phone.id"
+                      />
+                    </el-select>
+                  </div>
+                </el-col>
+              </el-row>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
+      </div>
+
+      <!-- API和UI测试使用折叠面板方式 -->
+      <el-collapse v-else v-model="defaultSettingItems">
         <el-collapse-item name="selectRunEnv">
           <template #title>
             <div class="el-collapse-item-title"> 选择环境: </div>
@@ -46,85 +138,6 @@
           </div>
         </el-collapse-item>
 
-        <!-- 选择运行设备 -->
-        <el-collapse-item name="selectDevice" v-if="testType === 'app'">
-          <template #title>
-            <div class="el-collapse-item-title"> APP执行参数设置: </div>
-          </template>
-          <div style="margin-left: 20px">
-            <div style="margin-top: 40px">
-              <label>是否重置APP本地缓存： </label>
-            </div>
-            <div style="margin-top: 10px">
-              <label>
-              <span style="color: red">
-                重置历史运行APP记录的信息，如登录信息、地址信息等 <br>
-              </span>
-              </label>
-            </div>
-            <div style="margin-top: 10px">
-              <el-radio v-model="noReset" :label="false">重置</el-radio>
-              <el-radio v-model="noReset" :label="true">不重置</el-radio>
-            </div>
-
-            <div style="margin-top: 40px">
-              <label>运行终端： </label>
-            </div>
-            <div style="margin-top: 10px">
-              <label>
-              <span style="color: red">
-                运行服务器: 要连接哪个终端的appium服务器进行app自动化测试 <br>
-                运行手机: 该设备运行自动化测试的手机型号 <br>
-                注：请确保N-Tester平台与选中的appium服务器网络通畅、appium服务器已启动、手机已连接到该服务器<br>
-              </span>
-              </label>
-            </div>
-            <el-row>
-              <el-col :span="12">
-                <div style="margin-top: 10px">
-                  <label>运行服务器：</label>
-                  <el-select
-                      v-model="runServer"
-                      filterable
-                      default-first-option
-                      placeholder="请选择运行服务器"
-                      style="width: 80%"
-                      size="small"
-                  >
-                    <el-option
-                        v-for="server in runServerList"
-                        :key="server.id"
-                        :label="`${server.name}   (最近一次访问：${appiumServerRequestStatusMappingContent[server.status]})`"
-                        :value="server.id"
-                    />
-                  </el-select>
-                </div>
-              </el-col>
-
-              <el-col :span="12">
-                <div style="margin-top: 10px">
-                  <label>运行手机：</label>
-                  <el-select
-                      v-model="runPhone"
-                      filterable
-                      default-first-option
-                      placeholder="请选择运行手机"
-                      style="width: 80%"
-                      size="small"
-                  >
-                    <el-option
-                        v-for="phone in runPhoneList"
-                        :key="phone.id"
-                        :label="phone.name"
-                        :value="phone.id"
-                    />
-                  </el-select>
-                </div>
-              </el-col>
-            </el-row>
-          </div>
-        </el-collapse-item>
-
         <!-- 选择执行模式 -->
         <el-collapse-item name="selectRunModel" v-if="testType !== 'app' && showSelectRunModel">
           <template #title>
@@ -143,8 +156,10 @@
             </div>
           </div>
         </el-collapse-item>
+      </el-collapse>
 
-        <!-- 重新指定参数 -->
+      <!-- 重新指定参数 - 所有测试类型共用 -->
+      <el-collapse v-model="defaultSettingItems" style="margin-top: 15px">
         <el-collapse-item v-if="showRunArgs" name="editRunArgs">
           <template #title>
             <div class="el-collapse-item-title"> 重新指定参数: </div>
@@ -231,11 +246,11 @@
           </div>
         </el-collapse-item>
       </el-collapse>
-    </el-scrollbar>
+    </div>
 
     <template #footer>
       <span class="dialog-footer">
-        <el-button size="small" @click="dialogIsShow = false">取 消</el-button>
+        <el-button size="small" @click="handleCancel">取 消</el-button>
         <el-button v-loading="submitButtonIsLoading" size="small" type="primary" @click="runData()">确 定</el-button>
       </span>
     </template>
@@ -298,35 +313,20 @@ const defaultEnv = ref()
 const runType = ref('0')
 const defaultSettingItems = ref(['selectRunEnv', 'selectDevice', 'editRunArgs'])
 const showArgsTabName = ref('variables')
+const appActiveTab = ref('selectRunEnv') // App自动化的Tab切换
 const eventType = 'select-run-env'
 const triggerFrom = ref()
 const runServerList = ref([])
 const runPhoneList = ref([])
-const envScrollHeight = ref('10px')
 const runName = ref("")
-
-const setTableHeight = () => {
-  if (window.innerHeight < 800){  // 小屏
-    envScrollHeight.value = `${window.innerHeight * 0.75}px`
-  }else {  // 大屏
-    envScrollHeight.value =  `${window.innerHeight * 0.8}px`
-  }
-}
-
-const handleResize = () => {
-  setTableHeight();
-}
 
 onMounted(() =>{
   getRunTimeout() // 初始化等待用例运行超时时间
   bus.on(busEvent.drawerIsShow, onDrawerIsShow)
-  setTableHeight()
-  window.addEventListener('resize', handleResize);
 })
 
 onBeforeUnmount(() => {
   bus.off(busEvent.drawerIsShow, onDrawerIsShow)
-  window.removeEventListener('resize', handleResize);
 })
 
 const onDrawerIsShow = (message) => {
@@ -394,6 +394,16 @@ const getTempVariables = () =>  {
   return temp_variables
 }
 
+const handleClose = () => {
+  dialogIsShow.value = false
+  submitButtonIsLoading.value = false
+}
+
+const handleCancel = () => {
+  dialogIsShow.value = false
+  submitButtonIsLoading.value = false
+}
+
 const runData = () =>  {
   const selectRunEnv = runEnvCheckboxRef.value.selectedEnvDataList
   if (selectRunEnv.length > 0) {
@@ -410,9 +420,14 @@ const runData = () =>  {
       temp_variables: temp_variables
     }
 
-    bus.emit(busEvent.drawerIsCommit,data)
     submitButtonIsLoading.value = true
-    dialogIsShow.value = false
+    bus.emit(busEvent.drawerIsCommit,data)
+    
+    // 延迟关闭弹窗，确保事件已发送
+    setTimeout(() => {
+      dialogIsShow.value = false
+      submitButtonIsLoading.value = false
+    }, 100)
   } else {
     ElMessage.warning('请选择运行环境')
   }
@@ -461,5 +476,241 @@ const getRunAppEnv = () => {
   font-weight: 600;
   font-size: 18px;
   color: rgb(250, 110, 134);
+}
+
+// 顶部运行标题样式
+.run-title {
+  text-align: center;
+  font-weight: 600;
+  font-size: 16px;
+  color: #409EFF; // 蓝色突出显示
+  padding: 4px 0; // 上下间距只有4px
+  margin-bottom: 8px; // 与下方内容的间距
+  border-bottom: 1px solid #e4e7ed; // 添加底部分隔线
+}
+
+// 运行环境弹窗样式
+.run-env-dialog {
+  :deep(.el-dialog) {
+    margin-top: 3vh !important;
+    max-height: 94vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  :deep(.el-dialog__header) {
+    flex-shrink: 0;
+    padding: 20px 20px 15px;
+  }
+  
+  :deep(.el-dialog__body) {
+    flex: 1;
+    padding: 10px 20px 20px; // 减少顶部padding，从20px改为10px
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: calc(94vh - 140px); // 减去header和footer的高度
+    min-height: 200px; // 确保有最小高度
+    
+    // 自定义滚动条样式
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+      
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
+  }
+  
+  :deep(.el-dialog__footer) {
+    flex-shrink: 0;
+    padding: 15px 20px;
+    border-top: 1px solid #ebeef5;
+  }
+}
+
+.dialog-content {
+  width: 100%;
+  
+  // 确保折叠面板内容也能正常滚动
+  :deep(.el-collapse) {
+    border: none;
+  }
+  
+  :deep(.el-collapse-item__content) {
+    padding-bottom: 15px;
+  }
+  
+  // App自动化Tab容器样式
+  .app-tabs-container {
+    margin-bottom: 15px;
+    
+    :deep(.el-tabs--border-card) {
+      border: 1px solid #dcdfe6;
+      box-shadow: none; // 去除阴影效果
+      border-radius: 4px;
+      
+      .el-tabs__header {
+        background-color: #f5f7fa;
+        border-bottom: 1px solid #e4e7ed;
+      }
+      
+      .el-tabs__item {
+        color: #606266;
+        
+        &.is-active {
+          color: #409EFF;
+          font-weight: 600;
+        }
+        
+        &:hover {
+          color: #409EFF;
+        }
+      }
+      
+      .el-tabs__content {
+        padding: 0;
+        max-height: 300px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        
+        // 自定义滚动条样式
+        &::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        &::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 3px;
+        }
+        
+        &::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 3px;
+          
+          &:hover {
+            background: #a8a8a8;
+          }
+        }
+      }
+    }
+  }
+  
+  // 限制APP执行参数设置的高度（Tab方式中）
+  .app-device-settings {
+    max-height: 280px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    
+    // 自定义滚动条样式
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+      
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
+  }
+  
+  // 限制"重新指定参数"折叠面板中的标签页内容高度
+  // 调整为添加3条及以上时显示滚动条
+  :deep(.el-collapse-item) {
+    .el-tabs {
+      .el-tabs__content {
+        max-height: 250px; // 降低高度，约3条数据的高度
+        overflow-y: auto;
+        overflow-x: hidden;
+        
+        // 自定义滚动条样式
+        &::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        &::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 3px;
+        }
+        
+        &::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 3px;
+          
+          &:hover {
+            background: #a8a8a8;
+          }
+        }
+      }
+      
+      .el-tab-pane {
+        padding-right: 5px; // 为滚动条留出空间
+      }
+    }
+  }
+}
+
+// 响应式适配
+@media (max-width: 1200px) {
+  .run-env-dialog {
+    :deep(.el-dialog) {
+      width: 90% !important;
+      margin: 3vh auto !important;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .run-env-dialog {
+    :deep(.el-dialog) {
+      width: 95% !important;
+      margin: 2vh auto !important;
+      max-height: 96vh;
+    }
+    
+    :deep(.el-dialog__body) {
+      padding: 15px;
+      max-height: calc(96vh - 130px);
+    }
+    
+    :deep(.el-dialog__header) {
+      padding: 15px;
+    }
+    
+    :deep(.el-dialog__footer) {
+      padding: 10px 15px;
+    }
+  }
+}
+
+// 小屏幕优化
+@media (max-height: 800px) {
+  .run-env-dialog {
+    :deep(.el-dialog) {
+      margin-top: 2vh !important;
+      max-height: 96vh;
+    }
+    
+    :deep(.el-dialog__body) {
+      max-height: calc(96vh - 130px);
+    }
+  }
 }
 </style>

@@ -173,10 +173,19 @@
             placeholder="请输入 API 密钥"
             show-password
           />
+          <el-text size="small" type="warning" style="display: block; margin-top: 5px;">
+            ⚠️ 请直接填写API密钥，不要包含"Bearer "前缀
+          </el-text>
         </el-form-item>
 
         <el-form-item label="API 地址" prop="base_url">
           <el-input v-model="configForm.base_url" placeholder="API 基础地址（可选）" />
+          <el-text size="small" type="info" style="display: block; margin-top: 5px;">
+            常见配置：OpenAI: https://api.openai.com/v1 | DeepSeek: https://api.deepseek.com | 通义千问: https://dashscope.aliyuncs.com/compatible-mode/v1
+          </el-text>
+          <el-text size="small" type="warning" style="display: block; margin-top: 3px;">
+            ⚠️ 注意：base_url只需填写基础地址，不要包含 /chat/completions 等端点路径
+          </el-text>
         </el-form-item>
 
         <el-form-item label="系统提示词" prop="system_prompt">
@@ -340,13 +349,7 @@ const loadConfigs = async () => {
     }
   } catch (error: any) {
     console.error('获取配置列表失败:', error)
-    // 只处理业务逻辑错误，HTTP错误由响应拦截器处理
-    if (error.response?.status < 500 && error.response?.data?.message) {
-      ElMessage.error({
-        message: error.response.data.message,
-        duration: 5000
-      })
-    }
+    // 错误消息已由响应拦截器处理，这里不再重复显示
   } finally {
     loading.value = false
   }
@@ -374,34 +377,10 @@ const testConfig = async (config: GlobalLLMConfig) => {
   testingId.value = config.id
   try {
     const response = await globalApi.testLLMConfig(config.id)
-    if (response.status === 200) {
-      ElMessage.success({
-        message: `配置 "${config.name}" 测试成功`,
-        duration: 3000
-      })
-    }
+    // 成功消息已由响应拦截器处理，这里不再重复显示
   } catch (error: any) {
     console.error('测试配置失败:', error)
-    
-    // 对于LLM配置测试，我们总是显示详细的错误信息
-    let errorMessage = '测试配置失败'
-    
-    if (error.response?.data?.message) {
-      // 后端返回的详细错误信息
-      errorMessage = error.response.data.message
-    } else if (error.message) {
-      // 网络或其他错误
-      errorMessage = error.message
-    }
-    
-    // 显示详细的错误信息，延迟一点显示以避免与响应拦截器冲突
-    setTimeout(() => {
-      ElMessage.error({
-        message: errorMessage,
-        duration: 10000, // 延长显示时间，让用户有时间阅读详细信息
-        showClose: true
-      })
-    }, 100)
+    // 错误消息已由响应拦截器处理，这里不再重复显示
   } finally {
     testingId.value = null
   }
@@ -428,13 +407,8 @@ const testCurrentConfig = async () => {
     
     // 如果是编辑模式，直接测试现有配置
     if (editingConfig.value) {
-      const response = await globalApi.testLLMConfig(editingConfig.value.id)
-      if (response.status === 200) {
-        ElMessage.success({
-          message: '连接测试成功！配置可以正常使用',
-          duration: 3000
-        })
-      }
+      await globalApi.testLLMConfig(editingConfig.value.id)
+      // 成功消息已由响应拦截器处理
     } else {
       // 新建模式，先创建临时配置进行测试
       try {
@@ -444,13 +418,8 @@ const testCurrentConfig = async () => {
           
           // 测试临时配置
           try {
-            const testResponse = await globalApi.testLLMConfig(tempConfigId)
-            if (testResponse.status === 200) {
-              ElMessage.success({
-                message: '连接测试成功！配置可以正常使用',
-                duration: 3000
-              })
-            }
+            await globalApi.testLLMConfig(tempConfigId)
+            // 成功消息已由响应拦截器处理
           } finally {
             // 删除临时配置
             await globalApi.deleteLLMConfig(tempConfigId)
@@ -463,26 +432,7 @@ const testCurrentConfig = async () => {
     }
   } catch (error: any) {
     console.error('连接测试失败:', error)
-    
-    // 对于LLM配置测试，我们总是显示详细的错误信息
-    let errorMessage = '连接测试失败'
-    
-    if (error.response?.data?.message) {
-      // 后端返回的详细错误信息
-      errorMessage = error.response.data.message
-    } else if (error.message) {
-      // 网络或其他错误
-      errorMessage = error.message
-    }
-    
-    // 显示详细的错误信息，延迟一点显示以避免与响应拦截器冲突
-    setTimeout(() => {
-      ElMessage.error({
-        message: errorMessage,
-        duration: 10000, // 延长显示时间
-        showClose: true
-      })
-    }, 100)
+    // 错误消息已由响应拦截器处理，这里不再重复显示
   } finally {
     testing.value = false
   }
@@ -550,22 +500,13 @@ const handleSubmit = async () => {
     }
     
     if (response.status === 200) {
-      ElMessage.success({
-        message: editingConfig.value ? '配置更新成功' : '配置创建成功',
-        duration: 3000
-      })
+      // 成功消息已由响应拦截器处理，这里不再重复显示
       showCreateDialog.value = false
       loadConfigs()
     }
   } catch (error: any) {
     console.error('提交失败:', error)
-    // 只处理业务逻辑错误，HTTP错误由响应拦截器处理
-    if (error.response?.status < 500 && error.response?.data?.message) {
-      ElMessage.error({
-        message: error.response.data.message,
-        duration: 5000
-      })
-    }
+    // 错误消息已由响应拦截器处理，这里不再重复显示
   } finally {
     submitting.value = false
   }

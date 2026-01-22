@@ -3,128 +3,80 @@
     <el-dialog 
         v-model="drawerIsShow" 
         title="新增页面" 
-        width="85%"
+        width="800px"
         :close-on-click-modal="false"
         :close-on-press-escape="false"
         destroy-on-close
-        top="2vh"
+        top="5vh"
         class="add-page-dialog">
 
-      <el-form ref="ruleFormRef" :model="formData" :rules="formRules" label-width="90px">
-        <el-form-item label="所属模块" class="is-required" style="margin-bottom: 5px">
-        <!--          <el-select v-model="formData.module_name" placeholder="请选择模块" size="small" style="width: 100%">-->
-        <!--            <el-option :value="[]" style="height: auto">-->
-        <!--              <el-tree-->
-        <!--                  :data="moduleTree"-->
-        <!--                  show-checkbox-->
-        <!--                  default-expand-all-->
-        <!--                  node-key="id"-->
-        <!--                  check-strictly-->
-        <!--                  highlight-current-->
-        <!--                  :default-checked-keys="[formData.module_id]"-->
-        <!--                  :props="defaultProps"-->
-        <!--              />-->
-        <!--            </el-option>-->
-        <!--          </el-select>-->
-          <el-input v-model="moduleName" size="small" disabled/>
+      <el-form ref="ruleFormRef" :model="formData" :rules="formRules" label-width="100px" size="small">
+        <el-form-item label="所属模块" class="is-required">
+          <el-input v-model="moduleName" disabled/>
         </el-form-item>
 
-        <el-table ref="dataTable" :data="formData.page_list" stripe size="small" row-key="id">
-
-          <el-table-column label="排序" width="40" align="center">
-            <template #header>
-              <el-tooltip class="item" effect="dark" placement="top-start">
-                <template #content>
-                  <div>可拖拽数据前的图标进行自定义排序</div>
-                </template>
-                <span style="color: #409EFF"><Help></Help></span>
+        <div v-for="(item, index) in formData.page_list" :key="item.id" class="page-form-item">
+          <div class="page-header">
+            <span class="page-title">页面 {{ index + 1 }}</span>
+            <div class="page-actions">
+              <el-tooltip content="添加页面" placement="top">
+                <el-button
+                    v-show="index === 0 || index === formData.page_list.length - 1"
+                    type="primary"
+                    :icon="Plus"
+                    circle
+                    size="small"
+                    @click="addRow"
+                />
               </el-tooltip>
-            </template>
-            <template #default="scope">
-              <el-button
-                  text
-                  @dragstart="handleDragStart($event, scope.row, scope.$index)"
-                  @dragover="handleDragOver($event, scope.$index)"
-                  @drop="handleDrop($event, scope.$index)"
-                  @dragend="handleDragEnd"
-                  draggable="true"
-                  class="drag-button"
-                  :data-index="scope.$index"
-              >
-                <SortThree></SortThree>
-              </el-button>
-            </template>
-          </el-table-column>
+              <el-tooltip content="复制页面" placement="top">
+                <el-button
+                    type="info"
+                    :icon="Copy"
+                    circle
+                    size="small"
+                    @click="copyRow(item)"
+                />
+              </el-tooltip>
+              <el-tooltip content="删除页面" placement="top">
+                <el-button
+                    v-show="isShowDelButton(index)"
+                    type="danger"
+                    :icon="Minus"
+                    circle
+                    size="small"
+                    @click="delRow(index)"
+                />
+              </el-tooltip>
+              <el-tooltip content="清除数据" placement="top">
+                <el-button
+                    v-show="formData.page_list.length === 1"
+                    type="warning"
+                    :icon="Clear"
+                    circle
+                    size="small"
+                    @click="clearData()"
+                />
+              </el-tooltip>
+            </div>
+          </div>
 
-          <el-table-column label="序号" header-align="center" width="40">
-              <template #default="scope">
-                <div>{{ scope.$index + 1 }}</div>
-              </template>
-            </el-table-column>
+          <el-form-item label="页面名称" :prop="`page_list.${index}.name`" :rules="[{ required: true, message: '请输入页面名称', trigger: 'blur' }]">
+            <el-input v-model="item.name" placeholder="请输入页面名称" clearable />
+          </el-form-item>
 
-            <el-table-column header-align="center" min-width="20%">
-              <template #header>
-                <span><span style="color: red">*</span>页面名称</span>
-              </template>
-              <template #default="scope">
-                <el-input v-model="scope.row.name" size="small" type="textarea" :rows="1" />
-              </template>
-            </el-table-column>
+          <el-form-item label="页面描述" :prop="`page_list.${index}.desc`">
+            <el-input 
+                v-model="item.desc" 
+                type="textarea" 
+                :rows="3" 
+                placeholder="请填写页面描述、用途说明等"
+                clearable
+            />
+          </el-form-item>
 
-            <el-table-column header-align="center" min-width="30%">
-              <template #header>
-                <span>页面描述</span>
-              </template>
-              <template #default="scope">
-                <el-input v-model="scope.row.desc" size="small" type="textarea" :rows="1" />
-              </template>
-            </el-table-column>
-
-            <el-table-column fixed="right"  align="center" label="操作" width="90">
-              <template #default="scope">
-                <el-tooltip class="item" effect="dark" placement="top-end" content="添加一行">
-                  <el-button
-                      v-show="scope.$index === 0 || scope.$index === formData.page_list.length - 1"
-                      type="text"
-                      size="small"
-                      style="margin: 2px; padding: 0"
-                      @click.native="addRow"
-                  ><Plus></Plus></el-button>
-                </el-tooltip>
-
-                <el-tooltip class="item" effect="dark" placement="top-end" content="复制当前行">
-                  <el-button
-                      type="text"
-                      size="small"
-                      style="margin: 2px; padding: 0"
-                      @click.native="copyRow(scope.row)"
-                  ><Copy></Copy></el-button>
-                </el-tooltip>
-
-                <el-tooltip class="item" effect="dark" placement="top-end" content="删除当前行">
-                  <el-button
-                      v-show="isShowDelButton(scope.$index)"
-                      type="text"
-                      size="small"
-                      style="color: red;margin: 2px; padding: 0"
-                      @click.native="delRow(scope.$index)"
-                  ><Minus></Minus></el-button>
-                </el-tooltip>
-
-                <el-tooltip class="item" effect="dark" placement="top-end" content="清除数据">
-                  <el-button
-                      v-show="formData.page_list.length === 1"
-                      type="text"
-                      size="small"
-                      style="color: red;margin: 2px; padding: 0"
-                      @click.native="clearData()"
-                  ><Clear></Clear></el-button>
-                </el-tooltip>
-              </template>
-            </el-table-column>
-
-          </el-table>
-
+          <el-divider v-if="index < formData.page_list.length - 1" />
+        </div>
       </el-form>
 
       <template #footer>
@@ -146,10 +98,10 @@
 <script lang="ts" setup>
 
 import {onBeforeUnmount, onMounted, ref} from "vue";
-import {Clear, Copy, Help, Minus, Plus, SortThree} from "@icon-park/vue-next";
+import {Clear, Copy, Minus, Plus} from "@icon-park/vue-next";
 import {PostPage} from "@/api/autotest/page";
 import {bus, busEvent} from "@/utils/bus-events";
-import {ElMessage, ElTree} from "element-plus";
+import {ElMessage} from "element-plus";
 
 const props = defineProps({
   testType: {
@@ -160,13 +112,11 @@ const props = defineProps({
 
 onMounted(() => {
   bus.on(busEvent.treeIsChoice, onTreeIsChoiceEvent);
-  bus.on(busEvent.treeIsDone, onTreeIsDoneEvent);
   bus.on(busEvent.drawerIsShow, onShowDrawerEvent);
 })
 
 onBeforeUnmount(() => {
   bus.off(busEvent.treeIsChoice, onTreeIsChoiceEvent);
-  bus.off(busEvent.treeIsDone, onTreeIsDoneEvent);
   bus.off(busEvent.drawerIsShow, onShowDrawerEvent);
 })
 
@@ -179,12 +129,6 @@ const onShowDrawerEvent = (message: any) => {
   }
 }
 
-const onTreeIsDoneEvent = (message: any) => {
-  if (message.eventType === 'module') {
-    moduleTree.value = message.content
-  }
-}
-
 const onTreeIsChoiceEvent = (message: any) => {
   if (message.eventType === 'module') {
     moduleName.value = message.content.data.name
@@ -193,10 +137,6 @@ const onTreeIsChoiceEvent = (message: any) => {
 
 const drawerIsShow = ref(false)
 const moduleName = ref('')
-const moduleTree = ref([])
-const oldIndex = ref(); // 当前拖拽项的索引
-const dragRow = ref();   // 当前拖拽的行数据
-const defaultProps = {children: 'children', label: 'name'}
 const submitButtonIsLoading = ref(false)
 const ruleFormRef = ref(null)
 const formData = ref({
@@ -231,7 +171,7 @@ const addRow = () => {
   formData.value.page_list.push(getNewData())
 }
 
-const copyRow = (row: {id: string, key: null, value: null, remark: null, data_type: null}) => {
+const copyRow = (row: {id: string, name: null, desc: null}) => {
   let newData = JSON.parse(JSON.stringify(row))
   newData.id = `${Date.now()}`
   formData.value.page_list.push(newData)
@@ -257,8 +197,8 @@ const validatePageList = () => {
   }
   formData.value.page_list.forEach((item, index) => {
     if (!item.name){
-      ElMessage.warning(`第 ${index + 1} 行, 请填完善数据`)
-      throw new Error(`第 ${index + 1} 行, 请填完善数据`);
+      ElMessage.warning(`第 ${index + 1} 个页面, 请完善数据`)
+      throw new Error(`第 ${index + 1} 个页面, 请完善数据`);
     }
   })
 }
@@ -275,39 +215,11 @@ const addData = () => {
           drawerIsShow.value = false
         }
       })
+    } else {
+      ElMessage.warning('请完善表单信息')
     }
   })
 }
-
-// 记录拖拽前的数据顺序
-const handleDragStart = (event, row, index) => {
-  oldIndex.value = index;
-  dragRow.value = row;
-  event.dataTransfer.effectAllowed = "move";
-  event.dataTransfer.setData("text/html", event.target);
-  event.target.classList.add('drag-dragging');
-};
-
-const handleDragOver = (event, index) => {
-  event.preventDefault();  // 必须调用这个方法才能使 drop 生效
-};
-
-const handleDragEnd = (event) => {
-  // 恢复拖拽操作的样式
-  event.target.classList.remove('drag-dragging');
-};
-
-const handleDrop = (event, newIndex) => {
-  event.preventDefault();
-  const updatedData = [...formData.value.page_list];
-  // // 移除当前拖拽的行数据
-  updatedData.splice(oldIndex.value, 1);
-  // // 插入拖拽的行数据到目标索引位置
-  updatedData.splice(newIndex, 0, dragRow.value);
-  formData.value.page_list = updatedData;
-  // 恢复样式
-  event.target.classList.remove('drag-dragging');
-};
 
 </script>
 
@@ -317,9 +229,8 @@ const handleDrop = (event, newIndex) => {
 :deep(.add-page-dialog) {
   .el-dialog {
     border-radius: 8px;
-    max-height: 96vh;
-    margin-top: 2vh !important;
-    margin-bottom: 2vh;
+    max-height: 90vh;
+    margin-top: 5vh !important;
     display: flex;
     flex-direction: column;
   }
@@ -333,7 +244,27 @@ const handleDrop = (event, newIndex) => {
   .el-dialog__body {
     padding: 20px;
     flex: 1;
-    overflow: auto;
+    overflow-y: auto;
+    max-height: calc(90vh - 140px);
+    
+    // 自定义滚动条样式
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+      
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
   }
   
   .el-dialog__footer {
@@ -343,128 +274,92 @@ const handleDrop = (event, newIndex) => {
   }
 }
 
+// 页面表单项样式
+.page-form-item {
+  margin-bottom: 20px;
+  
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #409EFF;
+    
+    .page-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #409EFF;
+    }
+    
+    .page-actions {
+      display: flex;
+      gap: 8px;
+      
+      .el-button {
+        &.is-circle {
+          width: 32px;
+          height: 32px;
+          padding: 0;
+        }
+      }
+    }
+  }
+  
+  .el-form-item {
+    margin-bottom: 18px;
+  }
+}
+
+// 分隔线样式
+.el-divider {
+  margin: 30px 0;
+  border-top: 2px dashed #e4e7ed;
+}
+
+// 底部按钮样式
 .dialog-footer {
   text-align: right;
   
   .el-button {
     margin-left: 10px;
+    min-width: 80px;
   }
 }
 
 // 表单样式优化
 :deep(.el-form) {
-  .el-form-item {
-    margin-bottom: 18px;
-  }
-  
   .el-form-item__label {
     font-weight: 500;
+    color: #606266;
   }
   
-  .is-required .el-form-item__label::before {
-    content: '*';
-    color: #f56c6c;
-    margin-right: 4px;
-  }
-}
-
-// 表格样式优化
-:deep(.el-table) {
-  .el-table__header {
-    th {
-      background-color: #f8f9fa;
-      color: #606266;
-      font-weight: 500;
-    }
-  }
-  
-  .el-table__row {
+  .el-input__wrapper {
+    transition: all 0.3s;
+    
     &:hover {
-      background-color: #f5f7fa;
-    }
-  }
-}
-
-// 拖拽按钮样式优化
-.drag-button {
-  cursor: grab;
-  color: #409eff;
-  padding: 4px !important;
-  
-  &:hover {
-    color: #66b1ff;
-    background-color: #ecf5ff;
-  }
-  
-  &:active {
-    cursor: grabbing;
-  }
-}
-
-.drag-dragging {
-  opacity: 0.5;
-  cursor: grabbing !important;
-}
-
-// 表格内输入框样式优化
-:deep(.el-table) {
-  .el-input {
-    .el-input__wrapper {
-      border: 1px solid transparent;
-      box-shadow: none;
-      
-      &:hover {
-        border-color: #c0c4cc;
-      }
-      
-      &.is-focus {
-        border-color: #409eff;
-        box-shadow: 0 0 0 1px #409eff inset;
-      }
+      box-shadow: 0 0 0 1px #c0c4cc inset;
     }
     
-    .el-textarea__inner {
-      border: 1px solid transparent;
-      box-shadow: none;
-      resize: none;
-      
-      &:hover {
-        border-color: #c0c4cc;
-      }
-      
-      &:focus {
-        border-color: #409eff;
-        box-shadow: 0 0 0 1px #409eff inset;
-      }
+    &.is-focus {
+      box-shadow: 0 0 0 1px #409eff inset;
     }
   }
-}
-
-// 操作按钮样式优化
-:deep(.el-table) {
-  .el-button {
-    &.is-text {
-      padding: 4px;
-      margin: 2px;
-      border-radius: 4px;
-      
-      &:hover {
-        background-color: #ecf5ff;
-      }
+  
+  .el-textarea__inner {
+    transition: all 0.3s;
+    
+    &:hover {
+      border-color: #c0c4cc;
+    }
+    
+    &:focus {
+      border-color: #409eff;
     }
   }
-}
-
-// 工具提示样式
-:deep(.el-tooltip__trigger) {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-// 模块输入框样式优化
-:deep(.el-input) {
-  &.is-disabled {
+  
+  // 禁用状态的输入框样式
+  .el-input.is-disabled {
     .el-input__wrapper {
       background-color: #f5f7fa;
       border-color: #e4e7ed;
@@ -477,8 +372,7 @@ const handleDrop = (event, newIndex) => {
 @media (max-width: 1200px) {
   :deep(.add-page-dialog) {
     .el-dialog {
-      width: 95% !important;
-      margin: 1vh auto !important;
+      width: 90% !important;
     }
   }
 }
@@ -486,35 +380,28 @@ const handleDrop = (event, newIndex) => {
 @media (max-width: 768px) {
   :deep(.add-page-dialog) {
     .el-dialog {
-      width: 100% !important;
-      margin: 0 !important;
-      height: 100vh;
-      border-radius: 0;
+      width: 95% !important;
+      margin-top: 2vh !important;
     }
     
     .el-dialog__body {
-      padding: 10px;
+      padding: 15px;
     }
   }
   
-  // 移动端表格优化
-  :deep(.el-table) {
-    font-size: 12px;
-    
-    .el-table__cell {
-      padding: 8px 4px;
-    }
-    
-    .el-input {
-      .el-input__inner,
-      .el-textarea__inner {
-        font-size: 12px;
-        padding: 4px 8px;
+  .page-form-item {
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      
+      .page-actions {
+        width: 100%;
+        justify-content: flex-end;
       }
     }
   }
   
-  // 移动端表单优化
   :deep(.el-form) {
     .el-form-item__label {
       font-size: 14px;

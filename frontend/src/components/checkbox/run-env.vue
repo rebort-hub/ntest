@@ -7,21 +7,21 @@
     >全选
     </el-checkbox>
 
-    <el-checkbox-group v-model="selectedEnvDataList" @change="handleCheckedItemChange">
-      <div v-for="(envDataList, groupName, index) in envGroupDataDict" :key="index">
-        {{ envDataList }}
+    <div v-for="(envDataList, groupName, index) in envGroupDataDict" :key="index" style="margin-bottom: 15px;">
+      <div style="font-weight: 600; color: #303133; margin-bottom: 8px; margin-top: 10px;">
         {{ groupName }}
-        <div style="margin: 15px 0;"/>
-        <el-checkbox disabled>{{ groupName }}</el-checkbox>
-        <br>
-        <el-checkbox
-            v-for="(env) in envDataList"
-            :key="env.id"
-            :label="getItem === 'code' ? env.code : env.id"
-        >{{ env.name }}
-        </el-checkbox>
       </div>
-    </el-checkbox-group>
+      <el-checkbox-group v-model="selectedEnvDataList" @change="handleCheckedItemChange">
+        <div style="margin-left: 20px; display: flex; flex-wrap: wrap; gap: 10px;">
+          <el-checkbox
+              v-for="(env) in envDataList"
+              :key="env.id"
+              :label="getItem === 'code' ? env.code : env.id"
+          >&nbsp;&nbsp;{{ env.name }}
+          </el-checkbox>
+        </div>
+      </el-checkbox-group>
+    </div>
 
   </div>
 </template>

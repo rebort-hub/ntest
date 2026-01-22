@@ -157,13 +157,13 @@
                 <div class="requirement-header">
                   <div class="requirement-meta">
                     <el-tag :type="getTypeColor(req.requirement_type)" size="small">
-                      {{ req.requirement_type }}
+                      {{ req.requirement_type_cn || req.requirement_type }}
                     </el-tag>
                     <el-tag :type="getPriorityColor(req.priority)" size="small">
-                      {{ req.priority }}
+                      优先级: {{ req.priority_cn || req.priority }}
                     </el-tag>
                     <el-tag :type="getStatusColor(req.status)" size="small">
-                      {{ req.status }}
+                      {{ req.status_cn || req.status }}
                     </el-tag>
                     <span class="similarity-score">
                       相似度: {{ (req.similarity_score * 100).toFixed(1) }}%
@@ -211,7 +211,7 @@
                         :key="type"
                         class="distribution-item"
                       >
-                        <span>{{ type }}: {{ count }}</span>
+                        <span>{{ getTypeLabel(type) }}: {{ count }}</span>
                         <div class="distribution-bar">
                           <div 
                             class="distribution-fill"
@@ -232,7 +232,7 @@
                         :key="priority"
                         class="distribution-item"
                       >
-                        <span>{{ priority }}: {{ count }}</span>
+                        <span>{{ getPriorityLabel(priority) }}: {{ count }}</span>
                         <div class="distribution-bar">
                           <div 
                             class="distribution-fill"
@@ -253,7 +253,7 @@
                         :key="status"
                         class="distribution-item"
                       >
-                        <span>{{ status }}: {{ count }}</span>
+                        <span>{{ getStatusLabel(status) }}: {{ count }}</span>
                         <div class="distribution-bar">
                           <div 
                             class="distribution-fill"
@@ -303,87 +303,245 @@
       </el-col>
     </el-row>
 
-    <!-- 上下文感知生成 -->
+    <!-- 基于检索结果生成测试用例 -->
     <el-row style="margin-top: 20px">
       <el-col :span="24">
-        <el-card>
+        <el-card class="test-case-generation-card">
           <template #header>
             <div class="card-header">
-              <span>上下文感知生成</span>
+              <span>🧪 基于检索结果生成测试用例</span>
               <el-button 
                 type="primary" 
-                @click="generateWithContext"
-                :loading="generationLoading"
-                :disabled="!searchResult"
+                @click="generateTestCases"
+                :loading="testCaseLoading"
+                :disabled="!searchResult || !searchResult.requirements.length"
               >
-                基于检索结果生成
+                生成测试用例
               </el-button>
             </div>
           </template>
 
           <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form :model="generationForm" label-width="120px">
-                <el-form-item label="生成请求">
+            <!-- 左侧：生成配置 -->
+            <el-col :span="8">
+              <el-form :model="testCaseForm" label-width="100px">
+                <el-form-item label="需求描述">
                   <el-input
-                    v-model="generationForm.request"
+                    v-model="testCaseForm.requirement_query"
                     type="textarea"
                     :rows="4"
-                    placeholder="基于检索到的需求，请生成..."
+                    placeholder="基于检索到的需求，描述要生成测试用例的场景..."
                   />
-                </el-form-item>
-
-                <el-form-item label="生成类型">
-                  <el-select v-model="generationForm.generation_type" style="width: 100%">
-                    <el-option label="测试用例" value="test_case" />
-                    <el-option label="需求文档" value="requirement" />
-                    <el-option label="技术文档" value="documentation" />
-                  </el-select>
-                </el-form-item>
-
-                <el-form-item label="上下文来源">
-                  <el-select
-                    v-model="generationForm.context_sources"
-                    multiple
-                    placeholder="选择上下文来源"
-                    style="width: 100%"
+                  <el-button 
+                    size="small" 
+                    type="text" 
+                    @click="useSearchQuery"
+                    style="margin-top: 8px"
                   >
-                    <el-option label="检索结果" value="search_results" />
-                    <el-option label="知识库" value="knowledge_base" />
-                    <el-option label="历史生成" value="history" />
+                    使用检索查询
+                  </el-button>
+                </el-form-item>
+
+                <el-form-item label="测试类型">
+                  <el-select v-model="testCaseForm.test_type" style="width: 100%">
+                    <el-option
+                      v-for="type in testTypes"
+                      :key="type.id"
+                      :label="`${type.icon} ${type.name}`"
+                      :value="type.id"
+                    >
+                      <div class="test-type-option">
+                        <span>{{ type.icon }} {{ type.name }}</span>
+                        <div class="type-desc">{{ type.description }}</div>
+                      </div>
+                    </el-option>
                   </el-select>
                 </el-form-item>
+
+                <el-row :gutter="10">
+                  <el-col :span="12">
+                    <el-form-item label="检索数量">
+                      <el-input-number
+                        v-model="testCaseForm.top_k"
+                        :min="1"
+                        :max="20"
+                        size="small"
+                        style="width: 100%"
+                      />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                    <el-form-item label="相似度">
+                      <el-input-number
+                        v-model="testCaseForm.score_threshold"
+                        :min="0"
+                        :max="1"
+                        :step="0.1"
+                        size="small"
+                        style="width: 100%"
+                      />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
               </el-form>
             </el-col>
 
-            <el-col :span="12">
-              <div v-if="generationResult" class="generation-result">
-                <div class="generation-info">
-                  <el-tag :type="getConfidenceColor(generationResult.confidence)">
-                    置信度: {{ generationResult.confidence }}
-                  </el-tag>
-                  <el-tag type="info">
-                    方法: {{ generationResult.generation_method }}
-                  </el-tag>
+            <!-- 右侧：生成结果 -->
+            <el-col :span="16">
+              <div v-if="testCaseResult" class="test-case-results">
+                <!-- 统计信息 -->
+                <div class="stats-section">
+                  <el-row :gutter="15">
+                    <el-col :span="6">
+                      <el-statistic 
+                        title="用例数量" 
+                        :value="testCaseResult.statistics?.total_test_cases || 0" 
+                      />
+                    </el-col>
+                    <el-col :span="6">
+                      <el-statistic 
+                        title="高优先级" 
+                        :value="testCaseResult.statistics?.high_priority || 0" 
+                      />
+                    </el-col>
+                    <el-col :span="6">
+                      <el-statistic 
+                        title="检索时间" 
+                        :value="testCaseResult.retrieval_time?.toFixed(2) || 0" 
+                        suffix="s"
+                      />
+                    </el-col>
+                    <el-col :span="6">
+                      <el-statistic 
+                        title="生成时间" 
+                        :value="testCaseResult.generation_time?.toFixed(2) || 0" 
+                        suffix="s"
+                      />
+                    </el-col>
+                  </el-row>
                 </div>
 
-                <div class="generation-content">
-                  <h4>生成内容</h4>
-                  <div class="content-display">
-                    <pre>{{ JSON.stringify(generationResult.generated_content, null, 2) }}</pre>
+                <!-- 需求分析 -->
+                <div v-if="testCaseResult.analysis" class="analysis-section-tc">
+                  <h4>需求分析</h4>
+                  <div class="analysis-tags">
+                    <div v-if="testCaseResult.analysis.modules?.length">
+                      <strong>功能模块：</strong>
+                      <el-tag 
+                        v-for="module in testCaseResult.analysis.modules" 
+                        :key="module" 
+                        size="small"
+                        style="margin: 0 5px 5px 0"
+                      >
+                        {{ module }}
+                      </el-tag>
+                    </div>
+                    <div v-if="testCaseResult.analysis.test_scenarios?.length" style="margin-top: 10px">
+                      <strong>测试场景：</strong>
+                      <el-tag 
+                        v-for="scenario in testCaseResult.analysis.test_scenarios" 
+                        :key="scenario" 
+                        size="small"
+                        type="info"
+                        style="margin: 0 5px 5px 0"
+                      >
+                        {{ scenario }}
+                      </el-tag>
+                    </div>
                   </div>
                 </div>
 
-                <div class="context-info">
-                  <h4>上下文信息</h4>
-                  <p>使用来源: {{ generationResult.context_info.sources_used }}</p>
-                  <p>上下文质量: {{ generationResult.context_info.context_quality }}</p>
-                  <p>生成类型: {{ generationResult.context_info.generation_type }}</p>
+                <!-- 测试用例列表 -->
+                <div class="test-cases-list">
+                  <div class="list-header">
+                    <h4>测试用例 ({{ getTestCaseCount() }})</h4>
+                    <div class="header-actions">
+                      <el-button size="small" @click="exportTestCases">导出</el-button>
+                      <el-button size="small" @click="copyTestCases">复制</el-button>
+                    </div>
+                  </div>
+
+                  <el-collapse v-model="activeTestCases">
+                    <el-collapse-item
+                      v-for="(testCase, index) in getTestCases()"
+                      :key="testCase.id || index"
+                      :name="testCase.id || `tc-${index}`"
+                    >
+                      <template #title>
+                        <div class="case-title">
+                          <span class="case-id">{{ testCase.id }}</span>
+                          <span class="case-name">{{ testCase.title }}</span>
+                          <el-tag :type="getPriorityType(testCase.priority)" size="small">
+                            {{ testCase.priority }}
+                          </el-tag>
+                          <el-tag :type="getTestTypeColor(testCase.type)" size="small">
+                            {{ testCase.type }}
+                          </el-tag>
+                        </div>
+                      </template>
+
+                      <div class="case-detail">
+                        <!-- 前置条件 -->
+                        <div v-if="testCase.preconditions?.length" class="case-section">
+                          <strong>前置条件：</strong>
+                          <ul>
+                            <li v-for="(condition, idx) in testCase.preconditions" :key="idx">
+                              {{ condition }}
+                            </li>
+                          </ul>
+                        </div>
+
+                        <!-- 测试步骤 -->
+                        <div v-if="testCase.test_steps?.length" class="case-section">
+                          <strong>测试步骤：</strong>
+                          <ol>
+                            <li v-for="step in testCase.test_steps" :key="step.step">
+                              <div class="step-action"><strong>操作：</strong>{{ step.action }}</div>
+                              <div class="step-expected"><strong>预期：</strong>{{ step.expected }}</div>
+                            </li>
+                          </ol>
+                        </div>
+
+                        <!-- 测试数据 -->
+                        <div v-if="testCase.test_data" class="case-section">
+                          <strong>测试数据：</strong>
+                          <pre class="test-data">{{ JSON.stringify(testCase.test_data, null, 2) }}</pre>
+                        </div>
+
+                        <!-- 后置条件 -->
+                        <div v-if="testCase.postconditions?.length" class="case-section">
+                          <strong>后置条件：</strong>
+                          <ul>
+                            <li v-for="(condition, idx) in testCase.postconditions" :key="idx">
+                              {{ condition }}
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    </el-collapse-item>
+                  </el-collapse>
+                </div>
+
+                <!-- 参考文档 -->
+                <div v-if="testCaseResult.context_chunks?.length" class="context-chunks">
+                  <h4>参考文档 ({{ testCaseResult.context_chunks.length }})</h4>
+                  <el-collapse>
+                    <el-collapse-item
+                      v-for="(chunk, index) in testCaseResult.context_chunks"
+                      :key="index"
+                      :title="`${chunk.metadata?.document_title || '未知文档'} - 相似度: ${(chunk.score * 100).toFixed(1)}%`"
+                    >
+                      <div class="chunk-content">{{ chunk.content }}</div>
+                    </el-collapse-item>
+                  </el-collapse>
                 </div>
               </div>
 
-              <div v-else class="no-generation">
-                <el-empty description="暂无生成结果" />
+              <div v-else class="no-test-cases">
+                <el-empty 
+                  description="暂无测试用例，请先检索需求并点击生成测试用例按钮" 
+                  :image-size="120"
+                />
               </div>
             </el-col>
           </el-row>
@@ -427,6 +585,7 @@ const goBack = () => {
 // 响应式数据
 const searchLoading = ref(false)
 const generationLoading = ref(false)
+const testCaseLoading = ref(false)
 
 const searchForm = reactive<RequirementRetrievalRequest>({
   query: '',
@@ -442,6 +601,14 @@ const generationForm = reactive<ContextAwareGenerationRequest>({
   context_sources: ['search_results']
 })
 
+// 测试用例生成表单
+const testCaseForm = reactive({
+  requirement_query: '',
+  test_type: 'functional',
+  top_k: 5,
+  score_threshold: 0.3
+})
+
 const knowledgeBases = ref<Array<{
   id: string
   name: string
@@ -450,6 +617,9 @@ const knowledgeBases = ref<Array<{
 
 const searchResult = ref<RequirementRetrievalResponse | null>(null)
 const generationResult = ref<ContextAwareGenerationResponse | null>(null)
+const testCaseResult = ref<any>(null)
+const testTypes = ref<any[]>([])
+const activeTestCases = ref<string[]>([])
 
 const quickQueries = ref([
   '用户登录功能',
@@ -503,7 +673,7 @@ const searchRequirements = async () => {
       searchResult.value = response.data
       searchStats.total_requirements = response.data.analysis.total_requirements
       searchStats.matched_count = response.data.filtered_count
-      ElMessage.success('需求检索完成')
+      // 不显示成功提示，因为结果已经展示在页面上
     }
   } catch (error) {
     console.error('需求检索失败:', error)
@@ -554,6 +724,17 @@ const getTypeColor = (type: string) => {
   return colors[type] || 'info'
 }
 
+const getTypeLabel = (type: string) => {
+  const labels: Record<string, string> = {
+    'functional': '功能需求',
+    'non-functional': '非功能需求',
+    'business': '业务需求',
+    'user': '用户需求',
+    'system': '系统需求'
+  }
+  return labels[type] || type
+}
+
 const getPriorityColor = (priority: string) => {
   const colors: Record<string, string> = {
     'High': 'danger',
@@ -561,6 +742,15 @@ const getPriorityColor = (priority: string) => {
     'Low': 'success'
   }
   return colors[priority] || 'info'
+}
+
+const getPriorityLabel = (priority: string) => {
+  const labels: Record<string, string> = {
+    'High': '高优先级',
+    'Medium': '中优先级',
+    'Low': '低优先级'
+  }
+  return labels[priority] || priority
 }
 
 const getStatusColor = (status: string) => {
@@ -573,6 +763,16 @@ const getStatusColor = (status: string) => {
   return colors[status] || 'info'
 }
 
+const getStatusLabel = (status: string) => {
+  const labels: Record<string, string> = {
+    'active': '进行中',
+    'pending': '待处理',
+    'completed': '已完成',
+    'cancelled': '已取消'
+  }
+  return labels[status] || status
+}
+
 const getConfidenceColor = (confidence: string) => {
   const colors: Record<string, string> = {
     'high': 'success',
@@ -582,9 +782,132 @@ const getConfidenceColor = (confidence: string) => {
   return colors[confidence] || 'info'
 }
 
+// 测试用例生成相关方法
+const generateTestCases = async () => {
+  if (!testCaseForm.requirement_query.trim()) {
+    ElMessage.warning('请输入需求描述')
+    return
+  }
+
+  if (!searchForm.knowledge_base_id) {
+    ElMessage.warning('请选择知识库')
+    return
+  }
+
+  testCaseLoading.value = true
+  testCaseResult.value = null
+
+  try {
+    const params: any = {
+      requirement_query: testCaseForm.requirement_query,
+      knowledge_base_id: searchForm.knowledge_base_id,
+      test_type: testCaseForm.test_type,
+      top_k: testCaseForm.top_k,
+      score_threshold: testCaseForm.score_threshold
+    }
+
+    const response = await advancedFeaturesApi.langGraph.generateTestCases(projectId, params)
+
+    if (response.data) {
+      testCaseResult.value = response.data
+      ElMessage.success('测试用例生成成功')
+      
+      // 默认展开第一个测试用例
+      const testCases = getTestCases()
+      if (testCases.length > 0) {
+        activeTestCases.value = [testCases[0].id || 'tc-0']
+      }
+    }
+  } catch (error: any) {
+    console.error('测试用例生成失败:', error)
+    ElMessage.error(error.response?.data?.detail || '测试用例生成失败')
+  } finally {
+    testCaseLoading.value = false
+  }
+}
+
+const useSearchQuery = () => {
+  testCaseForm.requirement_query = searchForm.query
+}
+
+const getTestCases = () => {
+  if (!testCaseResult.value?.test_cases) return []
+  
+  // 查找测试套件
+  const testCases = testCaseResult.value.test_cases
+  for (const key in testCases) {
+    if (key.includes('test_suite') && testCases[key].test_cases) {
+      return testCases[key].test_cases
+    }
+  }
+  return []
+}
+
+const getTestCaseCount = () => {
+  return getTestCases().length
+}
+
+const exportTestCases = () => {
+  if (!testCaseResult.value) return
+
+  const content = JSON.stringify(testCaseResult.value.test_cases, null, 2)
+  const blob = new Blob([content], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `test_cases_${Date.now()}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+  
+  ElMessage.success('测试用例已导出')
+}
+
+const copyTestCases = async () => {
+  if (!testCaseResult.value) return
+
+  try {
+    const content = JSON.stringify(testCaseResult.value.test_cases, null, 2)
+    await navigator.clipboard.writeText(content)
+    ElMessage.success('测试用例已复制到剪贴板')
+  } catch (error) {
+    ElMessage.error('复制失败')
+  }
+}
+
+const getPriorityType = (priority: string) => {
+  const map: Record<string, any> = {
+    'High': 'danger',
+    'Medium': 'warning',
+    'Low': 'info'
+  }
+  return map[priority] || 'info'
+}
+
+const getTestTypeColor = (type: string) => {
+  const map: Record<string, any> = {
+    'Positive': 'success',
+    'Negative': 'warning',
+    'Boundary': 'info'
+  }
+  return map[type] || 'info'
+}
+
+// 获取测试类型列表
+const fetchTestTypes = async () => {
+  try {
+    const response = await advancedFeaturesApi.langGraph.getTestTypes()
+    if (response.data?.test_types) {
+      testTypes.value = response.data.test_types
+    }
+  } catch (error) {
+    console.error('获取测试类型失败:', error)
+  }
+}
+
 // 生命周期
 onMounted(() => {
   loadKnowledgeBases()
+  fetchTestTypes()
 })
 </script>
 
@@ -837,5 +1160,153 @@ onMounted(() => {
   margin: 5px 0;
   font-size: 14px;
   color: #606266;
+}
+
+/* 测试用例生成样式 */
+.test-case-generation-card {
+  margin-bottom: 20px;
+}
+
+.test-type-option {
+  display: flex;
+  flex-direction: column;
+}
+
+.type-desc {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+}
+
+.test-case-results {
+  max-height: 600px;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.stats-section {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.analysis-section-tc {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #ecf5ff;
+  border-radius: 8px;
+}
+
+.analysis-section-tc h4 {
+  margin: 0 0 10px 0;
+  color: #409eff;
+}
+
+.analysis-tags {
+  font-size: 14px;
+}
+
+.test-cases-list {
+  margin-bottom: 20px;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.list-header h4 {
+  margin: 0;
+  color: #303133;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.case-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.case-id {
+  font-weight: 600;
+  color: #409eff;
+}
+
+.case-name {
+  flex: 1;
+  color: #303133;
+}
+
+.case-detail {
+  padding: 16px;
+}
+
+.case-section {
+  margin-bottom: 16px;
+}
+
+.case-section strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #303133;
+}
+
+.case-section ul,
+.case-section ol {
+  margin: 0;
+  padding-left: 24px;
+}
+
+.case-section li {
+  margin-bottom: 8px;
+  color: #606266;
+  line-height: 1.6;
+}
+
+.step-action,
+.step-expected {
+  margin-bottom: 4px;
+}
+
+.test-data {
+  background: #f5f7fa;
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  overflow-x: auto;
+}
+
+.context-chunks {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #dcdfe6;
+}
+
+.context-chunks h4 {
+  margin: 0 0 15px 0;
+  color: #303133;
+}
+
+.chunk-content {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #606266;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.no-test-cases {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
 }
 </style>

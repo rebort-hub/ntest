@@ -121,16 +121,16 @@
       />
     </div>
 
-    <EditDrawer></EditDrawer>
-    <ToBusinessDrawer></ToBusinessDrawer>
+    <EditDialog></EditDialog>
+    <ToUserDialog></ToUserDialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import {computed, onBeforeUnmount, onMounted, Ref, ref} from "vue";
 import Pagination from '@/components/pagination.vue'
-import EditDrawer from './drawer.vue'
-import ToBusinessDrawer from './to-user.vue'
+import EditDialog from './edit-dialog.vue'
+import ToUserDialog from './to-user-dialog.vue'
 
 import {bus, busEvent} from "@/utils/bus-events";
 

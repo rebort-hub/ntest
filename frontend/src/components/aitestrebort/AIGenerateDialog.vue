@@ -357,14 +357,10 @@
       </div>
     </div>
 
-    <!-- 生成结果预览 -->
+    <!-- 生成结果预览 - 改为折叠面板 -->
     <div v-if="generatedTestCases.length > 0" class="result-preview">
-      <el-divider content-position="left">
-        <el-icon><Select /></el-icon>
-        生成结果预览 ({{ generatedTestCases.length }})
-      </el-divider>
-      
-      <div class="preview-summary">
+      <!-- 操作按钮区域 - 始终可见 -->
+      <div class="preview-actions-fixed">
         <el-alert
           :title="`成功生成 ${generatedTestCases.length} 个测试用例`"
           type="success"
@@ -372,21 +368,20 @@
           show-icon
         >
           <template #default>
-            <p>需求：{{ form.requirement }}</p>
-            <p>模块：{{ selectedModuleName }}</p>
-            <div class="preview-actions">
+            <div class="preview-buttons">
               <!-- 表单模式按钮 -->
               <template v-if="generationMode === 'form'">
                 <el-button type="primary" @click="showPreviewDialog" size="small">
                   <el-icon><View /></el-icon>
-                  查看详细预览
+                  预览用例
                 </el-button>
                 <el-button 
                   type="success" 
                   @click="confirmGenerate"
                   size="small"
                 >
-                  确认保存
+                  <el-icon><Select /></el-icon>
+                  保存用例
                 </el-button>
               </template>
               
@@ -398,20 +393,39 @@
                   size="small"
                 >
                   <el-icon><View /></el-icon>
-                  查看详细预览
+                  预览用例
                 </el-button>
                 <el-button 
                   type="success" 
-                  @click="showPreviewDialog"
+                  @click="confirmGenerate"
                   size="small"
                 >
-                  确认保存
+                  <el-icon><Select /></el-icon>
+                  保存用例
                 </el-button>
               </template>
             </div>
           </template>
         </el-alert>
       </div>
+      
+      <!-- 详细信息折叠面板 -->
+      <el-collapse class="preview-collapse">
+        <el-collapse-item name="1">
+          <template #title>
+            <div class="collapse-title">
+              <el-icon><Document /></el-icon>
+              <span>查看生成详情</span>
+            </div>
+          </template>
+          <div class="preview-detail">
+            <p><strong>需求描述：</strong>{{ form.requirement || chatInput }}</p>
+            <p><strong>所属模块：</strong>{{ selectedModuleName }}</p>
+            <p><strong>生成数量：</strong>{{ generatedTestCases.length }} 个测试用例</p>
+            <p v-if="form.context"><strong>上下文信息：</strong>{{ form.context }}</p>
+          </div>
+        </el-collapse-item>
+      </el-collapse>
     </div>
 
     <!-- 测试用例预览弹窗 -->
@@ -429,7 +443,7 @@
 import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { MagicStick, Select, View, ChatDotRound } from '@element-plus/icons-vue'
+import { MagicStick, Select, View, ChatDotRound, Document } from '@element-plus/icons-vue'
 import { 
   aiGeneratorApi, 
   type AIGenerateRequest, 
@@ -1716,13 +1730,79 @@ onMounted(() => {
   margin-left: -20px;
   margin-right: -20px;
   margin-bottom: -20px;
-  max-height: 300px;
-  overflow-y: auto;
   border: 1px solid #ebeef5;
   border-radius: 0 0 6px 6px;
   border-top: none;
+  background-color: #f5f7fa;
+}
+
+/* 固定的操作按钮区域 */
+.preview-actions-fixed {
   padding: 16px 20px;
+  background-color: #fff;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.preview-actions-fixed .el-alert {
+  margin: 0;
+}
+
+.preview-buttons {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.preview-buttons .el-button {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* 折叠面板样式 */
+.preview-collapse {
+  border: none;
+  background-color: transparent;
+}
+
+.preview-collapse :deep(.el-collapse-item__header) {
   background-color: #fafafa;
+  border: none;
+  padding: 12px 20px;
+  font-size: 14px;
+  color: #606266;
+  transition: all 0.3s;
+}
+
+.preview-collapse :deep(.el-collapse-item__header:hover) {
+  background-color: #f0f2f5;
+}
+
+.preview-collapse :deep(.el-collapse-item__wrap) {
+  border: none;
+  background-color: #fff;
+}
+
+.preview-collapse :deep(.el-collapse-item__content) {
+  padding: 16px 20px;
+  color: #606266;
+}
+
+.collapse-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.preview-detail p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.preview-detail p strong {
+  color: #303133;
+  margin-right: 8px;
 }
 
 .testcase-preview-list {
@@ -1834,22 +1914,6 @@ onMounted(() => {
   background-color: #a8a8a8;
 }
 
-.preview-summary {
-  margin-top: 16px;
-}
-
-.preview-actions {
-  margin-top: 12px;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-}
-
-.preview-actions .el-button {
-  margin: 0;
-  flex-shrink: 0;
-}
 
 .form-actions, .chat-actions {
   margin-top: 12px;

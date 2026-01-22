@@ -68,13 +68,13 @@ class DatabaseCompatibility:
     def adapt_sql_for_db(sql: str) -> str:
         """根据数据库类型调整SQL语句"""
         if DatabaseCompatibility.is_postgresql():
-            # PostgreSQL特定调整 - 移除所有引号，让PostgreSQL自动处理
-            sql = sql.replace('`', '')  # 移除反引号
-            sql = sql.replace('"', '')  # 移除双引号
-            sql = sql.replace('AUTO_INCREMENT', 'SERIAL')
+            # PostgreSQL特定调整
+            # 将MySQL的反引号替换为双引号
+            sql = sql.replace('`', '"')
         else:
             # MySQL特定调整
-            sql = sql.replace('"', '`')  # 替换双引号为反引号
+            # 保持反引号或将双引号替换为反引号
+            sql = sql.replace('"', '`')
         
         return sql
     
@@ -84,12 +84,19 @@ class DatabaseCompatibility:
         adapted_sql = DatabaseCompatibility.adapt_sql_for_db(sql)
         db = Tortoise.get_connection("default")
         
-        if params:
-            result = await db.execute_query_dict(adapted_sql, params)
-        else:
-            result = await db.execute_query_dict(adapted_sql)
-        
-        return result
+        try:
+            if params:
+                result = await db.execute_query_dict(adapted_sql, params)
+            else:
+                result = await db.execute_query_dict(adapted_sql)
+            
+            # execute_query_dict直接返回list[dict]
+            return result if result else []
+        except Exception as e:
+            # 记录错误并返回空列表
+            print(f"Error executing SQL: {e}")
+            print(f"SQL: {adapted_sql}")
+            return []
     
     @staticmethod
     def get_migration_sql_adjustments() -> Dict[str, str]:

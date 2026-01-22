@@ -28,6 +28,7 @@ class RAGQueryRequest(BaseModel):
     use_knowledge_base: bool = Field(True, description="是否使用知识库")
     similarity_threshold: float = Field(0.7, description="相似度阈值")
     top_k: int = Field(5, description="返回结果数量")
+    prompt_template: str = Field('default', description="Prompt模板类型：default/technical/testing/concise")
     thread_id: Optional[str] = Field(None, description="对话线程ID")
 
 
@@ -66,6 +67,24 @@ class TestCaseGenerationRequest(BaseModel):
     similar_cases: List[Dict[str, Any]] = Field(default=[], description="相似测试用例")
 
 
+class TestCaseGenRequest(BaseModel):
+    """基于知识库的测试用例生成请求"""
+    requirement_query: str = Field(..., description="需求查询文本")
+    knowledge_base_id: str = Field(..., description="知识库ID")
+    test_type: str = Field('functional', description="测试类型：functional/api/ui/performance")
+    top_k: int = Field(5, description="检索结果数量")
+    score_threshold: float = Field(0.3, description="相似度阈值")
+    llm_config: Optional[Dict[str, Any]] = Field(None, description="LLM配置")
+    use_agents: bool = Field(False, description="是否使用智能体增强分析")
+
+
+class DocumentAnalysisRequest(BaseModel):
+    """文档分析请求"""
+    document_id: str = Field(..., description="文档ID")
+    knowledge_base_id: str = Field(..., description="知识库ID")
+    analysis_type: str = Field('full', description="分析类型：full/quick/deep")
+
+
 class ContextAwareGenerationRequest(BaseModel):
     """上下文感知生成请求"""
     request: str = Field(..., description="生成请求")
@@ -90,28 +109,66 @@ async def rag_query(project_id: int, request: RAGQueryRequest):
     执行RAG查询
     """
     try:
-        # 暂时返回模拟数据，等待完整的RAG服务实现
-        result = {
-            "question": request.question,
-            "answer": "这是一个模拟的RAG查询响应。RAG服务正在开发中。",
-            "context": [
-                {
-                    "content": "模拟的上下文内容",
-                    "metadata": {"source": "模拟文档"},
-                    "similarity_score": 0.85
-                }
-            ],
-            "retrieval_time": 0.1,
-            "generation_time": 0.2,
-            "total_time": 0.3
-        }
+        from app.services.aitestrebort.knowledge_enhanced import query_knowledge_base
+        from fastapi import Request
         
-        return {
-            "status": "success",
-            "data": result
-        }
+        # 创建一个模拟的 Request 对象
+        class MockRequest:
+            def __init__(self):
+                self.state = type('obj', (object,), {'user': type('obj', (object,), {'id': 1})()})()
+                
+                # 创建 app 对象的方法
+                class AppMethods:
+                    @staticmethod
+                    def get_success(data=None):
+                        return {"status": "success", "data": data}
+                    
+                    @staticmethod
+                    def fail(msg=None):
+                        return {"status": "fail", "message": msg}
+                    
+                    @staticmethod
+                    def error(msg=None):
+                        return {"status": "error", "message": msg}
+                
+                self.app = AppMethods()
+        
+        mock_request = MockRequest()
+        
+        # 调用真实的 RAG 查询服务
+        response = await query_knowledge_base(
+            request=mock_request,
+            project_id=project_id,
+            kb_id=request.knowledge_base_id,
+            query_data={
+                'query': request.question,
+                'top_k': request.top_k,
+                'score_threshold': request.similarity_threshold,
+                'use_rag': request.use_knowledge_base
+            }
+        )
+        
+        # 转换响应格式以匹配前端期望
+        if response.get('status') == 'success' and response.get('data'):
+            data = response['data']
+            result = {
+                "question": request.question,
+                "answer": data.get('answer', ''),
+                "context": data.get('sources', data.get('results', [])),
+                "retrieval_time": data.get('retrieval_time', 0),
+                "generation_time": data.get('generation_time', 0),
+                "total_time": data.get('total_time', 0)
+            }
+            
+            return {
+                "status": "success",
+                "data": result
+            }
+        else:
+            return response
         
     except Exception as e:
+        logger.error(f"RAG查询失败: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"RAG查询失败: {str(e)}")
 
 
@@ -456,6 +513,265 @@ async def generate_test_case_template(project_id: int, request: TestCaseGenerati
         raise HTTPException(status_code=500, detail=f"测试用例模板生成失败: {str(e)}")
 
 
+@router.post("/projects/{project_id}/generate-test-cases")
+async def generate_test_cases_from_kb(project_id: int, request: TestCaseGenRequest):
+    """
+    基于知识库生成测试用例（支持智能体增强）
+    """
+    try:
+        from app.services.aitestrebort.knowledge_enhanced import get_knowledge_base_service
+        from app.services.aitestrebort.rag_service import RAGService
+        from app.services.aitestrebort.test_case_generator import TestCaseGenerator
+        from app.services.aitestrebort.agents_testcase_service import AgentsTestCaseService
+        from app.models.aitestrebort.project import aitestrebortLLMConfig
+        
+        logger.info(f"开始生成测试用例，项目ID: {project_id}, 知识库ID: {request.knowledge_base_id}")
+        logger.info(f"使用智能体: {request.use_agents}")
+        
+        # 获取知识库服务
+        kb_service = await get_knowledge_base_service(request.knowledge_base_id)
+        if not kb_service:
+            raise HTTPException(status_code=404, detail="知识库不存在")
+        
+        # 初始化RAG服务
+        rag_service = RAGService(kb_service)
+        
+        # 获取LLM配置
+        llm_config = None
+        if request.llm_config:
+            llm_config = request.llm_config
+            logger.info(f"使用前端传递的LLM配置: provider={llm_config.get('provider')}")
+        else:
+            # 使用全局默认配置
+            llm_config_model = await aitestrebortLLMConfig.filter(
+                project_id__isnull=True,
+                is_active=True,
+                is_default=True
+            ).first()
+            if llm_config_model:
+                llm_config = {
+                    'provider': llm_config_model.provider,
+                    'model_name': llm_config_model.model_name,
+                    'api_key': llm_config_model.api_key,
+                    'base_url': llm_config_model.base_url,
+                    'temperature': llm_config_model.temperature,
+                    'max_tokens': llm_config_model.max_tokens
+                }
+                logger.info(f"使用全局默认LLM配置: provider={llm_config['provider']}, model={llm_config['model_name']}")
+            else:
+                logger.warning("未找到LLM配置！智能体服务将无法初始化")
+        
+        # 初始化智能体服务（如果启用）
+        agents_service = None
+        if request.use_agents:
+            if llm_config:
+                agents_service = AgentsTestCaseService(kb_service, rag_service, llm_config)
+                logger.info("智能体服务已初始化")
+            else:
+                logger.error("智能体模式已启用，但LLM配置为空！将回退到标准模式")
+                # 即使没有LLM配置，也创建agents服务，但会在调用时失败
+                # 这样可以提供更好的错误信息
+        else:
+            logger.info("使用标准模式（未启用智能体）")
+        
+        # 初始化测试用例生成器
+        test_generator = TestCaseGenerator(kb_service, rag_service, agents_service)
+        
+        # 生成测试用例
+        result = await test_generator.generate_test_cases(
+            requirement_query=request.requirement_query,
+            test_type=request.test_type,
+            top_k=request.top_k,
+            score_threshold=request.score_threshold,
+            llm_config=llm_config,
+            use_agents=request.use_agents
+        )
+        
+        logger.info(f"测试用例生成完成，成功: {result['success']}, 模式: {result.get('generation_mode', 'unknown')}")
+        
+        return {
+            "status": "success",
+            "data": result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"测试用例生成失败: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"测试用例生成失败: {str(e)}")
+
+
+@router.get("/projects/{project_id}/test-types")
+async def get_test_types(project_id: int):
+    """
+    获取支持的测试类型
+    """
+    return {
+        "status": "success",
+        "data": {
+            "test_types": [
+                {
+                    "id": "functional",
+                    "name": "功能测试",
+                    "description": "验证系统功能是否符合需求规格说明",
+                    "icon": "🔧"
+                },
+                {
+                    "id": "api",
+                    "name": "接口测试",
+                    "description": "验证API接口的功能、性能和安全性",
+                    "icon": "🔌"
+                },
+                {
+                    "id": "ui",
+                    "name": "界面测试",
+                    "description": "验证用户界面的功能和用户体验",
+                    "icon": "🖥️"
+                },
+                {
+                    "id": "performance",
+                    "name": "性能测试",
+                    "description": "验证系统在各种负载条件下的性能表现",
+                    "icon": "⚡"
+                }
+            ]
+        }
+    }
+
+
+@router.post("/projects/{project_id}/analyze-document")
+async def analyze_document(project_id: int, request: DocumentAnalysisRequest):
+    """
+    使用智能体分析文档
+    """
+    try:
+        from app.services.aitestrebort.knowledge_enhanced import get_knowledge_base_service
+        from app.services.aitestrebort.rag_service import RAGService
+        from app.services.aitestrebort.agents_testcase_service import AgentsTestCaseService
+        from app.models.aitestrebort.project import aitestrebortLLMConfig
+        from app.models.aitestrebort.knowledge import aitestrebortDocument
+        
+        logger.info(f"开始分析文档，文档ID: {request.document_id}")
+        
+        # 获取文档
+        document = await aitestrebortDocument.get(id=request.document_id)
+        if not document:
+            raise HTTPException(status_code=404, detail="文档不存在")
+        
+        # 获取知识库服务
+        kb_service = await get_knowledge_base_service(request.knowledge_base_id)
+        if not kb_service:
+            raise HTTPException(status_code=404, detail="知识库不存在")
+        
+        # 初始化RAG服务
+        rag_service = RAGService(kb_service)
+        
+        # 获取LLM配置
+        llm_config_model = await aitestrebortLLMConfig.filter(
+            project_id__isnull=True,
+            is_active=True,
+            is_default=True
+        ).first()
+        
+        if not llm_config_model:
+            raise HTTPException(status_code=404, detail="未找到LLM配置")
+        
+        llm_config = {
+            'provider': llm_config_model.provider,
+            'model_name': llm_config_model.model_name,
+            'api_key': llm_config_model.api_key,
+            'base_url': llm_config_model.base_url,
+            'temperature': llm_config_model.temperature,
+            'max_tokens': llm_config_model.max_tokens
+        }
+        
+        # 初始化智能体服务
+        agents_service = AgentsTestCaseService(kb_service, rag_service, llm_config)
+        
+        # 分析文档
+        analysis = await agents_service.analyze_requirement(
+            requirement_text=document.content,
+            document_id=request.document_id
+        )
+        
+        logger.info(f"文档分析完成")
+        
+        return {
+            "status": "success",
+            "data": {
+                "document_id": request.document_id,
+                "document_title": document.title,
+                "analysis": analysis,
+                "analysis_type": request.analysis_type
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"文档分析失败: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"文档分析失败: {str(e)}")
+
+
+@router.get("/projects/{project_id}/supported-file-types")
+async def get_supported_file_types(project_id: int):
+    """
+    获取支持的文件类型
+    """
+    from app.services.aitestrebort.document_parser import DocumentParser
+    
+    return {
+        "status": "success",
+        "data": {
+            "file_types": [
+                {
+                    "type": "pdf",
+                    "extensions": [".pdf"],
+                    "name": "PDF文档",
+                    "icon": "📄",
+                    "supported": True
+                },
+                {
+                    "type": "docx",
+                    "extensions": [".docx", ".doc"],
+                    "name": "Word文档",
+                    "icon": "📝",
+                    "supported": True
+                },
+                {
+                    "type": "xlsx",
+                    "extensions": [".xlsx", ".xls"],
+                    "name": "Excel表格",
+                    "icon": "📊",
+                    "supported": True
+                },
+                {
+                    "type": "md",
+                    "extensions": [".md", ".markdown"],
+                    "name": "Markdown文档",
+                    "icon": "📋",
+                    "supported": True
+                },
+                {
+                    "type": "html",
+                    "extensions": [".html", ".htm"],
+                    "name": "HTML文档",
+                    "icon": "🌐",
+                    "supported": True
+                },
+                {
+                    "type": "txt",
+                    "extensions": [".txt"],
+                    "name": "纯文本",
+                    "icon": "📃",
+                    "supported": True
+                }
+            ],
+            "total_supported": len(DocumentParser.get_supported_types())
+        }
+    }
+
+
 # ==================== 需求检索 ====================
 
 @router.post("/projects/{project_id}/retrieve-requirements")
@@ -464,41 +780,172 @@ async def retrieve_requirements(project_id: int, request: RequirementRetrievalRe
     检索相关需求文档
     """
     try:
-        # 暂时返回模拟数据，等待完整的需求检索服务实现
+        from app.services.aitestrebort.knowledge_enhanced import get_knowledge_base_service
+        
+        logger.info(f"开始检索需求，项目ID: {project_id}, 知识库ID: {request.knowledge_base_id}")
+        
+        # 获取知识库服务
+        kb_service = await get_knowledge_base_service(request.knowledge_base_id)
+        if not kb_service:
+            raise HTTPException(status_code=404, detail="知识库不存在")
+        
+        # 执行检索
+        search_results = await kb_service.search_knowledge(
+            query=request.query,
+            top_k=request.top_k,
+            score_threshold=0.3
+        )
+        
+        logger.info(f"检索到 {len(search_results)} 条结果")
+        
+        # 构建需求列表
+        requirements = []
+        for result in search_results:
+            # 从元数据中提取需求信息
+            metadata = result.get('metadata', {})
+            
+            # 判断需求类型
+            content = result.get('content', '')
+            requirement_type = 'functional'  # 默认功能需求
+            requirement_type_cn = '功能需求'
+            
+            if any(keyword in content for keyword in ['性能', '响应时间', '并发', '吞吐量', 'QPS', 'TPS']):
+                requirement_type = 'non-functional'
+                requirement_type_cn = '非功能需求'
+            elif any(keyword in content for keyword in ['业务', '流程', '规则', '策略']):
+                requirement_type = 'business'
+                requirement_type_cn = '业务需求'
+            elif any(keyword in content for keyword in ['用户', '界面', 'UI', '交互']):
+                requirement_type = 'user'
+                requirement_type_cn = '用户需求'
+            elif any(keyword in content for keyword in ['系统', '架构', '技术', '接口']):
+                requirement_type = 'system'
+                requirement_type_cn = '系统需求'
+            
+            # 判断优先级
+            priority = 'Medium'
+            priority_cn = '中'
+            if any(keyword in content for keyword in ['重要', '关键', '必须', '核心', '紧急', '高优先级']):
+                priority = 'High'
+                priority_cn = '高'
+            elif any(keyword in content for keyword in ['可选', '建议', '优化', '低优先级', '次要']):
+                priority = 'Low'
+                priority_cn = '低'
+            
+            # 过滤需求类型
+            if request.requirement_types and requirement_type not in request.requirement_types:
+                continue
+            
+            requirements.append({
+                'content': content,
+                'metadata': metadata,
+                'requirement_type': requirement_type,
+                'requirement_type_cn': requirement_type_cn,
+                'priority': priority,
+                'priority_cn': priority_cn,
+                'status': 'active',
+                'status_cn': '进行中',
+                'stakeholders': ['产品经理', '开发工程师'],
+                'similarity_score': result.get('score', 0)
+            })
+        
+        # 分析结果
+        type_distribution = {}
+        priority_distribution = {}
+        status_distribution = {}
+        
+        for req in requirements:
+            # 类型分布
+            req_type = req['requirement_type']
+            type_distribution[req_type] = type_distribution.get(req_type, 0) + 1
+            
+            # 优先级分布
+            priority = req['priority']
+            priority_distribution[priority] = priority_distribution.get(priority, 0) + 1
+            
+            # 状态分布
+            status = req['status']
+            status_distribution[status] = status_distribution.get(status, 0) + 1
+        
+        # 提取关键主题
+        key_themes = []
+        all_content = ' '.join([req['content'] for req in requirements])
+        theme_keywords = ['用户', '系统', '数据', '功能', '性能', '安全', '接口', '界面']
+        for keyword in theme_keywords:
+            if keyword in all_content:
+                key_themes.append(keyword)
+        
+        # 生成建议
+        recommendations = []
+        if priority_distribution.get('High', 0) > 0:
+            recommendations.append(f"发现 {priority_distribution['High']} 个高优先级需求，建议优先实现")
+        if type_distribution.get('non-functional', 0) > 0:
+            recommendations.append(f"包含 {type_distribution['non-functional']} 个非功能需求，需要特别关注性能、安全等方面")
+        if type_distribution.get('business', 0) > 0:
+            recommendations.append(f"包含 {type_distribution['business']} 个业务需求，需要与业务方充分沟通确认")
+        if len(requirements) > 10:
+            recommendations.append("检索结果较多，建议细化查询条件以获得更精准的结果")
+        if len(requirements) < 3:
+            recommendations.append("检索结果较少，建议扩大查询范围或调整相似度阈值")
+        
+        # 生成总结（更详细的中文描述）
+        summary_parts = []
+        summary_parts.append(f"本次检索共找到 {len(requirements)} 个相关需求")
+        
+        if type_distribution:
+            type_desc = []
+            type_map = {
+                'functional': '功能需求',
+                'non-functional': '非功能需求',
+                'business': '业务需求',
+                'user': '用户需求',
+                'system': '系统需求'
+            }
+            for req_type, count in sorted(type_distribution.items(), key=lambda x: x[1], reverse=True):
+                type_desc.append(f"{type_map.get(req_type, req_type)} {count} 个")
+            summary_parts.append(f"类型分布：{', '.join(type_desc)}")
+        
+        if priority_distribution:
+            priority_desc = []
+            priority_map = {'High': '高优先级', 'Medium': '中优先级', 'Low': '低优先级'}
+            for priority, count in sorted(priority_distribution.items(), key=lambda x: {'High': 3, 'Medium': 2, 'Low': 1}.get(x[0], 0), reverse=True):
+                priority_desc.append(f"{priority_map.get(priority, priority)} {count} 个")
+            summary_parts.append(f"优先级分布：{', '.join(priority_desc)}")
+        
+        if key_themes:
+            summary_parts.append(f"关键主题包括：{', '.join(key_themes[:5])}")
+        
+        summary = '。'.join(summary_parts) + '。'
+        
         result = {
             "query": request.query,
-            "enhanced_query": f"增强查询: {request.query}",
-            "total_found": 3,
-            "filtered_count": 3,
-            "requirements": [
-                {
-                    "content": "模拟需求内容1",
-                    "metadata": {"source": "需求文档1"},
-                    "requirement_type": "functional",
-                    "priority": "high",
-                    "status": "active",
-                    "stakeholders": ["产品经理", "开发工程师"],
-                    "similarity_score": 0.9
-                }
-            ],
+            "enhanced_query": f"增强查询: {request.query} (基于知识库上下文)",
+            "total_found": len(search_results),
+            "filtered_count": len(requirements),
+            "requirements": requirements,
             "analysis": {
-                "total_requirements": 3,
-                "type_distribution": {"functional": 2, "non-functional": 1},
-                "priority_distribution": {"high": 1, "medium": 2},
-                "status_distribution": {"active": 3},
-                "key_themes": ["用户体验", "性能优化"],
-                "recommendations": ["建议优先实现高优先级需求"],
-                "summary": "检索到3个相关需求"
+                "total_requirements": len(requirements),
+                "type_distribution": type_distribution,
+                "priority_distribution": priority_distribution,
+                "status_distribution": status_distribution,
+                "key_themes": key_themes,
+                "recommendations": recommendations,
+                "summary": summary
             },
             "retrieval_time": "0.1s"
         }
+        
+        logger.info(f"需求检索完成，返回 {len(requirements)} 条结果")
         
         return {
             "status": "success",
             "data": result
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"需求检索失败: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"需求检索失败: {str(e)}")
 
 

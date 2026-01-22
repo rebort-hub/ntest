@@ -1,4 +1,4 @@
-﻿/**
+/**
  * aitestrebort 知识库管理 API - 增强版
  * 基于原Django架构完整实现，包含RAG功能
  */
@@ -97,6 +97,7 @@ export interface SystemStatus {
   processing_documents: number
   total_chunks: number
   system_status: 'healthy' | 'warning' | 'error'
+  status_message?: string
 }
 
 export interface EmbeddingService {
@@ -260,13 +261,37 @@ export const chunkApi = {
 // ==================== RAG查询功能 ====================
 
 export const ragApi = {
-  // 查询知识库（RAG）
+  // 查询知识库（RAG - 非流式）
   queryKnowledgeBase: (projectId: number, kbId: string, data: {
     query: string
     top_k?: number
-    include_metadata?: boolean
+    score_threshold?: number
+    use_rag?: boolean
+    llm_provider?: string
+    llm_model?: string
+    llm_api_key?: string
+    llm_base_url?: string
+    temperature?: number
+    system_prompt?: string
   }) => {
     return request.post(`${baseDiraitestrebort}/knowledge/projects/${projectId}/knowledge-bases/${kbId}/query`, data)
+  },
+
+  // 查询知识库（RAG - 流式）
+  queryKnowledgeBaseStream: (projectId: number, kbId: string, data: {
+    query: string
+    top_k?: number
+    score_threshold?: number
+    llm_provider?: string
+    llm_model?: string
+    llm_api_key?: string
+    llm_base_url?: string
+    temperature?: number
+    system_prompt?: string
+  }) => {
+    return request.post(`${baseDiraitestrebort}/knowledge/projects/${projectId}/knowledge-bases/${kbId}/query-stream`, data, {
+      responseType: 'stream'
+    })
   },
 
   // 获取查询日志

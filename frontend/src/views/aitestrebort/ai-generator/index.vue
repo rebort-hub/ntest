@@ -231,28 +231,32 @@
                 <h4>{{ testcase.name }}</h4>
                 <div class="testcase-actions">
                   <el-tag :type="getLevelType(testcase.level)">{{ testcase.level }}</el-tag>
-                  <el-button type="text" @click="editGeneratedTestCase(testcase, index)">编辑</el-button>
-                  <el-button type="text" @click="saveTestCase(testcase, index)" :loading="savingIndex === index">保存</el-button>
+                  <el-button size="small" @click="editGeneratedTestCase(testcase, index)">编辑</el-button>
+                  <el-button size="small" type="success" @click="saveTestCase(testcase, index)" :loading="savingIndex === index">保存</el-button>
                 </div>
               </div>
 
-              <div class="testcase-content">
-                <p><strong>前置条件：</strong>{{ testcase.precondition }}</p>
-                
-                <div class="testcase-steps">
-                  <h5>测试步骤：</h5>
-                  <ol>
-                    <li v-for="step in testcase.steps" :key="step.step_number">
-                      <div class="step-content">
-                        <div><strong>操作：</strong>{{ step.description }}</div>
-                        <div><strong>预期结果：</strong>{{ step.expected_result }}</div>
-                      </div>
-                    </li>
-                  </ol>
-                </div>
+              <el-collapse class="testcase-collapse">
+                <el-collapse-item title="查看详情" name="1">
+                  <div class="testcase-content">
+                    <p><strong>前置条件：</strong>{{ testcase.precondition }}</p>
+                    
+                    <div class="testcase-steps">
+                      <h5>测试步骤：</h5>
+                      <ol>
+                        <li v-for="step in testcase.steps" :key="step.step_number">
+                          <div class="step-content">
+                            <div><strong>操作：</strong>{{ step.description }}</div>
+                            <div><strong>预期结果：</strong>{{ step.expected_result }}</div>
+                          </div>
+                        </li>
+                      </ol>
+                    </div>
 
-                <p v-if="testcase.notes"><strong>备注：</strong>{{ testcase.notes }}</p>
-              </div>
+                    <p v-if="testcase.notes"><strong>备注：</strong>{{ testcase.notes }}</p>
+                  </div>
+                </el-collapse-item>
+              </el-collapse>
             </div>
           </div>
         </el-card>
@@ -930,12 +934,45 @@ onMounted(() => {
 .testcase-header h4 {
   margin: 0;
   color: #303133;
+  flex: 1;
 }
 
 .testcase-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.testcase-actions .el-button {
+  margin: 0;
+  padding: 5px 12px;
+  font-size: 12px;
+}
+
+.testcase-collapse {
+  border: none;
+  margin-top: 8px;
+}
+
+.testcase-collapse :deep(.el-collapse-item__header) {
+  background-color: #f5f7fa;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #606266;
+  height: auto;
+  line-height: 1.5;
+}
+
+.testcase-collapse :deep(.el-collapse-item__wrap) {
+  border: none;
+  background-color: transparent;
+}
+
+.testcase-collapse :deep(.el-collapse-item__content) {
+  padding: 12px 0 0 0;
 }
 
 .testcase-content p {

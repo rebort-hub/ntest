@@ -13,6 +13,7 @@ export interface RAGQueryRequest {
   use_knowledge_base?: boolean
   similarity_threshold?: number
   top_k?: number
+  prompt_template?: string  // Prompt 模板类型：default, technical, testing, concise
   thread_id?: string
 }
 
@@ -252,6 +253,35 @@ export const langGraphApi = {
       created_at: string
     }>>({
       url: `/api/aitestrebort/advanced/projects/${projectId}/knowledge-bases`,
+      method: 'GET'
+    })
+  },
+
+  /**
+   * 生成测试用例
+   */
+  generateTestCases: (projectId: number, data: {
+    requirement_query: string
+    knowledge_base_id: string
+    test_type?: string
+    top_k?: number
+    score_threshold?: number
+    llm_config?: any
+  }) => {
+    return request({
+      url: `/api/aitestrebort/advanced/projects/${projectId}/generate-test-cases`,
+      method: 'POST',
+      data,
+      timeout: 120000 // 2分钟超时
+    })
+  },
+
+  /**
+   * 获取测试类型列表
+   */
+  getTestTypes: () => {
+    return request({
+      url: `/api/aitestrebort/advanced/projects/1/test-types`,
       method: 'GET'
     })
   }

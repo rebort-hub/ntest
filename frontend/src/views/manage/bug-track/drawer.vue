@@ -1,119 +1,144 @@
 <template>
   <div>
-    <el-drawer v-model="drawerIsShow" :title="formData.id ? '修改缺陷' : '新增缺陷'" size="60%">
-
+    <el-dialog 
+      v-model="drawerIsShow" 
+      :title="formData.id ? '修改缺陷' : '新增缺陷'" 
+      width="700px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      destroy-on-close
+      top="5vh"
+      class="bug-track-dialog"
+    >
       <el-form
           ref="ruleFormRef"
           :model="formData"
           :rules="formRules"
-          label-width="90px">
+          label-width="100px"
+          size="small">
 
-        <el-form-item label="业务线" class="is-required" prop="business_id" size="small">
+        <el-form-item label="业务线" prop="business_id">
           <el-select
               v-model="formData.business_id"
-              placeholder="选择业务线"
+              placeholder="请选择业务线"
               clearable
               filterable
-              default-first-option
-              style="margin-right: 10px; width: 100%"
-              size="small"
+              style="width: 100%"
           >
             <el-option v-for="item in businessList" :key="item.id" :label="item.name" :value="item.id"/>
           </el-select>
         </el-form-item>
 
-        <el-form-item label="迭代" class="is-required" prop="iteration" size="small">
+        <el-form-item label="迭代" prop="iteration">
           <el-select
               v-model="formData.iteration"
-              placeholder="选择业务线"
+              placeholder="请选择或输入迭代"
               clearable
               filterable
               allow-create
-              default-first-option
-              style="margin-right: 10px; width: 100%"
-              size="small"
+              style="width: 100%"
           >
             <el-option v-for="iteration in iterationList" :key="iteration" :label="iteration" :value="iteration" />
           </el-select>
         </el-form-item>
 
-        <el-form-item label="缺陷描述" prop="name" size="small">
-          <el-input v-model="formData.name"  size="small" placeholder="缺陷描述"/>
+        <el-form-item label="缺陷描述" prop="name">
+          <el-input v-model="formData.name" placeholder="请输入缺陷描述" clearable />
         </el-form-item>
 
-        <el-form-item label="缺陷详情" prop="detail" size="small">
-          <el-input v-model="formData.detail"  size="small" type="textarea" :rows="2" placeholder="缺陷详情"/>
+        <el-form-item label="缺陷详情" prop="detail">
+          <el-input 
+              v-model="formData.detail" 
+              type="textarea" 
+              :rows="3" 
+              placeholder="请输入缺陷详情"
+              clearable
+          />
         </el-form-item>
 
-        <el-form-item label="缺陷来源" class="is-required" prop="bug_from" size="small">
-          <el-input v-model="formData.bug_from"  size="small" placeholder="缺陷来源"/>
+        <el-form-item label="缺陷来源" prop="bug_from">
+          <el-input v-model="formData.bug_from" placeholder="请输入缺陷来源" clearable />
         </el-form-item>
 
-        <el-form-item label="发现时间" prop="trigger_time" size="small">
+        <el-form-item label="发现时间" prop="trigger_time">
           <el-date-picker
               v-model="formData.trigger_time"
               type="datetime"
-              placeholder="选择发现时间"
+              placeholder="请选择发现时间"
               style="width: 100%"
               :picker-options="pickerOptions"
           />
         </el-form-item>
 
-        <el-form-item label="原因" prop="reason" size="small">
-          <el-input v-model="formData.reason" size="small" type="textarea" :rows="2" placeholder="原因"/>
+        <el-form-item label="原因" prop="reason">
+          <el-input 
+              v-model="formData.reason" 
+              type="textarea" 
+              :rows="3" 
+              placeholder="请输入原因"
+              clearable
+          />
         </el-form-item>
 
-        <el-form-item label="解决方案" prop="solution" size="small">
-          <el-input v-model="formData.solution" size="small" type="textarea" :rows="2" placeholder="解决方案"/>
+        <el-form-item label="解决方案" prop="solution">
+          <el-input 
+              v-model="formData.solution" 
+              type="textarea" 
+              :rows="3" 
+              placeholder="请输入解决方案"
+              clearable
+          />
         </el-form-item>
 
-        <el-form-item label="跟进人" class="is-required" prop="manager" size="small">
+        <el-form-item label="跟进人" prop="manager">
           <el-select
               v-model="formData.manager"
-              placeholder="选择跟进人"
+              placeholder="请选择跟进人"
               filterable
-              default-first-option
-              style="margin-right: 10px; width: 100%"
-              size="small"
+              style="width: 100%"
           >
             <el-option v-for="item in userList" :key="item.id" :label="item.name" :value="item.id" />
           </el-select>
         </el-form-item>
 
-        <el-form-item label="是否复盘" class="is-required" prop="replay" size="small">
+        <el-form-item label="是否复盘" prop="replay">
           <el-select
               v-model="formData.replay"
-              placeholder="选择是否复盘"
+              placeholder="请选择是否复盘"
               filterable
-              default-first-option
-              style="margin-right: 10px; width: 100%"
-              size="small"
+              style="width: 100%"
           >
             <el-option v-for="(value, key) in isReplayMapping" :key="parseInt(key)" :label="value" :value="parseInt(key)"/>
           </el-select>
         </el-form-item>
 
-        <el-form-item label="复盘结论" prop="conclusion" size="small">
-          <el-input v-model="formData.conclusion" size="small" type="textarea" :rows="2" placeholder="复盘结论"/>
+        <el-form-item label="复盘结论" prop="conclusion">
+          <el-input 
+              v-model="formData.conclusion" 
+              type="textarea" 
+              :rows="3" 
+              placeholder="请输入复盘结论"
+              clearable
+          />
         </el-form-item>
 
       </el-form>
 
       <template #footer>
-        <div slot="footer" class="dialog-footer">
-          <el-button size="small" @click="drawerIsShow = false"> {{ '取消' }}</el-button>
+        <div class="dialog-footer">
+          <el-button size="small" @click="drawerIsShow = false">取消</el-button>
           <el-button
               type="primary"
               size="small"
               :loading="submitButtonIsLoading"
               @click="submitForm"
           >
-            {{ '保存' }}
+            保存
           </el-button>
         </div>
       </template>
 
-    </el-drawer>
+    </el-dialog>
   </div>
 </template>
 
@@ -300,7 +325,57 @@ const changeData = () => {
 
 </script>
 
-
 <style scoped lang="scss">
+:deep(.bug-track-dialog) {
+  .el-dialog {
+    border-radius: 8px;
+    max-height: 90vh;
+    margin-top: 5vh !important;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .el-dialog__header {
+    border-bottom: 1px solid #ebeef5;
+    padding: 20px 20px 15px;
+    flex-shrink: 0;
+  }
+  
+  .el-dialog__body {
+    padding: 20px;
+    flex: 1;
+    overflow-y: auto;
+    max-height: calc(90vh - 140px);
+    
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+      
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
+  }
+  
+  .el-dialog__footer {
+    border-top: 1px solid #ebeef5;
+    padding: 15px 20px;
+    flex-shrink: 0;
+  }
+}
 
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
 </style>

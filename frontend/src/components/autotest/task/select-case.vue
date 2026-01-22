@@ -168,9 +168,9 @@ const caseTableRef = ref(null)
 const tableIsLoading = ref(false)
 let treeHeight = computed(() => {
   if (innerHeight < 800) {  // 小屏
-    return `${innerHeight * 0.6}px`
+    return `${innerHeight * 0.4}px`
   } else {  // 大屏
-    return `${innerHeight * 0.74}px`
+    return `${innerHeight * 0.45}px`
   }
 })
 

@@ -22,24 +22,19 @@
              :model="formData"
              :rules="formRules">
 
-            <el-row>
-              <el-col :span="12">
-                <el-form-item label="用例名称" class="is-required">
-                  <el-input v-model="formData.name" />
-                </el-form-item>
-              </el-col>
+            <el-form-item label="用例名称" class="is-required">
+              <el-input v-model="formData.name" placeholder="请输入用例名称" />
+            </el-form-item>
 
-              <el-col :span="4">
-                <el-form-item label="执行次数" class="is-required">
-                  <el-input-number
-                      v-model="formData.run_times"
-                      :min="1"
-                      :max="1000"
-                      controls-position="right"
-                  />
-                </el-form-item>
-              </el-col>
-            </el-row>
+            <el-form-item label="执行次数" class="is-required">
+              <el-input-number
+                  v-model="formData.run_times"
+                  :min="1"
+                  :max="1000"
+                  controls-position="right"
+                  style="width: 200px"
+              />
+            </el-form-item>
 
             <el-form-item label="用例来源">
               <el-input v-model="formData.from" disabled />

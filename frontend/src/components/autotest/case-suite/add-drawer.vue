@@ -3,19 +3,14 @@
     <el-dialog 
         v-model="drawerIsShow" 
         title="新增用例集" 
-        width="70%"
+        width="800px"
         :close-on-click-modal="false"
         :close-on-press-escape="false"
         destroy-on-close
         top="3vh"
         class="add-case-suite-dialog">
 
-      <el-form
-          ref="ruleFormRef"
-          :model="formData"
-          :rules="formRules"
-          label-width="90px">
-
+      <el-form ref="ruleFormRef" :model="formData" :rules="formRules" label-width="110px" size="small">
         <div style="margin: 0 0 20px 0; padding: 15px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px;">
           <div style="margin-bottom: 8px;"><strong>用例集类型说明：</strong></div>
           <div style="margin-bottom: 5px;">1、<strong>基础用例集</strong>: 用于创建某一个步骤或者某一个节点，<span style="color: red">只能被当前服务下的用例引用</span></div>
@@ -26,15 +21,12 @@
           <div>6、修改<span style="color: red">一级用例集</span>的类型，<span style="color: red">子用例集</span>的类型会跟随修改</div>
         </div>
 
-        <el-form-item label="用例集类型" prop="suite_type" class="is-required" size="small">
+        <el-form-item label="用例集类型" prop="suite_type" class="is-required">
           <el-select
             v-model="formData.suite_type"
-            default-first-option
-            size="small"
             :disabled="formData.parent !== null"
             style="width: 100%"
             placeholder="请选择用例集类型"
-            class="filter-item"
         >
           <el-option
               v-for="suiteType in suiteTypeList"
@@ -45,16 +37,68 @@
         </el-select>
         </el-form-item>
 
-        <el-form-item label="用例集名" prop="name" class="is-required" size="small">
-          <template #label>
-            <span>用例集名
+        <div v-for="(item, index) in formData.data_list" :key="item.id" class="suite-form-item">
+          <div class="suite-header">
+            <span class="suite-title">用例集 {{ index + 1 }}</span>
+            <div class="suite-actions">
+              <el-tooltip content="添加用例集" placement="top">
+                <el-button
+                    v-show="index === 0 || index === formData.data_list.length - 1"
+                    type="primary"
+                    :icon="Plus"
+                    circle
+                    size="small"
+                    @click="addRow"
+                />
+              </el-tooltip>
+              <el-tooltip content="复制用例集" placement="top">
+                <el-button
+                    type="info"
+                    :icon="Copy"
+                    circle
+                    size="small"
+                    @click="copyRow(item)"
+                />
+              </el-tooltip>
+              <el-tooltip content="删除用例集" placement="top">
+                <el-button
+                    v-show="isShowDelButton(index)"
+                    type="danger"
+                    :icon="Minus"
+                    circle
+                    size="small"
+                    @click="delRow(index)"
+                />
+              </el-tooltip>
+              <el-tooltip content="清除数据" placement="top">
+                <el-button
+                    v-show="formData.data_list.length === 1"
+                    type="warning"
+                    :icon="Clear"
+                    circle
+                    size="small"
+                    @click="clearData()"
+                />
+              </el-tooltip>
+            </div>
+          </div>
+
+          <el-form-item 
+              label="用例集名称" 
+              :prop="`data_list.${index}.name`" 
+              :rules="[{ required: true, message: '请输入用例集名称', trigger: 'blur' }]">
+            <template #label>
+              <span>用例集名称
                 <el-tooltip class="item" effect="dark" placement="top-start" content="同一节点下，用例集名称不可重复">
                   <span style="margin-left:5px;color: #409EFF"><Help></Help></span>
                 </el-tooltip>
-            </span>
-          </template>
-          <oneColumnRow ref="dataListRef" :current-data="formData.data_list" />
-        </el-form-item>
+              </span>
+            </template>
+            <el-input v-model="item.name" placeholder="请输入用例集名称" clearable />
+          </el-form-item>
+
+          <el-divider v-if="index < formData.data_list.length - 1" />
+        </div>
       </el-form>
 
       <template #footer>
@@ -78,11 +122,10 @@
 <script lang="ts" setup>
 
 import {onBeforeUnmount, onMounted, ref} from "vue";
-import {PostCaseSuite, GetCaseSuite} from "@/api/autotest/case-suite";
+import {PostCaseSuite} from "@/api/autotest/case-suite";
 import {bus, busEvent} from "@/utils/bus-events";
 import {GetConfigByCode} from "@/api/config/config-value";
-import oneColumnRow from "@/components/input/one-column-row.vue";
-import {Help} from "@icon-park/vue-next";
+import {Help, Plus, Copy, Minus, Clear} from "@icon-park/vue-next";
 import {ElMessage} from "element-plus";
 
 const props = defineProps({
@@ -113,12 +156,11 @@ const onShowDrawerEvent = (message: any) => {
 
 const suiteTypeList = ref([])
 const drawerIsShow = ref(false)
-const dataListRef = ref()
 let submitButtonIsLoading = ref(false)
 
 const ruleFormRef = ref(null)
 const formData = ref({
-  data_list: [],
+  data_list: [{id: `${Date.now()}`, name: null}],
   parent: undefined,
   suite_type: undefined,
   project_id: undefined
@@ -128,9 +170,10 @@ const formRules = {
     {required: true, message: '请选择用例集类型', trigger: 'blur'}
   ]
 }
+
 const resetForm = () => {
   formData.value = {
-    data_list: [],
+    data_list: [{id: `${Date.now()}`, name: null}],
     parent: undefined,
     suite_type: undefined,
     project_id: undefined
@@ -138,6 +181,7 @@ const resetForm = () => {
   ruleFormRef.value && ruleFormRef.value.resetFields();
   submitButtonIsLoading.value = false
 }
+
 const sendEvent = (content: any, command: string) => {
   bus.emit(busEvent.drawerIsCommit, {eventType: 'case-suite', content: content, command: command});
 };
@@ -150,17 +194,45 @@ const getSuiteTypeList = () => {
   }
 }
 
-const getCaseSuiteName = () => {
-  const dataList = dataListRef.value.getData()
-  if(dataList.length === 0){
-    ElMessage.warning(`请填写数据`)
-    throw new Error(`请填写数据`);
+const getNewData = () => {
+  return { id: `${Date.now()}`, name: null }
+}
+
+const addRow = () => {
+  formData.value.data_list.push(getNewData())
+}
+
+const copyRow = (row: {id: string, name: null}) => {
+  let newData = JSON.parse(JSON.stringify(row))
+  newData.id = `${Date.now()}`
+  formData.value.data_list.push(newData)
+}
+
+const isShowDelButton = (index: number) => {
+  return !(formData.value.data_list.length === 1 && index === 0)
+}
+
+const delRow = (index: number) => {
+  formData.value.data_list.splice(index, 1)
+}
+
+const clearData = () => {
+  formData.value.data_list[0] = getNewData()
+}
+
+const validateCaseSuiteList = () => {
+  if (formData.value.data_list.length < 1){
+    ElMessage.warning('请填写用例集信息')
+    throw new Error('请填写用例集信息')
   }
-  dataList.forEach((item, index) => {
-    if (!item){
-      ElMessage.warning(`第 ${index + 1} 行，请填写数据`)
-      throw new Error(`第 ${index + 1} 行，请填写数据`);
+  
+  const dataList: any[] = []
+  formData.value.data_list.forEach((item, index) => {
+    if (!item.name){
+      ElMessage.warning(`第 ${index + 1} 个用例集，请填写用例集名称`)
+      throw new Error(`第 ${index + 1} 个用例集，请填写用例集名称`);
     }
+    dataList.push(item.name)
   })
   return dataList
 }
@@ -168,7 +240,7 @@ const getCaseSuiteName = () => {
 const addData = () => {
   ruleFormRef.value.validate((valid) => {
     if (valid) {
-      const dataList = getCaseSuiteName()
+      const dataList = validateCaseSuiteList()
       submitButtonIsLoading.value = true
       PostCaseSuite(props.testType, {...formData.value, data_list: dataList}).then(response => {
         submitButtonIsLoading.value = false
@@ -177,6 +249,8 @@ const addData = () => {
           drawerIsShow.value = false
         }
       })
+    } else {
+      ElMessage.warning('请完善表单信息')
     }
   })
 }
@@ -189,9 +263,8 @@ const addData = () => {
 :deep(.add-case-suite-dialog) {
   .el-dialog {
     border-radius: 8px;
-    max-height: 94vh;
+    max-height: 90vh;
     margin-top: 3vh !important;
-    margin-bottom: 3vh;
     display: flex;
     flex-direction: column;
   }
@@ -205,7 +278,27 @@ const addData = () => {
   .el-dialog__body {
     padding: 20px;
     flex: 1;
-    overflow: auto;
+    overflow-y: auto;
+    max-height: calc(90vh - 140px);
+    
+    // 自定义滚动条样式
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+      
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
   }
   
   .el-dialog__footer {
@@ -215,11 +308,56 @@ const addData = () => {
   }
 }
 
+// 用例集表单项样式
+.suite-form-item {
+  margin-bottom: 20px;
+  
+  .suite-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #409EFF;
+    
+    .suite-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #409EFF;
+    }
+    
+    .suite-actions {
+      display: flex;
+      gap: 8px;
+      
+      .el-button {
+        &.is-circle {
+          width: 32px;
+          height: 32px;
+          padding: 0;
+        }
+      }
+    }
+  }
+  
+  .el-form-item {
+    margin-bottom: 18px;
+  }
+}
+
+// 分隔线样式
+.el-divider {
+  margin: 30px 0;
+  border-top: 2px dashed #e4e7ed;
+}
+
+// 底部按钮样式
 .dialog-footer {
   text-align: right;
   
   .el-button {
     margin-left: 10px;
+    min-width: 80px;
   }
 }
 
@@ -231,24 +369,32 @@ const addData = () => {
   
   .el-form-item__label {
     font-weight: 500;
+    color: #606266;
   }
   
-  .is-required .el-form-item__label::before {
-    content: '*';
-    color: #f56c6c;
-    margin-right: 4px;
-  }
-}
-
-// 选择器样式优化
-:deep(.el-select) {
   .el-input__wrapper {
+    transition: all 0.3s;
+    
     &:hover {
       box-shadow: 0 0 0 1px #c0c4cc inset;
     }
     
     &.is-focus {
       box-shadow: 0 0 0 1px #409eff inset;
+    }
+  }
+  
+  .el-select {
+    width: 100%;
+    
+    .el-input__wrapper {
+      &:hover {
+        box-shadow: 0 0 0 1px #c0c4cc inset;
+      }
+      
+      &.is-focus {
+        box-shadow: 0 0 0 1px #409eff inset;
+      }
     }
   }
 }
@@ -258,7 +404,6 @@ const addData = () => {
   :deep(.add-case-suite-dialog) {
     .el-dialog {
       width: 90% !important;
-      margin: 2vh auto !important;
     }
   }
 }
@@ -266,10 +411,8 @@ const addData = () => {
 @media (max-width: 768px) {
   :deep(.add-case-suite-dialog) {
     .el-dialog {
-      width: 100% !important;
-      margin: 0 !important;
-      height: 100vh;
-      border-radius: 0;
+      width: 95% !important;
+      margin-top: 2vh !important;
     }
     
     .el-dialog__body {
@@ -277,7 +420,19 @@ const addData = () => {
     }
   }
   
-  // 移动端表单优化
+  .suite-form-item {
+    .suite-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      
+      .suite-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+    }
+  }
+  
   :deep(.el-form) {
     .el-form-item__label {
       font-size: 14px;

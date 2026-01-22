@@ -88,15 +88,14 @@
               element-loading-spinner="el-icon-loading"
               :data="tableDataList"
               style="width: 100%"
-              :header-cell-style="{'text-align':'center'}"
               stripe
               :height="tableHeight"
               @selection-change="clickSelectAll"
               @row-dblclick="rowDblclick">
 
-            <el-table-column type="selection" width="20"/>
+            <el-table-column type="selection" width="40"/>
 
-            <el-table-column label="排序" width="40" align="center">
+            <el-table-column label="排序" width="50" align="center" header-align="center">
               <template #header>
                 <el-tooltip class="item" effect="dark" placement="top-start">
                   <template #content>
@@ -122,19 +121,19 @@
               </template>
             </el-table-column>
 
-            <el-table-column label="序号" header-align="center" width="40">
+            <el-table-column label="序号" align="center" header-align="center" width="50">
               <template #default="scope">
-                <span> {{ (queryItems.page_no - 1) * queryItems.page_size + scope.$index + 1 }} </span>
+                <span>{{ (queryItems.page_no - 1) * queryItems.page_size + scope.$index + 1 }}</span>
               </template>
             </el-table-column>
 
-            <el-table-column show-overflow-tooltip prop="name" align="left" label="用例名称" min-width="40%">
+            <el-table-column show-overflow-tooltip prop="name" align="left" header-align="left" label="用例名称" min-width="200">
               <template #default="scope">
-                <span> {{ scope.row.name }} </span>
+                <span>{{ scope.row.name }}</span>
               </template>
             </el-table-column>
 
-            <el-table-column show-overflow-tooltip prop="desc" align="left" label="详情" min-width="15%">
+            <el-table-column show-overflow-tooltip prop="desc" align="left" header-align="left" label="用例描述" min-width="200">
               <template #default="scope">
                 <el-popover
                     trigger="hover"
@@ -152,7 +151,7 @@
                         :project-id="queryItems.project_id"
                     />
                   <template #reference>
-                    <span> {{ scope.row.desc || '-' }} </span>
+                    <span>{{ scope.row.desc || '-' }}</span>
                   </template>
                 </el-popover>
               </template>
@@ -188,33 +187,35 @@
               </template>
             </el-table-column>
 
-            <el-table-column show-overflow-tooltip prop="create_user" align="center" label="创建人" width="60">
+            <el-table-column show-overflow-tooltip prop="create_user" align="center" header-align="center" label="创建人" width="60">
               <template #default="scope">
                 <span>{{ userDict[scope.row.create_user] }}</span>
               </template>
             </el-table-column>
 
-            <el-table-column show-overflow-tooltip prop="create_user" align="center" label="修改人" width="60">
+            <el-table-column show-overflow-tooltip prop="create_user" align="center" header-align="center" label="修改人" width="60">
               <template #default="scope">
                 <span>{{ userDict[scope.row.update_user] }}</span>
               </template>
             </el-table-column>
 
-            <el-table-column fixed="right" prop="desc" align="center" label="操作" width="200">
+            <el-table-column fixed="right" prop="desc" align="center" header-align="center" label="操作" width="360">
               <template #default="scope">
-                <el-button type="text" size="small" style="margin: 0; padding: 2px" @click="clickRun(scope.row)">运行</el-button>
-                <el-button type="text" size="small" style="margin: 0; padding: 2px" @click="showEditDrawer('edit', scope.row)">修改</el-button>
-                <el-popconfirm width="200px" title="复制用例及其步骤?" @confirm="copyCase(scope.row)">
-                  <template #reference>
-                    <el-button style="margin: 0; padding: 2px" type="text" size="small">复制</el-button>
-                  </template>
-                </el-popconfirm>
-                <el-button type="text" size="small" style="margin: 0; padding: 2px" @click="showReport(scope.row)">历史报告</el-button>
-                <el-popconfirm width="300px" :title="`确定删除【${ scope.row.name }】?`" @confirm="deleteData(scope.row)">
-                  <template #reference>
-                    <el-button style="margin: 0; padding: 2px;color: red" type="text" size="small">删除</el-button>
-                  </template>
-                </el-popconfirm>
+                <div class="action-buttons">
+                  <el-button size="small" type="primary" @click="clickRun(scope.row)">运行</el-button>
+                  <el-button size="small" @click="showEditDrawer('edit', scope.row)">修改</el-button>
+                  <el-popconfirm width="200px" title="复制用例及其步骤?" @confirm="copyCase(scope.row)">
+                    <template #reference>
+                      <el-button size="small" type="success">复制</el-button>
+                    </template>
+                  </el-popconfirm>
+                  <el-button size="small" type="info" @click="showReport(scope.row)">历史报告</el-button>
+                  <el-popconfirm width="300px" :title="`确定删除【${ scope.row.name }】?`" @confirm="deleteData(scope.row)">
+                    <template #reference>
+                      <el-button size="small" type="danger">删除</el-button>
+                    </template>
+                  </el-popconfirm>
+                </div>
               </template>
             </el-table-column>
           </el-table>
@@ -560,6 +561,47 @@ const treeIsChoice = (message: any) => {
 </script>
 
 <style scoped lang="scss">
+// 表格样式优化 - 确保数据与标题对齐
+:deep(.el-table) {
+  // 统一表格单元格内边距
+  .el-table__header-wrapper,
+  .el-table__body-wrapper {
+    th, td {
+      .cell {
+        padding-left: 10px;
+        padding-right: 10px;
+      }
+    }
+  }
+  
+  // 确保左对齐列的对齐方式
+  .el-table__body {
+    td {
+      &.el-table-column--selection {
+        .cell {
+          padding-left: 14px;
+        }
+      }
+    }
+  }
+}
+
+// 操作按钮样式
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  
+  .el-button {
+    margin: 0;
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+}
+
 .case-status-0 :deep(.el-input__wrapper){
   background-color: #dcdfe6;
 }

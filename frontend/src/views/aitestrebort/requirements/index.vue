@@ -110,6 +110,11 @@
           </div>
         </el-tab-pane>
 
+        <!-- 智能生成测试用例 -->
+        <el-tab-pane label="智能生成测试用例" name="ai-generator">
+          <AITestCaseGenerator :project-id="projectId" :knowledge-base-id="knowledgeBaseId" />
+        </el-tab-pane>
+
         <!-- 手动需求管理 -->
         <el-tab-pane label="手动需求" name="manual-requirements">
           <div class="manual-requirements-section">
@@ -328,6 +333,7 @@ import {
 import { requirementDocumentApi, requirementApi, type RequirementDocument, type Requirement } from '@/api/aitestrebort/requirements'
 import ModuleSplitDialog from './components/ModuleSplitDialog.vue'
 import RequirementDetailDialog from './components/RequirementDetailDialog.vue'
+import AITestCaseGenerator from './components/AITestCaseGenerator.vue'
 
 // 获取项目ID
 const route = useRoute()
@@ -351,6 +357,7 @@ const total = ref(0)
 const selectedDocument = ref<RequirementDocument | null>(null)
 const selectedRequirement = ref<Requirement | null>(null)
 const editingRequirement = ref<Requirement | null>(null)
+const knowledgeBaseId = ref<number | undefined>(undefined)
 
 // 搜索表单
 const searchForm = reactive({
@@ -802,7 +809,20 @@ const getRequirementStatusText = (status: string) => {
 // 生命周期
 onMounted(() => {
   loadDocuments()
+  loadKnowledgeBase()
 })
+
+// 加载知识库信息
+const loadKnowledgeBase = async () => {
+  try {
+    // 尝试获取项目关联的知识库
+    // 这里假设有一个API可以获取项目的知识库
+    // 如果没有，可以让用户在生成时选择
+    knowledgeBaseId.value = undefined
+  } catch (error) {
+    console.error('获取知识库失败:', error)
+  }
+}
 </script>
 
 <style scoped>

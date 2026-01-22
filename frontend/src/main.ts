@@ -10,10 +10,14 @@ import './assets/style/common.scss' // 公共css
 import './theme/modules/chinese/index.scss'
 import "vue3-json-viewer/dist/index.css"
 
+import uploader from 'vue-simple-uploader'
+import 'vue-simple-uploader/dist/style.css'
+
 import App from './App.vue'
 import store from './store'
 import router from './router'
 import CodeDiff from 'v-code-diff'
+
 
 // 初始化主题配置
 const initThemeConfig = () => {
@@ -46,7 +50,7 @@ app.use(ElementPlus, {
 })
 app.use(CodeDiff)
 app.use(store)
-
+app.use(uploader)
 // 在store初始化后，立即初始化主题配置
 initThemeConfig();
 

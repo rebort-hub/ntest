@@ -167,17 +167,19 @@
               </template>
             </el-table-column>
 
-            <el-table-column fixed="right" prop="desc" align="center" label="操作" width="190">
+            <el-table-column fixed="right" prop="desc" align="center" label="操作" width="320">
               <template #default="scope">
-                <el-button type="text" size="small" style="margin: 0; padding: 2px" @click="showEnvSelector(scope.row)">运行</el-button>
-                <el-button type="text" size="small" style="margin: 0; padding: 2px" @click="showEditDrawer('edit', scope.row)">修改</el-button>
-                <el-button type="text" size="small" style="margin: 0; padding: 2px" @click="showAddDrawer(scope.row)">复制</el-button>
-                <el-button type="text" size="small" style="margin: 0; padding: 2px" @click="showReport(scope.row)">查看报告</el-button>
-                <el-popconfirm width="250px" :title="`确定删除【${ scope.row.name }】?`" @confirm="deleteData(scope.row)">
-                  <template #reference>
-                    <el-button style="margin: 0; padding: 2px;color: red" type="text" size="small">删除</el-button>
-                  </template>
-                </el-popconfirm>
+                <div class="action-buttons">
+                  <el-button size="small" type="primary" @click="showEnvSelector(scope.row)">运行</el-button>
+                  <el-button size="small" @click="showEditDrawer('edit', scope.row)">修改</el-button>
+                  <el-button size="small" type="success" @click="showAddDrawer(scope.row)">复制</el-button>
+                  <el-button size="small" type="info" @click="showReport(scope.row)">查看报告</el-button>
+                  <el-popconfirm width="250px" :title="`确定删除【${ scope.row.name }】?`" @confirm="deleteData(scope.row)">
+                    <template #reference>
+                      <el-button size="small" type="danger">删除</el-button>
+                    </template>
+                  </el-popconfirm>
+                </div>
               </template>
             </el-table-column>
           </el-table>
@@ -192,17 +194,17 @@
         </el-tab-pane>
 
         <EditDrawer :business-id="project.business_id"></EditDrawer>
-        <AddDrawer :project-id="queryItems.project_id" :module-id="queryItems.module_id"></AddDrawer>
-        <SelectRunEnv :test-type="'api'" :business-id="project.business_id"></SelectRunEnv>
-        <ShowRunProcess :test-type="'api'"></ShowRunProcess>
+        <AddDialog :project-id="queryItems.project_id" :module-id="queryItems.module_id"></AddDialog>
         <el-dialog 
             v-model="reportTableIsShow" 
             title="报告列表" 
             width="85%"
             :close-on-click-modal="false"
             :close-on-press-escape="false"
+            :destroy-on-close="true"
             top="3vh"
-            class="report-table-dialog">
+            class="report-table-dialog"
+            @close="handleReportDialogClose">
           <ReportTable :test-type="'api'" :user-dict="userDict" :user-list="userList"></ReportTable>
         </el-dialog>
       </el-tabs>
@@ -213,9 +215,7 @@
 import {onMounted, ref, onBeforeUnmount, computed, nextTick} from "vue";
 import Pagination from '@/components/pagination.vue'
 import EditDrawer from './edit-drawer.vue'
-import AddDrawer from './add-drawer.vue'
-import SelectRunEnv from '@/components/select-run-env.vue'
-import ShowRunProcess from '@/components/show-run-process.vue'
+import AddDialog from './add-dialog.vue'
 
 import {bus, busEvent} from "@/utils/bus-events";
 import {ElMessage} from "element-plus";
@@ -338,6 +338,10 @@ const showReport = (row) => {
       triggerId: row.id
     })
   })
+}
+
+const handleReportDialogClose = () => {
+  reportTableIsShow.value = false
 }
 
 const showAddDrawer = (row) => {
@@ -484,6 +488,22 @@ const handleDrop = (event, newIndex) => {
 </script>
 
 <style scoped lang="scss">
+// 操作按钮样式
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  
+  .el-button {
+    margin: 0;
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+}
+
 .block_post {
   border: 1px solid #49cc90;
   background-color: rgba(73, 204, 144, .1)

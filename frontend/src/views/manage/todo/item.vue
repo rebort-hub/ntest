@@ -3,39 +3,36 @@
     <div class="item-header">
       <h4 class="item-title">{{ data.title }}</h4>
       <div class="item-actions">
-        <el-tooltip content="编辑待办" placement="top">
+        <el-tooltip content="编辑" placement="top">
           <el-button 
             v-show="data.status === 'todo'" 
-            type="text" 
+            type="primary"
+            :icon="Edit"
+            circle
             size="small"
             @click.stop="showDetail(data.id)"
-            class="action-btn edit-btn"
-          >
-            <el-icon><Edit /></el-icon>
-          </el-button>
+          />
         </el-tooltip>
         
-        <el-tooltip content="查看详情" placement="top">
+        <el-tooltip content="查看" placement="top">
           <el-button 
             v-show="data.status !== 'todo'" 
-            type="text" 
+            type="success"
+            :icon="View"
+            circle
             size="small"
             @click.stop="showDetail(data.id)"
-            class="action-btn view-btn"
-          >
-            <el-icon><View /></el-icon>
-          </el-button>
+          />
         </el-tooltip>
         
-        <el-tooltip content="复制待办" placement="top">
+        <el-tooltip content="复制" placement="top">
           <el-button 
-            type="text" 
+            type="info"
+            :icon="CopyDocument"
+            circle
             size="small"
             @click.stop="addTodo(data)"
-            class="action-btn copy-btn"
-          >
-            <el-icon><CopyDocument /></el-icon>
-          </el-button>
+          />
         </el-tooltip>
         
         <el-popconfirm 
@@ -48,12 +45,11 @@
           <template #reference>
             <el-button 
               v-show="data.status === 'todo'" 
-              type="text" 
+              type="danger"
+              :icon="Delete"
+              circle
               size="small"
-              class="action-btn delete-btn"
-            >
-              <el-icon><Delete /></el-icon>
-            </el-button>
+            />
           </template>
         </el-popconfirm>
       </div>
@@ -190,48 +186,11 @@ const deleteTodo = (content: object) => {
     
     .item-actions {
       display: flex;
-      gap: 4px;
-      opacity: 1; // 始终显示操作按钮
+      gap: 8px;
+      opacity: 1;
       transition: opacity 0.2s ease;
       position: relative;
-      z-index: 2; // 确保操作按钮在状态徽章之上
-      
-      .action-btn {
-        padding: 4px;
-        border-radius: 4px;
-        
-        &.edit-btn {
-          color: #409eff;
-          
-          &:hover {
-            background-color: #ecf5ff;
-          }
-        }
-        
-        &.view-btn {
-          color: #67c23a;
-          
-          &:hover {
-            background-color: #f0f9ff;
-          }
-        }
-        
-        &.copy-btn {
-          color: #e6a23c;
-          
-          &:hover {
-            background-color: #fdf6ec;
-          }
-        }
-        
-        &.delete-btn {
-          color: #f56c6c;
-          
-          &:hover {
-            background-color: #fef0f0;
-          }
-        }
-      }
+      z-index: 2;
     }
   }
   

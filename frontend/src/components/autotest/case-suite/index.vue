@@ -119,8 +119,8 @@
       <addDrawer :test-type="testType"></addDrawer>
       <uploadDrawer :test-type="testType"></uploadDrawer>
 
-<!--      <selectRunEnv :test-type="testType" :business-id="project.business_id"></selectRunEnv>-->
-<!--      <showRunProcess :test-type="testType"></showRunProcess>-->
+      <selectRunEnv :test-type="testType" :business-id="project.business_id"></selectRunEnv>
+      <showRunProcess :test-type="testType"></showRunProcess>
     <copy-suite :test-type="testType" :project-id="project.id" :project-list="projectList"></copy-suite>
     </div>
   </div>
@@ -143,8 +143,8 @@ import {Plus, UploadOne, Write, Delete, SortThree, Copy} from "@icon-park/vue-ne
 import {GetCaseSuiteList, DeleteCaseSuite} from "@/api/autotest/case-suite";
 import {GetConfigByCode} from "@/api/config/config-value";
 import CopySuite from "@/components/autotest/case-suite/copy-suite.vue";
-// import selectRunEnv from "@/components/select-run-env.vue";
-// import showRunProcess from "@/components/show-run-process.vue";
+import selectRunEnv from "@/components/select-run-env.vue";
+import showRunProcess from "@/components/show-run-process.vue";
 
 const props = defineProps({
   testType: {
@@ -237,7 +237,8 @@ const clickDeleteModule = (node: any, data: { name: any; }) => {
       {confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'})
       .then(() => {
         DeleteCaseSuite(props.testType, { id: data.id }).then(response => {
-          if (response){
+          // 只有当响应状态为成功时才删除树节点
+          if (response && (response.status === 200 || response.status === 'success' || response.status < 400)){
             treeRef.value.remove(data)
             treeIsDone(treeData.value)
           }

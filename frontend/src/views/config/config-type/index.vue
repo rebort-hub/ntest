@@ -110,16 +110,16 @@
       />
     </div>
 
-    <EditDrawer></EditDrawer>
-    <AddDrawer></AddDrawer>
+    <EditDialog></EditDialog>
+    <AddDialog></AddDialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import {onMounted, ref, Ref, computed, onBeforeUnmount} from "vue";
 import Pagination from '@/components/pagination.vue'
-import EditDrawer from './edit-drawer.vue'
-import AddDrawer from './add-drawer.vue'
+import EditDialog from './edit-dialog.vue'
+import AddDialog from './add-dialog.vue'
 
 import {ChangeConfigTypeSort, GetConfigTypeList} from "@/api/config/config-type";
 import {GetUserList} from "@/api/system/user";

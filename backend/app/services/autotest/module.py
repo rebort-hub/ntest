@@ -48,8 +48,23 @@ async def change_module(request: Request, form: schema.EditModuleForm):
 
 async def delete_module(request: Request, form: schema.GetModuleForm):
     model = ApiModule if request.app.test_type == "api" else AppModule if request.app.test_type == "app" else UiModule
+    
+    # 检查是否有子模块
     await model.validate_is_not_exist("请先删除当前模块下的子模块", parent=form.id)
-    await ApiMsg.validate_is_not_exist("请先删除模块下的接口", module_id=form.id)
+    
+    # 根据测试类型检查模块下的资源
+    if request.app.test_type == "api":
+        # 接口自动化：检查是否有接口
+        await ApiMsg.validate_is_not_exist("请先删除模块下的接口", module_id=form.id)
+    elif request.app.test_type == "ui":
+        # UI自动化：检查是否有页面
+        from app.models.autotest.page import UiPage
+        await UiPage.validate_is_not_exist("请先删除模块下的页面", module_id=form.id)
+    elif request.app.test_type == "app":
+        # App自动化：检查是否有页面
+        from app.models.autotest.page import AppPage
+        await AppPage.validate_is_not_exist("请先删除模块下的页面", module_id=form.id)
+    
     await model.filter(id=form.id).delete()
     return request.app.delete_success()
 

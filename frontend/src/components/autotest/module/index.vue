@@ -249,7 +249,8 @@ const clickDeleteModule = (node: any, data: { name: any; }) => {
       {confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'})
       .then(() => {
         DeleteModule(props.testType, { id: data.id }).then(response => {
-          if (response){
+          // 只有当响应状态为成功时才删除树节点
+          if (response && (response.status === 200 || response.status === 'success' || response.status < 400)){
             treeRef.value.remove(data)
             treeIsDone(treeData.value)
           }

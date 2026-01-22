@@ -1,151 +1,163 @@
-﻿<template>
+<template>
   <div class="knowledge-base-detail">
     <div class="detail-header">
-      <h3>{{ knowledgeBase.name }}</h3>
+      <div class="header-left">
+        <el-button @click="$emit('close')" style="margin-right: 12px;">
+          <el-icon><ArrowLeft /></el-icon>
+          返回列表
+        </el-button>
+        <h3>{{ knowledgeBase.name }}</h3>
+      </div>
       <el-button type="text" @click="$emit('close')">
         <el-icon><Close /></el-icon>
       </el-button>
     </div>
 
     <div class="detail-content">
-      <!-- 基本信息和配置信息 - 两列布局 -->
-      <div class="info-grid">
-        <!-- 基本信息 -->
-        <div class="info-section">
-          <h4>基本信息</h4>
-          <div class="info-item">
-            <span class="label">描述:</span>
-            <span class="value">{{ knowledgeBase.description || '暂无描述' }}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">状态:</span>
-            <el-tag :type="knowledgeBase.is_active ? 'success' : 'danger'" size="small">
-              {{ knowledgeBase.is_active ? '启用' : '禁用' }}
-            </el-tag>
-          </div>
-          <div class="info-item">
-            <span class="label">创建时间:</span>
-            <span class="value">{{ formatDate(knowledgeBase.created_at) }}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">更新时间:</span>
-            <span class="value">{{ formatDate(knowledgeBase.updated_at) }}</span>
-          </div>
-        </div>
+      <!-- 功能标签页 -->
+      <el-tabs v-model="activeTab" class="detail-tabs">
+        <!-- 基本信息标签页 -->
+        <el-tab-pane label="知识库基本信息" name="info">
+          <!-- 基本信息和配置信息 - 两列布局 -->
+          <div class="info-grid">
+            <!-- 基本信息 -->
+            <div class="info-section">
+              <h4>基本信息</h4>
+              <div class="info-item">
+                <span class="label">描述:</span>
+                <span class="value">{{ knowledgeBase.description || '暂无描述' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">状态:</span>
+                <el-tag :type="knowledgeBase.is_active ? 'success' : 'danger'" size="small">
+                  {{ knowledgeBase.is_active ? '启用' : '禁用' }}
+                </el-tag>
+              </div>
+              <div class="info-item">
+                <span class="label">创建时间:</span>
+                <span class="value">{{ formatDate(knowledgeBase.created_at) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">更新时间:</span>
+                <span class="value">{{ formatDate(knowledgeBase.updated_at) }}</span>
+              </div>
+            </div>
 
-        <!-- 配置信息 -->
-        <div class="info-section">
-          <h4>配置信息</h4>
-          <div class="info-item">
-            <span class="label">分块大小:</span>
-            <span class="value">{{ knowledgeBase.chunk_size }}</span>
+            <!-- 配置信息 -->
+            <div class="info-section">
+              <h4>配置信息</h4>
+              <div class="info-item">
+                <span class="label">分块大小:</span>
+                <span class="value">{{ knowledgeBase.chunk_size }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">分块重叠:</span>
+                <span class="value">{{ knowledgeBase.chunk_overlap }}</span>
+              </div>
+            </div>
           </div>
-          <div class="info-item">
-            <span class="label">分块重叠:</span>
-            <span class="value">{{ knowledgeBase.chunk_overlap }}</span>
-          </div>
-        </div>
-      </div>
 
-      <!-- 统计信息 -->
-      <div class="info-section">
-        <h4>统计信息</h4>
-        <div class="stats-grid">
-          <div class="stat-item">
-            <div class="stat-value">{{ knowledgeBase.document_count || 0 }}</div>
-            <div class="stat-label">文档数量</div>
+          <!-- 统计信息 -->
+          <div class="info-section">
+            <h4>统计信息</h4>
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-value">{{ knowledgeBase.document_count || 0 }}</div>
+                <div class="stat-label">文档数量</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value">{{ knowledgeBase.processed_count || 0 }}</div>
+                <div class="stat-label">已处理</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value">{{ knowledgeBase.chunk_count || 0 }}</div>
+                <div class="stat-label">分块总数</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value">{{ processingProgress }}%</div>
+                <div class="stat-label">处理进度</div>
+              </div>
+            </div>
           </div>
-          <div class="stat-item">
-            <div class="stat-value">{{ knowledgeBase.processed_count || 0 }}</div>
-            <div class="stat-label">已处理</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-value">{{ knowledgeBase.chunk_count || 0 }}</div>
-            <div class="stat-label">分块总数</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-value">{{ processingProgress }}%</div>
-            <div class="stat-label">处理进度</div>
-          </div>
-        </div>
-      </div>
+        </el-tab-pane>
 
-      <!-- 文档管理 -->
-      <div class="documents-section">
-        <div class="section-header">
-          <h4>文档管理</h4>
-          <div class="header-actions">
-            <el-button type="default" size="small" @click="fetchDocuments" :loading="documentsLoading">
-              <el-icon><Refresh /></el-icon>
-              刷新
-            </el-button>
-            <el-button type="primary" size="small" @click="showUploadModal">
-              <el-icon><Upload /></el-icon>
-              上传文档
-            </el-button>
+        <!-- 文档管理标签页 -->
+        <el-tab-pane label="知识库文档管理" name="documents">
+          <div class="section-header">
+            <h4>文档管理</h4>
+            <div class="header-actions">
+              <el-button type="default" size="small" @click="fetchDocuments" :loading="documentsLoading">
+                <el-icon><Refresh /></el-icon>
+                刷新
+              </el-button>
+              <el-button type="primary" size="small" @click="showUploadModal">
+                <el-icon><Upload /></el-icon>
+                上传文档
+              </el-button>
+            </div>
           </div>
-        </div>
 
-        <div class="documents-list">
-          <el-table
-            :data="documents"
-            :loading="documentsLoading"
-            size="small"
-            max-height="200"
-          >
-            <el-table-column prop="title" label="文档名称" min-width="120">
-              <template #default="{ row }">
-                <el-link @click="viewDocument(row.id)" :underline="false" class="document-title-link">
-                  {{ row.title }}
-                </el-link>
-              </template>
-            </el-table-column>
-            <el-table-column prop="document_type" label="类型" width="60" />
-            <el-table-column prop="status" label="状态" width="80" align="center">
-              <template #default="{ row }">
-                <div class="status-cell">
-                  <el-tag :type="getStatusType(row.status)" size="small">
-                    {{ getStatusText(row.status) }}
-                  </el-tag>
-                  <el-tooltip v-if="row.status === 'failed' && row.error_message" :content="row.error_message">
-                    <el-icon style="color: #f56c6c; margin-left: 4px; cursor: help;"><Warning /></el-icon>
-                  </el-tooltip>
-                </div>
-              </template>
-            </el-table-column>
-            <el-table-column prop="chunk_count" label="分块数" width="70" align="center">
-              <template #default="{ row }">
-                {{ row.chunk_count || 0 }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="uploader_name" label="上传者" width="80" />
-            <el-table-column prop="uploaded_at" label="上传时间" width="100">
-              <template #default="{ row }">
-                {{ formatDate(row.uploaded_at) }}
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="120" fixed="right" align="center">
-              <template #default="{ row }">
-                <el-button type="text" size="small" @click="viewDocument(row.id)">查看</el-button>
-                <el-button v-if="row.status === 'failed'" type="text" size="small" @click="reprocessDocument(row.id)">重试</el-button>
-                <el-button type="text" size="small" @click="deleteDocument(row.id)" style="color: #f56c6c;">删除</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
-      </div>
+          <div class="documents-list">
+            <el-table
+              :data="documents"
+              :loading="documentsLoading"
+              size="small"
+              max-height="200"
+            >
+              <el-table-column prop="title" label="文档名称" min-width="120">
+                <template #default="{ row }">
+                  <el-link @click="viewDocument(row.id)" :underline="false" class="document-title-link">
+                    {{ row.title }}
+                  </el-link>
+                </template>
+              </el-table-column>
+              <el-table-column prop="document_type" label="类型" width="60" />
+              <el-table-column prop="status" label="状态" width="80" align="center">
+                <template #default="{ row }">
+                  <div class="status-cell">
+                    <el-tag :type="getStatusType(row.status)" size="small">
+                      {{ getStatusText(row.status) }}
+                    </el-tag>
+                    <el-tooltip v-if="row.status === 'failed' && row.error_message" :content="row.error_message">
+                      <el-icon style="color: #f56c6c; margin-left: 4px; cursor: help;"><Warning /></el-icon>
+                    </el-tooltip>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column prop="chunk_count" label="分块数" width="70" align="center">
+                <template #default="{ row }">
+                  {{ row.chunk_count || 0 }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="uploader_name" label="上传者" width="80" />
+              <el-table-column prop="uploaded_at" label="上传时间" width="100">
+                <template #default="{ row }">
+                  {{ formatDate(row.uploaded_at) }}
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="120" fixed="right" align="center">
+                <template #default="{ row }">
+                  <el-button type="text" size="small" @click="viewDocument(row.id)">查看</el-button>
+                  <el-button v-if="row.status === 'failed'" type="text" size="small" @click="reprocessDocument(row.id)">重试</el-button>
+                  <el-button type="text" size="small" @click="deleteDocument(row.id)" style="color: #f56c6c;">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </el-tab-pane>
 
-      <!-- 查询测试 -->
-      <div class="query-section">
-        <h4>查询测试</h4>
-        <div class="query-form">
-          <el-input
-            v-model="queryText"
-            type="textarea"
-            :rows="3"
-            placeholder="输入查询内容..."
-            style="margin-bottom: 12px"
-          />
+        <!-- 查询测试标签页 -->
+        <el-tab-pane label="知识库RAG查询测试" name="query">
+          <div class="query-section">
+            <h4>查询测试</h4>
+            <div class="query-form">
+              <el-input
+                v-model="queryText"
+                type="textarea"
+                :rows="3"
+                placeholder="输入查询内容..."
+                style="margin-bottom: 12px"
+              />
 
           <!-- 查询参数设置 -->
           <div class="query-settings">
@@ -205,8 +217,8 @@
               >
                 <div class="source-content">{{ source.content }}</div>
                 <div class="source-meta">
-                  <span>文档: {{ source.metadata.title || source.metadata.source }}</span> |
-                  <span>相似度: {{ (source.similarity_score * 100).toFixed(1) }}%</span>
+                  <span>文档: {{ source.metadata.document_title || source.metadata.title || source.metadata.source }}</span> |
+                  <span>相似度: {{ ((source.score || source.similarity_score || 0) * 100).toFixed(1) }}%</span>
                   <span v-if="source.metadata.page_number"> | 页码: {{ source.metadata.page_number }}</span>
                 </div>
               </div>
@@ -220,11 +232,21 @@
             </div>
           </div>
         </div>
-      </div>
+          </div>
+        </el-tab-pane>
+
+        <!-- 测试用例生成标签页 -->
+        <el-tab-pane label="基于知识库测试用例生成" name="testcase">
+          <TestCaseGenerator
+            :knowledge-base="knowledgeBase"
+            :project-id="projectId"
+          />
+        </el-tab-pane>
+      </el-tabs>
     </div>
 
     <!-- 上传文档对话框 -->
-    <DocumentUploadModal
+    <DocumentUploadAdvanced
       v-model="isUploadModalVisible"
       :knowledge-base-id="knowledgeBase.id"
       :project-id="projectId"
@@ -244,10 +266,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Close, Refresh, Upload, Warning } from '@element-plus/icons-vue'
+import { Close, Refresh, Upload, Warning, ArrowLeft } from '@element-plus/icons-vue'
 import { knowledgeEnhancedApi, type KnowledgeBase } from '@/api/aitestrebort/knowledge-enhanced'
-import DocumentUploadModal from './DocumentUploadModal.vue'
+import DocumentUploadAdvanced from './DocumentUploadAdvanced.vue'
 import DocumentDetailModal from './DocumentDetailModal.vue'
+import TestCaseGenerator from './TestCaseGenerator.vue'
 
 interface Props {
   knowledgeBase: KnowledgeBase
@@ -285,6 +308,7 @@ const emit = defineEmits<{
 }>()
 
 // 响应式数据
+const activeTab = ref('info')
 const documents = ref<Document[]>([])
 const documentsLoading = ref(false)
 const queryText = ref('')
@@ -375,13 +399,13 @@ const deleteDocument = async (documentId: string) => {
       documentId
     )
     
-    ElMessage.success('文档删除成功')
+    // 响应拦截器会显示成功消息
     await fetchDocuments()
     emit('refresh')
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除文档失败:', error)
-      ElMessage.error('删除文档失败')
+      // 响应拦截器会显示错误消息
     }
   }
 }
@@ -400,7 +424,8 @@ const testQuery = async () => {
       {
         query: queryText.value,
         top_k: topK.value,
-        include_metadata: true
+        score_threshold: similarityThreshold.value,
+        use_rag: false  // 简单检索模式
       }
     )
     
@@ -420,9 +445,10 @@ const showUploadModal = () => {
 }
 
 const handleDocumentUploaded = () => {
+  isUploadModalVisible.value = false  // 关闭上传弹窗
   fetchDocuments()
   emit('refresh')
-  ElMessage.success('文档上传成功')
+  // 响应拦截器会显示成功消息
 }
 
 const viewDocument = (documentId: string) => {
@@ -452,6 +478,12 @@ onMounted(() => {
   margin-bottom: 20px;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
 .detail-header h3 {
   margin: 0;
   font-size: 18px;
@@ -461,6 +493,16 @@ onMounted(() => {
 .detail-content {
   flex: 1;
   overflow-y: auto;
+}
+
+.detail-tabs {
+  height: 100%;
+}
+
+.detail-tabs :deep(.el-tabs__content) {
+  height: calc(100% - 55px);
+  overflow-y: auto;
+  padding: 16px 0;
 }
 
 .info-grid {

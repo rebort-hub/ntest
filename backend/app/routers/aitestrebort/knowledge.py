@@ -32,10 +32,15 @@ router.add_get_route("/projects/{project_id}/knowledge-bases/{kb_id}/statistics"
 # 文档管理
 router.add_get_route("/projects/{project_id}/knowledge-bases/{kb_id}/documents", knowledge_service.get_documents, summary="获取文档列表")
 router.add_post_route("/projects/{project_id}/knowledge-bases/{kb_id}/documents", knowledge_service.upload_document, summary="上传文档")
-router.add_get_route("/projects/{project_id}/knowledge-bases/{kb_id}/documents/{doc_id}", knowledge_service.get_documents, summary="获取文档详情")
-router.add_get_route("/projects/{project_id}/knowledge-bases/{kb_id}/documents/{doc_id}/content", knowledge_service.get_documents, summary="获取文档完整内容")
-router.add_delete_route("/projects/{project_id}/knowledge-bases/{kb_id}/documents/{doc_id}", knowledge_service.get_documents, summary="删除文档")
-router.add_post_route("/projects/{project_id}/knowledge-bases/{kb_id}/documents/{doc_id}/process", knowledge_service.get_documents, summary="重新处理文档")
+router.add_get_route("/projects/{project_id}/knowledge-bases/{kb_id}/documents/{doc_id}", knowledge_service.get_document_detail, summary="获取文档详情")
+router.add_get_route("/projects/{project_id}/knowledge-bases/{kb_id}/documents/{doc_id}/content", knowledge_service.get_document_content, summary="获取文档内容")
+router.add_get_route("/projects/{project_id}/knowledge-bases/{kb_id}/documents/{doc_id}/chunks", knowledge_service.get_document_chunks, summary="获取文档分块")
+router.add_delete_route("/projects/{project_id}/knowledge-bases/{kb_id}/documents/{doc_id}", knowledge_service.delete_document, summary="删除文档")
+router.add_post_route("/projects/{project_id}/knowledge-bases/{kb_id}/documents/{doc_id}/process", knowledge_service.reprocess_document, summary="重新处理文档")
 
 # RAG查询功能
 router.add_post_route("/projects/{project_id}/knowledge-bases/{kb_id}/query", knowledge_service.query_knowledge_base, summary="查询知识库")
+router.add_post_route("/projects/{project_id}/knowledge-bases/{kb_id}/query-stream", knowledge_service.query_knowledge_base_stream, summary="查询知识库（流式）")
+
+# 系统状态
+router.add_get_route("/system-status", knowledge_service.get_system_status, summary="获取系统状态")

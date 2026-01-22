@@ -134,9 +134,9 @@
       />
     </div>
 
-    <EditDrawer :runEnvGroupList="runEnvGroupList"></EditDrawer>
-    <AddDrawer :runEnvGroupList="runEnvGroupList"></AddDrawer>
-    <ToBusinessDrawer></ToBusinessDrawer>
+    <EditDialog :runEnvGroupList="runEnvGroupList"></EditDialog>
+    <AddDialog :runEnvGroupList="runEnvGroupList"></AddDialog>
+    <ToBusinessDialog></ToBusinessDialog>
   </div>
 </template>
 
@@ -145,9 +145,9 @@ import {onMounted, ref, onBeforeUnmount, computed} from "vue";
 import {ElMessage} from "element-plus";
 
 import Pagination from '@/components/pagination.vue'
-import EditDrawer from './eidt-drawer.vue'
-import AddDrawer from './add-drawer.vue'
-import ToBusinessDrawer from './to-business.vue'
+import EditDialog from './edit-dialog.vue'
+import AddDialog from './add-dialog.vue'
+import ToBusinessDialog from './to-business-dialog.vue'
 
 import {RunEnvGroupList, GetRunEnvList, RunEnvSort} from "@/api/config/run-env";
 import {bus, busEvent} from "@/utils/bus-events";

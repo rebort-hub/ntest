@@ -196,43 +196,28 @@
                     </template>
                   </el-table-column>
 
-                  <el-table-column fixed="right" show-overflow-tooltip prop="desc" align="center" label="操作" width="200">
+                  <el-table-column fixed="right" show-overflow-tooltip prop="desc" align="center" label="操作" width="320">
                     <template #default="scope">
-                      <el-button
-                          style="margin: 0; padding: 2px"
-                          type="text"
-                          size="small"
-                          @click.native="clickRun(scope.row)">运行
-                      </el-button>
-
-<!--                      :disabled="scope.row.status === 1"-->
-                      <el-button
-                          style="margin: 0; padding: 2px"
-                          type="text"
-                          size="small"
-                          @click.native="showEditDrawer(scope.row)">修改
-                      </el-button>
-
-                      <el-popconfirm width="250px" title="复制此任务并生成新的任务?" @confirm="copyData(scope.row)">
-                        <template #reference>
-                          <el-button style="margin: 0; padding: 2px" type="text" size="small">复制</el-button>
-                        </template>
-                      </el-popconfirm>
-
-                      <el-button type="text" size="small" style="margin: 0; padding: 2px" @click="showReport(scope.row)">查看报告</el-button>
-
-                      <el-popconfirm width="250px" :title="`确定删除【${ scope.row.name }】?`" @confirm="deleteData(scope.row)">
-                        <template #reference>
-<!--                          :disabled="scope.row.status === 1"-->
-                          <el-button
-                              :loading="scope.row.isLoading"
-                              style="margin: 0; padding: 2px;color: red"
-                              type="text"
-                              size="small"
-                          >删除
-                          </el-button>
-                        </template>
-                      </el-popconfirm>
+                      <div class="action-buttons">
+                        <el-button size="small" type="primary" @click="clickRun(scope.row)">运行</el-button>
+                        <el-button size="small" @click="showEditDrawer(scope.row)">修改</el-button>
+                        <el-popconfirm width="250px" title="复制此任务并生成新的任务?" @confirm="copyData(scope.row)">
+                          <template #reference>
+                            <el-button size="small" type="success">复制</el-button>
+                          </template>
+                        </el-popconfirm>
+                        <el-button size="small" type="info" @click="showReport(scope.row)">查看报告</el-button>
+                        <el-popconfirm width="250px" :title="`确定删除【${ scope.row.name }】?`" @confirm="deleteData(scope.row)">
+                          <template #reference>
+                            <el-button
+                                :loading="scope.row.isLoading"
+                                size="small"
+                                type="danger"
+                            >删除
+                            </el-button>
+                          </template>
+                        </el-popconfirm>
+                      </div>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -251,8 +236,8 @@
       </el-row>
     </div>
     <EditDrawer :test-type="testType" :user-list="userList"></EditDrawer>
-<!--    <selectRunEnv :test-type="testType"></selectRunEnv>-->
-<!--    <showRunProcess :test-type="testType"></showRunProcess>-->
+    <selectRunEnv :test-type="testType"></selectRunEnv>
+    <showRunProcess :test-type="testType"></showRunProcess>
     <el-drawer v-model="reportTableIsShow" title="报告列表" size="80%">
       <ReportTable :test-type="testType" :user-dict="userDict" :user-list="userList"></ReportTable>
     </el-drawer>
@@ -280,8 +265,8 @@ import {
   RunTask
 } from "@/api/autotest/task";
 import {RunCase} from "@/api/autotest/case";
-// import SelectRunEnv from "@/components/select-run-env.vue";
-// import ShowRunProcess from "@/components/show-run-process.vue";
+import SelectRunEnv from "@/components/select-run-env.vue";
+import ShowRunProcess from "@/components/show-run-process.vue";
 import {GetUserList} from "@/api/system/user";
 import ReportTable from "@/components/autotest/report/report-table.vue";
 
@@ -603,6 +588,22 @@ const drawerIsCommit = (message: any) => {
 </script>
 
 <style scoped lang="scss">
+// 操作按钮样式
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  
+  .el-button {
+    margin: 0;
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+}
+
 .first-col {
   width: 20% !important;
 }

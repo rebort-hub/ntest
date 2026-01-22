@@ -49,3 +49,21 @@ body #nprogress .spinner-icon {
   border-top-color: var(--system-primary-color);
   border-left-color: var(--system-primary-color);
 }
+
+
+// 全局弹窗样式修复（适用于浅色和深色模式）
+.el-dialog {
+  border-radius: 8px;
+  overflow: hidden; // 关键：防止内容溢出圆角
+  
+  .el-dialog__header {
+    margin: 0;
+    padding: 16px 20px;
+    border-radius: 8px 8px 0 0; // 顶部圆角
+  }
+  
+  .el-dialog__footer {
+    padding: 12px 20px;
+    border-radius: 0 0 8px 8px; // 底部圆角
+  }
+}

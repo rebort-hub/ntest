@@ -79,14 +79,14 @@
       />
     </div>
 
-    <EditDrawer></EditDrawer>
+    <EditDialog></EditDialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import {onMounted, ref, onBeforeUnmount, computed} from "vue";
 import Pagination from '@/components/pagination.vue'
-import EditDrawer from './edit-drawer.vue'
+import EditDialog from './edit-dialog.vue'
 
 import {bus, busEvent} from "@/utils/bus-events";
 import {GetUserList} from "@/api/system/user";

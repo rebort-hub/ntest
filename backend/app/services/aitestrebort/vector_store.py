@@ -6,6 +6,7 @@ import os
 import time
 import hashlib
 import logging
+import json
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 
@@ -31,7 +32,179 @@ from langchain.embeddings.base import Embeddings
 import requests
 import uuid
 
+from .qdrant_manager import QdrantManager
+
 logger = logging.getLogger(__name__)
+
+
+class DashScopeEmbeddings(Embeddings):
+    """
+    阿里云百炼（DashScope）嵌入服务
+    """
+    
+    def __init__(self, api_key: str, model: str = "text-embedding-v1"):
+        self.api_key = api_key
+        self.model = model
+        
+        # DashScope API端点
+        self.embeddings_url = "https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding"
+        
+        logger.info(f"DashScopeEmbeddings initialized: model: {self.model}")
+    
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """嵌入多个文档"""
+        return self._embed_texts(texts)
+    
+    def embed_query(self, text: str) -> List[float]:
+        """嵌入单个查询"""
+        return self._embed_texts([text])[0]
+    
+    def _embed_texts(self, texts: List[str]) -> List[List[float]]:
+        """调用DashScope嵌入API"""
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": self.model,
+            "input": {
+                "texts": texts
+            }
+        }
+        
+        try:
+            logger.info(f"Calling DashScope embedding API: {self.embeddings_url}")
+            logger.info(f"Model: {self.model}, Texts count: {len(texts)}")
+            
+            response = requests.post(
+                self.embeddings_url,
+                headers=headers,
+                json=payload,
+                timeout=30
+            )
+            
+            logger.info(f"Response status: {response.status_code}")
+            
+            if response.status_code == 404:
+                error_msg = (
+                    f"DashScope嵌入API端点不存在\n"
+                    f"可能的原因：\n"
+                    f"1. API端点已更新，请检查最新文档\n"
+                    f"2. 模型名称不正确\n"
+                    f"3. 请访问: https://help.aliyun.com/zh/dashscope/"
+                )
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+            
+            if response.status_code == 401:
+                error_msg = "API密钥无效或过期，请检查您的阿里云API密钥"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+            
+            response.raise_for_status()
+            
+            result = response.json()
+            
+            # DashScope返回格式: {"output": {"embeddings": [{"embedding": [...], "text_index": 0}]}}
+            if "output" not in result or "embeddings" not in result["output"]:
+                logger.error(f"Invalid response format: {result}")
+                raise ValueError(f"DashScope API响应格式不正确: {result}")
+            
+            embeddings_data = result["output"]["embeddings"]
+            # 按text_index排序并提取embedding
+            embeddings_data.sort(key=lambda x: x.get("text_index", 0))
+            embeddings = [item["embedding"] for item in embeddings_data]
+            
+            logger.info(f"Successfully embedded {len(texts)} texts, dimension: {len(embeddings[0]) if embeddings else 0}")
+            return embeddings
+            
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP Error: {e}")
+            logger.error(f"Response content: {e.response.text if hasattr(e, 'response') else 'N/A'}")
+            raise
+        except Exception as e:
+            logger.error(f"DashScope embedding API call failed: {e}")
+            raise
+
+
+class OllamaEmbeddings(Embeddings):
+    """
+    Ollama嵌入服务,支持本地运行的BGE-M3等模型
+    """
+    
+    def __init__(self, base_url: str, model: str):
+        self.base_url = base_url.rstrip('/')
+        self.model = model
+        
+        # 构建嵌入API端点
+        # Ollama使用 /api/embeddings 端点
+        if '/api/embeddings' not in self.base_url:
+            self.embeddings_url = f"{self.base_url}/api/embeddings"
+        else:
+            self.embeddings_url = self.base_url
+            
+        logger.info(f"OllamaEmbeddings initialized: {self.embeddings_url}, model: {self.model}")
+    
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """嵌入多个文档"""
+        return [self.embed_query(text) for text in texts]
+    
+    def embed_query(self, text: str) -> List[float]:
+        """嵌入单个查询"""
+        return self._embed_text(text)
+    
+    def _embed_text(self, text: str) -> List[float]:
+        """调用Ollama嵌入API"""
+        payload = {
+            "model": self.model,
+            "prompt": text
+        }
+        
+        try:
+            logger.info(f"Calling Ollama embedding API: {self.embeddings_url}")
+            logger.info(f"Model: {self.model}")
+            
+            response = requests.post(
+                self.embeddings_url,
+                json=payload,
+                timeout=30
+            )
+            
+            logger.info(f"Response status: {response.status_code}")
+            
+            if response.status_code == 404:
+                error_msg = (
+                    f"Ollama嵌入API端点不存在: {self.embeddings_url}\n"
+                    f"可能的原因：\n"
+                    f"1. Ollama服务未启动\n"
+                    f"2. 模型 '{self.model}' 未安装\n"
+                    f"3. 请运行: ollama pull {self.model}"
+                )
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+            
+            response.raise_for_status()
+            
+            result = response.json()
+            
+            # Ollama返回格式: {"embedding": [0.1, 0.2, ...]}
+            if "embedding" not in result:
+                logger.error(f"Invalid response format: {result}")
+                raise ValueError(f"Ollama API响应格式不正确，缺少'embedding'字段")
+            
+            embedding = result["embedding"]
+            
+            logger.info(f"Successfully embedded text, dimension: {len(embedding)}")
+            return embedding
+            
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP Error: {e}")
+            logger.error(f"Response content: {e.response.text if hasattr(e, 'response') else 'N/A'}")
+            raise
+        except Exception as e:
+            logger.error(f"Ollama embedding API call failed: {e}")
+            raise
 
 
 class CustomEmbeddings(Embeddings):
@@ -40,16 +213,40 @@ class CustomEmbeddings(Embeddings):
     """
     
     def __init__(self, api_base_url: str, api_key: str, model_name: str):
-        self.api_base_url = api_base_url.rstrip('/')
+        # 清理API密钥，移除可能的Bearer前缀
+        if api_key and api_key.startswith("Bearer "):
+            api_key = api_key[7:].strip()
+        
         self.api_key = api_key
         self.model_name = model_name
         
+        # 清理base_url，移除可能的端点路径
+        base_url = api_base_url.rstrip('/')
+        
+        # 移除常见的端点路径（如果用户错误地包含了）
+        endpoints_to_remove = ['/embeddings', '/v1/embeddings', '/api/embeddings']
+        for endpoint in endpoints_to_remove:
+            if base_url.endswith(endpoint):
+                base_url = base_url[:-len(endpoint)]
+                logger.info(f"Removed endpoint '{endpoint}' from base_url")
+                break
+        
+        # 移除可能的/api路径（某些服务使用/api作为前缀）
+        if base_url.endswith('/api'):
+            base_url = base_url[:-4]
+            logger.info(f"Removed /api from base_url")
+        
+        # 确保base_url以/v1结尾（OpenAI兼容API标准）
+        if not base_url.endswith('/v1'):
+            # 检查是否已经包含/v1在路径中
+            if '/v1' not in base_url:
+                base_url = base_url + '/v1'
+                logger.info(f"Added /v1 to base_url: {base_url}")
+        
         # 构建完整的嵌入API端点
-        if '/embeddings' not in self.api_base_url:
-            self.embeddings_url = f"{self.api_base_url}/embeddings"
-        else:
-            self.embeddings_url = self.api_base_url
-            
+        self.api_base_url = base_url
+        self.embeddings_url = f"{base_url}/embeddings"
+        
         logger.info(f"CustomEmbeddings initialized: {self.embeddings_url}, model: {self.model_name}")
     
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
@@ -62,10 +259,22 @@ class CustomEmbeddings(Embeddings):
     
     def _embed_texts(self, texts: List[str]) -> List[List[float]]:
         """调用嵌入API"""
+        # 检测是否是阿里云DashScope API
+        is_dashscope = 'dashscope.aliyuncs.com' in self.embeddings_url
+        
+        # 构建请求头
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
+        
+        # 阿里云可能支持两种认证方式
+        if is_dashscope:
+            # 尝试两种认证头
+            headers["Authorization"] = f"Bearer {self.api_key}"
+            headers["X-DashScope-API-Key"] = self.api_key
+            logger.info("Detected DashScope API, using dual authentication headers")
+        else:
+            headers["Authorization"] = f"Bearer {self.api_key}"
         
         payload = {
             "input": texts,
@@ -73,20 +282,111 @@ class CustomEmbeddings(Embeddings):
         }
         
         try:
+            logger.info(f"Calling embedding API: {self.embeddings_url}")
+            logger.info(f"Model: {self.model_name}, Texts count: {len(texts)}")
+            logger.info(f"API Key (masked): {self.api_key[:10]}...{self.api_key[-4:] if len(self.api_key) > 14 else '****'}")
+            
             response = requests.post(
                 self.embeddings_url,
                 headers=headers,
                 json=payload,
                 timeout=30
             )
+            
+            # 记录响应状态
+            logger.info(f"Response status: {response.status_code}")
+            
+            # 如果是401，提供更详细的错误信息
+            if response.status_code == 401:
+                error_detail = ""
+                try:
+                    error_json = response.json()
+                    error_detail = json.dumps(error_json, ensure_ascii=False)
+                except:
+                    error_detail = response.text
+                
+                error_msg = (
+                    f"API认证失败 (401 Unauthorized)\n"
+                    f"端点: {self.embeddings_url}\n"
+                    f"可能的原因：\n"
+                    f"1. API密钥不正确或已过期\n"
+                    f"2. API密钥格式错误（应该是 sk-xxxxxxxx）\n"
+                    f"3. 账户未开通该服务或余额不足\n"
+                    f"4. API密钥权限不足\n"
+                    f"\n服务器响应: {error_detail[:200]}"
+                )
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+            
+            # 如果是404，提供更详细的错误信息
+            if response.status_code == 404:
+                error_msg = (
+                    f"嵌入API端点不存在: {self.embeddings_url}\n"
+                    f"可能的原因：\n"
+                    f"1. 该API服务不支持标准的OpenAI嵌入端点\n"
+                    f"2. 端点路径可能不是 /v1/embeddings\n"
+                    f"3. 请检查API文档确认正确的嵌入端点路径\n"
+                    f"提示：如果使用通义千问等国内模型，可能需要使用专用的SDK或不同的端点路径"
+                )
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+            
             response.raise_for_status()
             
             result = response.json()
+            
+            # 检查响应格式
+            if "data" not in result:
+                logger.error(f"Invalid response format: {result}")
+                raise ValueError(f"API响应格式不正确，缺少'data'字段: {result}")
+            
             embeddings = [item["embedding"] for item in result["data"]]
             
-            logger.info(f"Successfully embedded {len(texts)} texts")
+            logger.info(f"Successfully embedded {len(texts)} texts, dimension: {len(embeddings[0]) if embeddings else 0}")
             return embeddings
             
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP Error: {e}")
+            logger.error(f"Response content: {e.response.text if hasattr(e, 'response') else 'N/A'}")
+            raise
+        except Exception as e:
+            logger.error(f"Embedding API call failed: {e}")
+            raise
+            
+            # 记录响应状态
+            logger.info(f"Response status: {response.status_code}")
+            
+            # 如果是404，提供更详细的错误信息
+            if response.status_code == 404:
+                error_msg = (
+                    f"嵌入API端点不存在: {self.embeddings_url}\n"
+                    f"可能的原因：\n"
+                    f"1. 该API服务不支持标准的OpenAI嵌入端点\n"
+                    f"2. 端点路径可能不是 /v1/embeddings\n"
+                    f"3. 请检查API文档确认正确的嵌入端点路径\n"
+                    f"提示：如果使用通义千问等国内模型，可能需要使用专用的SDK或不同的端点路径"
+                )
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+            
+            response.raise_for_status()
+            
+            result = response.json()
+            
+            # 检查响应格式
+            if "data" not in result:
+                logger.error(f"Invalid response format: {result}")
+                raise ValueError(f"API响应格式不正确，缺少'data'字段: {result}")
+            
+            embeddings = [item["embedding"] for item in result["data"]]
+            
+            logger.info(f"Successfully embedded {len(texts)} texts, dimension: {len(embeddings[0]) if embeddings else 0}")
+            return embeddings
+            
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP Error: {e}")
+            logger.error(f"Response content: {e.response.text if hasattr(e, 'response') else 'N/A'}")
+            raise
         except Exception as e:
             logger.error(f"Embedding API call failed: {e}")
             raise
@@ -131,6 +431,10 @@ class DocumentProcessor:
                 loader = UnstructuredMarkdownLoader(file_path)
             elif document_type == 'html':
                 loader = UnstructuredHTMLLoader(file_path)
+            elif document_type in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']:
+                # 图片文件，使用UnstructuredImageLoader
+                from langchain_community.document_loaders import UnstructuredImageLoader
+                loader = UnstructuredImageLoader(file_path)
             else:
                 raise ValueError(f"Unsupported document type: {document_type}")
             
@@ -262,7 +566,7 @@ class VectorStoreManager:
         获取嵌入模型实例
         
         Args:
-            knowledge_base: 知识库实例（可选，用于获取特定配置）
+            knowledge_base: 知识库实例
             
         Returns:
             嵌入模型实例
@@ -279,7 +583,14 @@ class VectorStoreManager:
         cache_key = f"{config.embedding_service}_{config.api_base_url}_{config.model_name}"
         
         if cache_key not in cls._embeddings_cache:
-            if config.embedding_service == 'custom':
+            if config.embedding_service == 'ollama':
+                # Ollama嵌入服务（支持BGE-M3等本地模型）
+                embeddings = OllamaEmbeddings(
+                    base_url=config.api_base_url or "http://localhost:11434",
+                    model=config.model_name or "bge-m3"
+                )
+            elif config.embedding_service == 'custom' or config.embedding_service == 'openai':
+                # OpenAI兼容的API服务
                 embeddings = CustomEmbeddings(
                     api_base_url=config.api_base_url,
                     api_key=config.api_key or "",
@@ -306,12 +617,21 @@ class VectorStoreManager:
             测试结果
         """
         try:
-            # 创建临时嵌入实例
-            embeddings = CustomEmbeddings(
-                api_base_url=config_data['api_base_url'],
-                api_key=config_data.get('api_key', ''),
-                model_name=config_data['model_name']
-            )
+            embedding_service = config_data.get('embedding_service', 'custom')
+            
+            # 根据服务类型创建临时嵌入实例
+            if embedding_service == 'ollama':
+                embeddings = OllamaEmbeddings(
+                    base_url=config_data.get('api_base_url', 'http://localhost:11434'),
+                    model=config_data.get('model_name', 'bge-m3')
+                )
+            else:
+                # OpenAI兼容的API服务
+                embeddings = CustomEmbeddings(
+                    api_base_url=config_data['api_base_url'],
+                    api_key=config_data.get('api_key', ''),
+                    model_name=config_data['model_name']
+                )
             
             # 测试嵌入
             start_time = time.time()
@@ -338,17 +658,17 @@ class VectorStoreManager:
 class KnowledgeBaseService:
     """
     知识库服务
-    提供完整的知识库管理功能
     """
     
     def __init__(self, knowledge_base_id: str):
         self.knowledge_base_id = knowledge_base_id
         self.processor = None
         self.embeddings = None
+        self.qdrant_manager = None
     
     async def initialize(self):
         """初始化服务"""
-        from app.models.aitestrebort.knowledge import aitestrebortKnowledgeBase
+        from app.models.aitestrebort.knowledge import aitestrebortKnowledgeBase, aitestrebortKnowledgeConfig
         
         self.knowledge_base = await aitestrebortKnowledgeBase.get(id=self.knowledge_base_id)
         self.processor = DocumentProcessor(
@@ -356,6 +676,52 @@ class KnowledgeBaseService:
             chunk_overlap=self.knowledge_base.chunk_overlap
         )
         self.embeddings = await VectorStoreManager.get_embeddings(self.knowledge_base)
+        
+        # 初始化 Qdrant 管理器
+        try:
+            # 获取全局配置
+            global_config = await aitestrebortKnowledgeConfig.first()
+            
+            # Qdrant 配置（从环境变量或全局配置获取）
+            qdrant_url = os.getenv('QDRANT_URL', None)
+            qdrant_api_key = os.getenv('QDRANT_API_KEY', None)
+            
+            # 集合名称使用知识库ID
+            collection_name = f"kb_{self.knowledge_base_id}"
+            
+            # 自动检测向量维度
+            try:
+                # 生成一个测试嵌入来获取实际维度
+                test_embedding = self.embeddings.embed_query("test")
+                vector_size = len(test_embedding)
+                logger.info(f"Detected embedding dimension: {vector_size}")
+            except Exception as e:
+                logger.warning(f"Failed to detect embedding dimension: {e}")
+                # 回退到默认值
+                vector_size = 1536  # 默认 OpenAI ada-002
+                if global_config:
+                    if 'bge' in global_config.model_name.lower():
+                        vector_size = 768  # BGE 模型
+                    elif 'ollama' in global_config.embedding_service:
+                        vector_size = 768  # Ollama 默认
+                    elif 'nomic' in global_config.model_name.lower():
+                        vector_size = 768  # Nomic Embed
+                    elif 'mxbai' in global_config.model_name.lower():
+                        vector_size = 1024  # mxbai-embed-large
+            
+            self.qdrant_manager = QdrantManager(
+                collection_name=collection_name,
+                embeddings=self.embeddings,
+                qdrant_url=qdrant_url,
+                qdrant_api_key=qdrant_api_key,
+                vector_size=vector_size
+            )
+            logger.info(f"Qdrant manager initialized for KB: {self.knowledge_base_id}, vector_size: {vector_size}")
+            
+        except Exception as e:
+            logger.warning(f"Failed to initialize Qdrant manager: {e}")
+            logger.warning("Vector storage will not be available")
+            self.qdrant_manager = None
     
     async def process_document(self, document_id: str) -> Dict[str, Any]:
         """
@@ -371,39 +737,87 @@ class KnowledgeBaseService:
         
         try:
             # 获取文档
+            logger.info(f"Getting document {document_id}")
             document = await aitestrebortDocument.get(id=document_id)
+            logger.info(f"Document found: {document.title}, type: {document.document_type}, status: {document.status}")
             
             # 更新状态为处理中
             document.status = 'processing'
             await document.save()
+            logger.info(f"Document status updated to 'processing'")
             
             # 加载文档内容
+            logger.info(f"Loading document content...")
             if document.url:
                 # 网页内容
+                logger.info(f"Loading from URL: {document.url}")
                 langchain_docs = self.processor.load_url(document.url)
             elif document.file_path:
                 # 文件内容
-                langchain_docs = self.processor.load_document(
-                    document.file_path, 
-                    document.document_type
-                )
+                logger.info(f"Loading from file: {document.file_path}")
+                logger.info(f"Document type: {document.document_type}")
+                
+                # 检查文件是否存在
+                if not os.path.exists(document.file_path):
+                    raise FileNotFoundError(f"文件不存在: {document.file_path}")
+                
+                try:
+                    langchain_docs = self.processor.load_document(
+                        document.file_path, 
+                        document.document_type
+                    )
+                except ModuleNotFoundError as e:
+                    # 提供更友好的错误信息
+                    module_name = str(e).split("'")[1] if "'" in str(e) else "unknown"
+                    error_msg = f"缺少必需的依赖包: {module_name}\n"
+                    
+                    if module_name == "markdown":
+                        error_msg += "请运行: pip install markdown"
+                    elif module_name == "pptx" or "python-pptx" in module_name:
+                        error_msg += "请运行: pip install python-pptx"
+                    elif "pypdf" in module_name:
+                        error_msg += "请运行: pip install pypdf"
+                    else:
+                        error_msg += f"请运行: pip install {module_name}"
+                    
+                    logger.error(error_msg)
+                    raise ValueError(error_msg)
             else:
                 # 直接文本内容
+                logger.info(f"Using direct text content, length: {len(document.content or '')}")
                 langchain_docs = [LangChainDocument(
                     page_content=document.content or "",
                     metadata={"source": document.title}
                 )]
             
+            logger.info(f"Loaded {len(langchain_docs)} document(s)")
+            
+            # 提取并保存完整文档内容
+            full_content = "\n\n".join([doc.page_content for doc in langchain_docs])
+            document.content = full_content
+            document.page_count = len(langchain_docs)  # 更新页数
+            await document.save()
+            logger.info(f"Saved full document content, length: {len(full_content)}, pages: {len(langchain_docs)}")
+            
             # 分割文档
+            logger.info(f"Splitting documents into chunks...")
             chunks = self.processor.split_documents(langchain_docs)
+            logger.info(f"Created {len(chunks)} chunks")
             
             # 删除旧的分块
-            await aitestrebortDocumentChunk.filter(document=document).delete()
+            old_chunks = await aitestrebortDocumentChunk.filter(document=document).count()
+            if old_chunks > 0:
+                logger.info(f"Deleting {old_chunks} old chunks")
+                await aitestrebortDocumentChunk.filter(document=document).delete()
             
             # 创建新的分块并向量化
+            logger.info(f"Creating and embedding {len(chunks)} chunks...")
             for i, chunk in enumerate(chunks):
-                # 生成嵌入
-                embedding = await self.embeddings.embed_query(chunk.page_content)
+                if i % 10 == 0:
+                    logger.info(f"Processing chunk {i+1}/{len(chunks)}")
+                
+                # 生成嵌入（embed_query是同步方法，不需要await）
+                embedding = self.embeddings.embed_query(chunk.page_content)
                 embedding_hash = hashlib.md5(str(embedding).encode()).hexdigest()
                 
                 # 保存分块
@@ -417,13 +831,29 @@ class KnowledgeBaseService:
                     page_number=chunk.metadata.get('page')
                 )
             
+            logger.info(f"All chunks created and embedded successfully")
+            
+            # 存储到 Qdrant 向量数据库
+            if self.qdrant_manager:
+                try:
+                    logger.info("Storing vectors to Qdrant...")
+                    vector_ids = self.qdrant_manager.add_documents(
+                        documents=chunks,
+                        document_id=str(document.id)
+                    )
+                    logger.info(f"Successfully stored {len(vector_ids)} vectors to Qdrant")
+                except Exception as e:
+                    logger.error(f"Failed to store vectors to Qdrant: {e}")
+                    # 不影响文档处理流程，继续执行
+            
             # 更新文档状态
+            from datetime import datetime
             document.status = 'completed'
-            document.processed_at = time.time()
+            document.processed_at = datetime.now()
             document.word_count = sum(len(chunk.page_content.split()) for chunk in chunks)
             await document.save()
             
-            logger.info(f"Successfully processed document {document_id}: {len(chunks)} chunks")
+            logger.info(f"Successfully processed document {document_id}: {len(chunks)} chunks, status: completed")
             
             return {
                 'success': True,
@@ -433,15 +863,16 @@ class KnowledgeBaseService:
             
         except Exception as e:
             # 更新文档状态为失败
+            logger.error(f"Failed to process document {document_id}: {e}", exc_info=True)
             try:
                 document = await aitestrebortDocument.get(id=document_id)
                 document.status = 'failed'
                 document.error_message = str(e)
                 await document.save()
-            except:
-                pass
+                logger.info(f"Document status updated to 'failed'")
+            except Exception as save_error:
+                logger.error(f"Failed to update document status: {save_error}")
             
-            logger.error(f"Failed to process document {document_id}: {e}")
             return {
                 'success': False,
                 'message': f'文档处理失败: {str(e)}',
@@ -449,48 +880,147 @@ class KnowledgeBaseService:
             }
     
     async def search_knowledge(
-        self, 
-        query: str, 
-        top_k: int = 5
+        self,
+        query: str,
+        top_k: int = 5,
+        score_threshold: float = 0.1
     ) -> List[Dict[str, Any]]:
         """
-        搜索知识库
+        搜索知识库（使用 Qdrant 向量检索）
         
         Args:
             query: 查询文本
             top_k: 返回结果数量
+            score_threshold: 相似度阈值
             
         Returns:
             搜索结果列表
         """
+        import asyncio
+        
         try:
-            from app.models.aitestrebort.knowledge import aitestrebortDocumentChunk
+            if not self.qdrant_manager:
+                logger.warning("Qdrant manager not initialized, falling back to database search")
+                return await self._fallback_search(query, top_k, score_threshold)
             
-            # 生成查询向量
-            query_embedding = await self.embeddings.embed_query(query)
+            logger.info(f"开始Qdrant向量检索，query: {query[:50]}...")
             
-            # 获取所有分块（这里简化实现，实际应该使用向量数据库）
+            # 使用 asyncio.to_thread 避免阻塞事件循环
+            try:
+                results = await asyncio.to_thread(
+                    self.qdrant_manager.similarity_search,
+                    query=query,
+                    k=top_k,
+                    score_threshold=score_threshold
+                )
+                logger.info(f"Qdrant检索完成，找到 {len(results)} 个结果")
+                return results
+            except Exception as search_error:
+                logger.error(f"Qdrant检索失败: {search_error}")
+                # 降级到数据库搜索
+                return await self._fallback_search(query, top_k, score_threshold)
+            
+        except Exception as e:
+            logger.error(f"Failed to search knowledge: {e}", exc_info=True)
+            # 降级到数据库搜索
+            return await self._fallback_search(query, top_k, score_threshold)
+    
+    async def _fallback_search(
+        self,
+        query: str,
+        top_k: int,
+        score_threshold: float = 0.1
+    ) -> List[Dict[str, Any]]:
+        """
+        降级搜索（使用数据库文本匹配）
+        
+        Args:
+            query: 查询文本
+            top_k: 返回结果数量
+            score_threshold: 相似度阈值
+            
+        Returns:
+            搜索结果列表
+        """
+        from app.models.aitestrebort.knowledge import aitestrebortDocumentChunk
+        
+        try:
+            # 获取所有分块
             chunks = await aitestrebortDocumentChunk.filter(
-                document__knowledge_base_id=self.knowledge_base_id
+                document__knowledge_base_id=self.knowledge_base_id,
+                document__status='completed'
             ).prefetch_related('document').all()
             
-            # 计算相似度（简化实现）
+            logger.info(f"Found {len(chunks)} chunks to search")
+            
+            if not chunks:
+                logger.warning("No chunks found in knowledge base")
+                return []
+            
+            # 改进的文本匹配（支持分词）
+            logger.info("Performing improved text matching")
             results = []
+            
+            # 分词查询
+            import re
+            query_lower = query.lower()
+            # 提取中文字符和英文单词
+            chinese_chars = re.findall(r'[\u4e00-\u9fff]+', query)
+            english_words = re.findall(r'[a-zA-Z]+', query_lower)
+            
+            query_terms = chinese_chars + english_words
+            if not query_terms:
+                query_terms = [query_lower]
+            
+            logger.info(f"Query terms: {query_terms}, score_threshold: {score_threshold}")
+            
+            matched_count = 0
             for chunk in chunks:
-                # 这里应该计算向量相似度，简化为文本匹配
-                if query.lower() in chunk.content.lower():
-                    results.append({
-                        'content': chunk.content,
-                        'metadata': {
-                            'document_title': chunk.document.title,
-                            'chunk_index': chunk.chunk_index,
-                            'score': 0.8  # 简化的相似度分数
-                        }
-                    })
+                content_lower = chunk.content.lower()
+                
+                # 计算匹配度
+                match_count = 0
+                total_match_length = 0
+                for term in query_terms:
+                    term_lower = term.lower()
+                    if term_lower in content_lower:
+                        match_count += 1
+                        # 计算匹配长度占比
+                        total_match_length += len(term)
+                
+                # 如果至少匹配一个词，就加入结果
+                if match_count > 0:
+                    # 改进的评分算法：考虑匹配词数和匹配长度
+                    term_match_score = match_count / len(query_terms)
+                    length_match_score = total_match_length / len(query)
+                    score = (term_match_score * 0.7 + length_match_score * 0.3)
+                    
+                    matched_count += 1
+                    
+                    # 应用相似度阈值
+                    if score >= score_threshold:
+                        results.append({
+                            'content': chunk.content,
+                            'score': score,
+                            'metadata': {
+                                'document_id': str(chunk.document.id),
+                                'document_title': chunk.document.title,
+                                'chunk_index': chunk.chunk_index
+                            }
+                        })
+                    else:
+                        logger.debug(f"Chunk score {score:.2f} below threshold {score_threshold}")
+            
+            logger.info(f"Matched {matched_count} chunks, {len(results)} passed threshold")
+            
+            # 按分数排序
+            results.sort(key=lambda x: x['score'], reverse=True)
+            
+            logger.info(f"Search completed, found {len(results)} matching chunks")
             
             # 返回前top_k个结果
             return results[:top_k]
             
         except Exception as e:
-            logger.error(f"Knowledge search failed: {e}")
+            logger.error(f"Fallback search failed: {e}")
             return []

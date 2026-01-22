@@ -61,7 +61,12 @@ async def create_requirement_document(
             user_id=1  # TODO: 从认证中获取用户ID
         )
         
-        result = RequirementDocumentResponse.model_validate(document.__dict__)
+        # 将UUID字段转换为字符串
+        doc_dict = document.__dict__.copy()
+        if 'id' in doc_dict and doc_dict['id'] is not None:
+            doc_dict['id'] = str(doc_dict['id'])
+        
+        result = RequirementDocumentResponse.model_validate(doc_dict)
         return request.app.post_success(data=result.model_dump())
         
     except Exception as e:
@@ -260,7 +265,13 @@ async def update_requirement_document(
             raise HTTPException(status_code=403, detail="无权限访问此文档")
         
         updated_document = await service.update_requirement_document(document_id, update_data)
-        return RequirementDocumentResponse.model_validate(updated_document.__dict__)
+        
+        # 将UUID字段转换为字符串
+        doc_dict = updated_document.__dict__.copy()
+        if 'id' in doc_dict and doc_dict['id'] is not None:
+            doc_dict['id'] = str(doc_dict['id'])
+        
+        return RequirementDocumentResponse.model_validate(doc_dict)
         
     except HTTPException:
         raise
@@ -634,7 +645,14 @@ async def start_document_review(
             user_id=1  # TODO: 从认证中获取用户ID
         )
         
-        result = ReviewReportResponse.model_validate(review_report.__dict__)
+        # 将UUID字段转换为字符串
+        review_dict = review_report.__dict__.copy()
+        if 'id' in review_dict and review_dict['id'] is not None:
+            review_dict['id'] = str(review_dict['id'])
+        if 'document_id' in review_dict and review_dict['document_id'] is not None:
+            review_dict['document_id'] = str(review_dict['document_id'])
+        
+        result = ReviewReportResponse.model_validate(review_dict)
         return request.app.post_success(data=result.model_dump())
         
     except HTTPException:
@@ -666,7 +684,17 @@ async def get_review_results(
             page_size=page_size
         )
         
-        items = [ReviewReportResponse.model_validate(review.__dict__) for review in reviews]
+        # 将UUID字段转换为字符串
+        items = []
+        for review in reviews:
+            review_dict = review.__dict__.copy()
+            # 确保id和document_id是字符串类型
+            if 'id' in review_dict and review_dict['id'] is not None:
+                review_dict['id'] = str(review_dict['id'])
+            if 'document_id' in review_dict and review_dict['document_id'] is not None:
+                review_dict['document_id'] = str(review_dict['document_id'])
+            items.append(ReviewReportResponse.model_validate(review_dict))
+        
         pages = (total + page_size - 1) // page_size
         
         result = {
@@ -694,7 +722,14 @@ async def get_review_detail(
         service = get_requirement_service()
         review = await service.get_review_detail(review_id)
         
-        result = ReviewReportResponse.model_validate(review.__dict__)
+        # 将UUID字段转换为字符串
+        review_dict = review.__dict__.copy()
+        if 'id' in review_dict and review_dict['id'] is not None:
+            review_dict['id'] = str(review_dict['id'])
+        if 'document_id' in review_dict and review_dict['document_id'] is not None:
+            review_dict['document_id'] = str(review_dict['document_id'])
+        
+        result = ReviewReportResponse.model_validate(review_dict)
         return request.app.get_success(data=result.model_dump())
         
     except Exception as e:
@@ -730,8 +765,20 @@ async def get_review_issues(
         service = get_requirement_service()
         issues = await service.get_review_issues(review_id)
         
-        result = [ReviewIssueResponse.model_validate(issue.__dict__) for issue in issues]
-        return request.app.get_success(data=[item.model_dump() for item in result])
+        # 将UUID字段转换为字符串
+        items = []
+        for issue in issues:
+            issue_dict = issue.__dict__.copy()
+            # 确保所有UUID字段都转换为字符串
+            if 'id' in issue_dict and issue_dict['id'] is not None:
+                issue_dict['id'] = str(issue_dict['id'])
+            if 'report_id' in issue_dict and issue_dict['report_id'] is not None:
+                issue_dict['report_id'] = str(issue_dict['report_id'])
+            if 'module_id' in issue_dict and issue_dict['module_id'] is not None:
+                issue_dict['module_id'] = str(issue_dict['module_id'])
+            items.append(ReviewIssueResponse.model_validate(issue_dict))
+        
+        return request.app.get_success(data=[item.model_dump() for item in items])
         
     except Exception as e:
         logger.error(f"获取评审问题列表失败: {e}")
@@ -749,7 +796,16 @@ async def update_issue(
         service = get_requirement_service()
         issue = await service.update_issue(issue_id, issue_data.model_dump(exclude_unset=True))
         
-        result = ReviewIssueResponse.model_validate(issue.__dict__)
+        # 将UUID字段转换为字符串
+        issue_dict = issue.__dict__.copy()
+        if 'id' in issue_dict and issue_dict['id'] is not None:
+            issue_dict['id'] = str(issue_dict['id'])
+        if 'report_id' in issue_dict and issue_dict['report_id'] is not None:
+            issue_dict['report_id'] = str(issue_dict['report_id'])
+        if 'module_id' in issue_dict and issue_dict['module_id'] is not None:
+            issue_dict['module_id'] = str(issue_dict['module_id'])
+        
+        result = ReviewIssueResponse.model_validate(issue_dict)
         return request.app.get_success(data=result.model_dump())
         
     except Exception as e:

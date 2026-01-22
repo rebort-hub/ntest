@@ -7,11 +7,10 @@
           <span> webhook </span>
           <el-tooltip class="box-item" effect="dark" placement="top-start">
             <template #content>
-              1、可用此功能设置一些预设值，比如token、账号信息 <br>
-              2、在此处设置的值，对于此服务下的接口、用例均可直接引用 <br>
-              3、若此处设置的值key为a，value为1，则只需要在要使用时使用“$a”即可获取到“1” <br>
-              4、此处的value可以使用自定义函数处理/获取数据，比如用自定义函数取数据库获取对应的数据 <br>
-              5、若在用例的公用变量处设置了与此处同样的key，则会以用例处定义的变量覆盖此处的变量
+              1、用于配置即时通讯工具的webhook地址，支持钉钉、企业微信、飞书 <br>
+              2、配置后可用于接收测试报告、系统通知等消息 <br>
+              3、支持配置多个webhook地址，可用于不同的业务线或项目 <br>
+              4、可通过"测试"按钮验证webhook配置是否正确
             </template>
             <span style="margin-left:5px;color: #409EFF"><Help></Help></span>
           </el-tooltip>
@@ -24,10 +23,10 @@
           <span> 邮件 </span>
           <el-tooltip class="box-item" effect="dark" placement="top-start">
             <template #content>
-              1、可用此功能设置当前服务的固定的头部参数，比如token、cookie <br>
-              2、在此处设置的值，在运行此服务下的接口、用例的时候，会自动加到对应的接口/步骤的头部参数上 <br>
-              3、此处的value可以使用自定义函数处理/获取数据，比如用自定义函数取数据库获取对应的数据 <br>
-              4、若在用例的头部参数处设置了与此处同样的key，则会以用例处定义的参数覆盖此处的参数
+              1、用于管理用户的邮箱地址，配置后可接收邮件通知 <br>
+              2、可为每个用户设置邮箱地址，用于接收测试报告、系统通知等 <br>
+              3、邮件通知需要在系统配置中设置SMTP服务器信息 <br>
+              4、支持批量配置和修改用户邮箱
             </template>
             <span style="margin-left:5px;color: #409EFF"><Help></Help></span>
           </el-tooltip>

@@ -1,27 +1,43 @@
 <template>
   <div>
-    <el-drawer v-model="drawerIsShow" :title="formData.id ? '修改账号' : '新增账号'" :size="formData.id ? '60%' : '80%'">
+    <el-dialog 
+      v-model="drawerIsShow" 
+      :title="formData.id ? '修改账号' : '新增账号'" 
+      :width="formData.id ? '600px' : '800px'"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      destroy-on-close
+      top="5vh"
+      class="edit-account-dialog"
+    >
       <div v-show="drawerType === 'edit'">
         <el-form
             ref="editRuleFormRef"
             :model="formData"
             :rules="editFormRules"
-            label-width="90px">
+            label-width="100px"
+            size="small">
 
-          <el-form-item label="账号名字" class="is-required" prop="name" size="small">
-            <el-input v-model="formData.name"  size="small" placeholder="账号名字，不可重复"/>
+          <el-form-item label="账号名字" prop="name">
+            <el-input v-model="formData.name" placeholder="请输入账号名字（不可重复）" clearable />
           </el-form-item>
 
-          <el-form-item label="账号" class="is-required" prop="value" size="small">
-            <el-input v-model="formData.value"  size="small" placeholder="账号，不可重复"/>
+          <el-form-item label="账号" prop="value">
+            <el-input v-model="formData.value" placeholder="请输入账号（不可重复）" clearable />
           </el-form-item>
 
-          <el-form-item label="密码" class="is-required" prop="password" size="small">
-            <el-input v-model="formData.password"  size="small" placeholder="密码"/>
+          <el-form-item label="密码" prop="password">
+            <el-input v-model="formData.password" type="password" placeholder="请输入密码" clearable show-password />
           </el-form-item>
 
-          <el-form-item label="备注" prop="desc" size="small">
-            <el-input v-model="formData.desc" type="textarea" autosize size="small" placeholder="备注" />
+          <el-form-item label="备注" prop="desc">
+            <el-input 
+                v-model="formData.desc" 
+                type="textarea" 
+                :rows="3" 
+                placeholder="请填写备注说明"
+                clearable
+            />
           </el-form-item>
         </el-form>
       </div>
@@ -34,20 +50,20 @@
       </div>
 
       <template #footer>
-        <div slot="footer" class="dialog-footer">
-          <el-button size="small" @click="drawerIsShow = false"> {{ '取消' }}</el-button>
+        <div class="dialog-footer">
+          <el-button size="small" @click="drawerIsShow = false">取消</el-button>
           <el-button
               type="primary"
               size="small"
               :loading="submitButtonIsLoading"
               @click="submitForm"
           >
-            {{ '保存' }}
+            保存
           </el-button>
         </div>
       </template>
 
-    </el-drawer>
+    </el-dialog>
   </div>
 </template>
 
@@ -178,7 +194,57 @@ const changeData = () => {
 
 </script>
 
-
 <style scoped lang="scss">
+:deep(.edit-account-dialog) {
+  .el-dialog {
+    border-radius: 8px;
+    max-height: 90vh;
+    margin-top: 5vh !important;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .el-dialog__header {
+    border-bottom: 1px solid #ebeef5;
+    padding: 20px 20px 15px;
+    flex-shrink: 0;
+  }
+  
+  .el-dialog__body {
+    padding: 20px;
+    flex: 1;
+    overflow-y: auto;
+    max-height: calc(90vh - 140px);
+    
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+      
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
+  }
+  
+  .el-dialog__footer {
+    border-top: 1px solid #ebeef5;
+    padding: 15px 20px;
+    flex-shrink: 0;
+  }
+}
 
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
 </style>

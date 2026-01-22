@@ -1,162 +1,208 @@
 ﻿<template>
   <div class="rag-query-form">
-    <div class="query-header">
-      <h4>{{ knowledgeBase.name }} - RAG查询测试</h4>
-      <p class="query-description">
-        基于知识库内容进行智能问答，系统会检索相关文档片段并生成回答。
-      </p>
-    </div>
-    
-    <!-- 查询输入 -->
-    <div class="query-input-section">
-      <el-form label-width="80px">
-        <el-form-item label="查询内容">
+    <el-card class="query-card">
+      <template #header>
+        <div class="card-header">
+          <span>RAG 智能问答</span>
+          <el-switch
+            v-model="useRAG"
+            active-text="RAG模式"
+            inactive-text="检索模式"
+            @change="handleModeChange"
+          />
+        </div>
+      </template>
+      
+      <!-- 查询表单 -->
+      <el-form :model="queryForm" label-width="100px" class="query-form">
+        <el-form-item label="问题">
           <el-input
             v-model="queryForm.query"
             type="textarea"
-            :rows="4"
-            placeholder="请输入您要查询的问题..."
+            :rows="3"
+            placeholder="请输入您的问题..."
+            @keydown.ctrl.enter="handleQuery"
           />
         </el-form-item>
         
         <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="返回数量">
+          <el-col :span="8">
+            <el-form-item label="检索数量">
               <el-input-number
                 v-model="queryForm.top_k"
                 :min="1"
                 :max="20"
-                :step="1"
+                size="small"
               />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="相似度阈值">
-              <el-slider
-                v-model="queryForm.similarity_threshold"
-                :min="0.1"
-                :max="1.0"
+              <el-input-number
+                v-model="queryForm.score_threshold"
+                :min="0"
+                :max="1"
                 :step="0.1"
-                :show-tooltip="true"
+                size="small"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="响应模式">
+              <el-switch
+                v-model="useStream"
+                active-text="流式"
+                inactive-text="普通"
+                :disabled="!useRAG"
               />
             </el-form-item>
           </el-col>
         </el-row>
         
+        <!-- RAG 配置 -->
+        <div v-if="useRAG" class="rag-config">
+          <el-divider content-position="left">LLM 配置</el-divider>
+          
+          <el-row :gutter="20">
+            <el-col :span="8">
+              <el-form-item label="服务商">
+                <el-select v-model="queryForm.llm_provider" size="small">
+                  <el-option label="OpenAI" value="openai" />
+                  <el-option label="Azure OpenAI" value="azure" />
+                  <el-option label="其他" value="other" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="模型">
+                <el-input v-model="queryForm.llm_model" size="small" placeholder="gpt-3.5-turbo" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="温度">
+                <el-input-number
+                  v-model="queryForm.temperature"
+                  :min="0"
+                  :max="2"
+                  :step="0.1"
+                  size="small"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="API Key">
+                <el-input
+                  v-model="queryForm.llm_api_key"
+                  type="password"
+                  size="small"
+                  placeholder="请输入 API Key"
+                  show-password
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Base URL">
+                <el-input
+                  v-model="queryForm.llm_base_url"
+                  size="small"
+                  placeholder="https://api.openai.com/v1"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          
+          <el-form-item label="系统提示词">
+            <el-input
+              v-model="queryForm.system_prompt"
+              type="textarea"
+              :rows="2"
+              placeholder="可选：自定义系统提示词"
+            />
+          </el-form-item>
+        </div>
+        
         <el-form-item>
-          <el-button 
-            type="primary" 
-            @click="executeQuery" 
+          <el-button
+            type="primary"
+            @click="handleQuery"
             :loading="querying"
             :disabled="!queryForm.query.trim()"
           >
             <el-icon><Search /></el-icon>
-            执行查询
+            {{ useRAG ? '智能问答' : '检索文档' }}
           </el-button>
-          <el-button @click="clearQuery">清空</el-button>
+          <el-button @click="clearResults">清空结果</el-button>
+          <el-button @click="$emit('close')">关闭</el-button>
         </el-form-item>
       </el-form>
-    </div>
-
+    </el-card>
+    
     <!-- 查询结果 -->
-    <div v-if="queryResult" class="query-result-section">
-      <el-divider content-position="left">查询结果</el-divider>
-      
-      <div class="result-content">
-        <div class="query-info">
-          <h5>查询内容</h5>
-          <p class="query-text">{{ queryResult.query }}</p>
-        </div>
-        
-        <div v-if="queryResult.answer" class="answer-section">
-          <h5>智能回答</h5>
-          <div class="answer-content">
-            {{ queryResult.answer }}
-          </div>
-        </div>
-        
-        <div class="sources-section">
-          <h5>相关内容 ({{ queryResult.results?.length || 0 }} 条结果)</h5>
-          
-          <div v-if="queryResult.results?.length" class="sources-list">
-            <div
-              v-for="(source, index) in queryResult.results"
-              :key="index"
-              class="source-item"
-            >
-              <div class="source-header">
-                <span class="source-index">#{{ index + 1 }}</span>
-                <span class="source-title">{{ source.metadata?.document_title || source.metadata?.title || '未知文档' }}</span>
-                <el-tag size="small" type="success">
-                  相似度: {{ (source.metadata?.score * 100 || 0).toFixed(1) }}%
-                </el-tag>
-              </div>
-              <div class="source-content">
-                {{ source.content }}
-              </div>
-              <div class="source-meta">
-                <span v-if="source.metadata?.chunk_index !== undefined">
-                  分块: {{ source.metadata.chunk_index }}
-                </span>
-                <span v-if="source.metadata?.page_number">
-                  | 页码: {{ source.metadata.page_number }}
-                </span>
-              </div>
+    <div v-if="queryResults.length > 0 || currentAnswer" class="results-section">
+      <!-- RAG 回答 -->
+      <el-card v-if="useRAG && currentAnswer" class="answer-card">
+        <template #header>
+          <div class="answer-header">
+            <span>AI 回答</span>
+            <div class="answer-stats">
+              <el-tag size="small">检索: {{ lastQueryStats.retrieval_time?.toFixed(2) }}s</el-tag>
+              <el-tag size="small" type="success">生成: {{ lastQueryStats.generation_time?.toFixed(2) }}s</el-tag>
             </div>
           </div>
-          
-          <div v-else class="no-results">
-            <el-empty description="未找到相关内容" />
-          </div>
-        </div>
+        </template>
         
-        <div class="timing-info">
-          <el-descriptions :column="3" size="small" border>
-            <el-descriptions-item label="检索时间">
-              {{ queryResult.retrieval_time?.toFixed(3) || 0 }}s
-            </el-descriptions-item>
-            <el-descriptions-item label="总时间">
-              {{ queryResult.total_time?.toFixed(3) || 0 }}s
-            </el-descriptions-item>
-            <el-descriptions-item label="结果数量">
-              {{ queryResult.total_results || 0 }}
-            </el-descriptions-item>
-          </el-descriptions>
+        <div class="answer-content">
+          <div v-if="useStream && streaming" class="streaming-indicator">
+            <el-icon class="rotating"><Loading /></el-icon>
+            正在生成回答...
+          </div>
+          <div class="answer-text" v-html="formatAnswer(currentAnswer)"></div>
         </div>
-      </div>
-    </div>
-
-    <!-- 查询历史 -->
-    <div v-if="queryHistory.length" class="query-history-section">
-      <el-divider content-position="left">查询历史</el-divider>
+      </el-card>
       
-      <div class="history-list">
-        <div
-          v-for="(history, index) in queryHistory"
-          :key="index"
-          class="history-item"
-          @click="loadHistoryQuery(history)"
-        >
-          <div class="history-query">{{ history.query }}</div>
-          <div class="history-meta">
-            <span>{{ history.results?.length || 0 }} 条结果</span>
-            <span>{{ history.total_time?.toFixed(2) || 0 }}s</span>
+      <!-- 检索结果 -->
+      <el-card class="sources-card">
+        <template #header>
+          <span>参考文档 ({{ queryResults.length }})</span>
+        </template>
+        
+        <div class="sources-list">
+          <div
+            v-for="(result, index) in queryResults"
+            :key="index"
+            class="source-item"
+          >
+            <div class="source-header">
+              <span class="source-title">{{ result.metadata?.document_title || '未知文档' }}</span>
+              <el-tag size="small" :type="getScoreType(result.score)">
+                相似度: {{ (result.score * 100).toFixed(1) }}%
+              </el-tag>
+            </div>
+            <div class="source-content">{{ result.content }}</div>
+            <div class="source-meta">
+              分块: {{ result.metadata?.chunk_index }} | ID: {{ result.id }}
+            </div>
           </div>
         </div>
-      </div>
+      </el-card>
     </div>
-
-    <!-- 操作按钮 -->
-    <div class="form-actions">
-      <el-button @click="$emit('close')">关闭</el-button>
-    </div>
+    
+    <!-- 空状态 -->
+    <el-empty
+      v-if="!querying && queryResults.length === 0 && !currentAnswer"
+      description="请输入问题开始查询"
+      :image-size="100"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Search } from '@element-plus/icons-vue'
+import { Search, Loading } from '@element-plus/icons-vue'
 import { knowledgeEnhancedApi, type KnowledgeBase } from '@/api/aitestrebort/knowledge-enhanced'
 
 interface Props {
@@ -164,43 +210,202 @@ interface Props {
   projectId: number
 }
 
-interface QueryResult {
-  query: string
-  results?: Array<{
-    content: string
-    metadata: any
-  }>
-  answer?: string
-  retrieval_time?: number
-  total_time?: number
-  total_results?: number
-}
-
 const props = defineProps<Props>()
 const emit = defineEmits<{
   close: []
 }>()
 
-// 响应式数据
-const querying = ref(false)
-const queryResult = ref<QueryResult | null>(null)
-const queryHistory = ref<QueryResult[]>([])
+// 查询模式
+const useRAG = ref(true)
+const useStream = ref(false)
 
 // 查询表单
 const queryForm = reactive({
   query: '',
   top_k: 5,
-  similarity_threshold: 0.3
+  score_threshold: 0.5,
+  llm_provider: 'openai',
+  llm_model: 'gpt-3.5-turbo',
+  llm_api_key: '',
+  llm_base_url: '',
+  temperature: 0.7,
+  system_prompt: ''
 })
 
-// 方法
-const executeQuery = async () => {
+// 查询状态
+const querying = ref(false)
+const streaming = ref(false)
+
+// 查询结果
+const queryResults = ref<any[]>([])
+const currentAnswer = ref('')
+const lastQueryStats = reactive({
+  retrieval_time: 0,
+  generation_time: 0
+})
+
+// 处理模式切换
+const handleModeChange = () => {
+  clearResults()
+}
+
+// 处理查询
+const handleQuery = async () => {
   if (!queryForm.query.trim()) {
-    ElMessage.warning('请输入查询内容')
+    ElMessage.warning('请输入问题')
     return
   }
 
+  if (useRAG.value) {
+    await handleRAGQuery()
+  } else {
+    await handleRetrievalQuery()
+  }
+}
+
+// RAG 查询
+const handleRAGQuery = async () => {
   querying.value = true
+  currentAnswer.value = ''
+  queryResults.value = []
+  
+  try {
+    const params: any = {
+      query: queryForm.query,
+      top_k: queryForm.top_k,
+      score_threshold: queryForm.score_threshold,
+      llm_config: {
+        provider: queryForm.llm_provider,
+        model: queryForm.llm_model,
+        temperature: queryForm.temperature
+      }
+    }
+
+    // 添加 API Key 和 Base URL
+    if (queryForm.llm_api_key) {
+      params.llm_config.api_key = queryForm.llm_api_key
+    }
+    if (queryForm.llm_base_url) {
+      params.llm_config.base_url = queryForm.llm_base_url
+    }
+    if (queryForm.system_prompt) {
+      params.system_prompt = queryForm.system_prompt
+    }
+
+    if (useStream.value) {
+      // 流式响应
+      streaming.value = true
+      await handleStreamQuery(params)
+    } else {
+      // 普通响应
+      const response = await knowledgeEnhancedApi.rag.queryKnowledgeBase(
+        props.projectId,
+        props.knowledgeBase.id,
+        {
+          ...params,
+          use_rag: true,
+          llm_provider: params.llm_config.provider,
+          llm_model: params.llm_config.model,
+          llm_api_key: params.llm_config.api_key,
+          llm_base_url: params.llm_config.base_url,
+          temperature: params.llm_config.temperature
+        }
+      )
+
+      if (response.data) {
+        currentAnswer.value = response.data.answer
+        queryResults.value = response.data.sources || []
+        lastQueryStats.retrieval_time = response.data.retrieval_time || 0
+        lastQueryStats.generation_time = response.data.generation_time || 0
+      }
+    }
+  } catch (error: any) {
+    console.error('RAG 查询失败:', error)
+    ElMessage.error(error.response?.data?.detail || 'RAG 查询失败')
+  } finally {
+    querying.value = false
+    streaming.value = false
+  }
+}
+
+// 流式查询
+const handleStreamQuery = async (params: any) => {
+  try {
+    const basePath = import.meta.env.VITE_BASE_API || '/api'
+    const response = await fetch(
+      `${basePath}/aitestrebort/knowledge/projects/${props.projectId}/knowledge-bases/${props.knowledgeBase.id}/query-stream`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: params.query,
+          top_k: params.top_k,
+          score_threshold: params.score_threshold,
+          llm_provider: params.llm_config.provider,
+          llm_model: params.llm_config.model,
+          llm_api_key: params.llm_config.api_key,
+          llm_base_url: params.llm_config.base_url,
+          temperature: params.llm_config.temperature,
+          system_prompt: params.system_prompt
+        })
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error('流式查询失败')
+    }
+
+    const reader = response.body?.getReader()
+    const decoder = new TextDecoder()
+
+    if (!reader) {
+      throw new Error('无法读取响应流')
+    }
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      const chunk = decoder.decode(value, { stream: true })
+      const lines = chunk.split('\n')
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6)
+          if (data === '[DONE]') {
+            continue
+          }
+
+          try {
+            const json = JSON.parse(data)
+            if (json.type === 'sources') {
+              queryResults.value = json.data
+            } else if (json.type === 'answer') {
+              currentAnswer.value += json.data
+            } else if (json.type === 'stats') {
+              lastQueryStats.retrieval_time = json.data.retrieval_time || 0
+              lastQueryStats.generation_time = json.data.generation_time || 0
+            }
+          } catch (e) {
+            console.error('解析流数据失败:', e)
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('流式查询失败:', error)
+    throw error
+  }
+}
+
+// 检索查询
+const handleRetrievalQuery = async () => {
+  querying.value = true
+  queryResults.value = []
+  currentAnswer.value = ''
+  
   try {
     const response = await knowledgeEnhancedApi.rag.queryKnowledgeBase(
       props.projectId,
@@ -208,42 +413,48 @@ const executeQuery = async () => {
       {
         query: queryForm.query,
         top_k: queryForm.top_k,
-        include_metadata: true
+        score_threshold: queryForm.score_threshold,
+        use_rag: false
       }
     )
-    
+
     if (response.data) {
-      queryResult.value = response.data
-      
-      // 添加到历史记录
-      queryHistory.value.unshift({
-        ...response.data,
-        query: queryForm.query
-      })
-      
-      // 限制历史记录数量
-      if (queryHistory.value.length > 10) {
-        queryHistory.value = queryHistory.value.slice(0, 10)
-      }
-      
-      ElMessage.success('查询完成')
+      queryResults.value = response.data.results || []
+      lastQueryStats.retrieval_time = response.data.retrieval_time || 0
     }
-  } catch (error) {
-    console.error('查询失败:', error)
-    ElMessage.error('查询失败，请检查知识库状态')
+  } catch (error: any) {
+    console.error('检索查询失败:', error)
+    ElMessage.error(error.response?.data?.detail || '检索查询失败')
   } finally {
     querying.value = false
   }
 }
 
-const clearQuery = () => {
-  queryForm.query = ''
-  queryResult.value = null
+// 清空结果
+const clearResults = () => {
+  queryResults.value = []
+  currentAnswer.value = ''
+  lastQueryStats.retrieval_time = 0
+  lastQueryStats.generation_time = 0
 }
 
-const loadHistoryQuery = (history: QueryResult) => {
-  queryForm.query = history.query
-  queryResult.value = history
+// 格式化答案（支持 Markdown）
+const formatAnswer = (text: string) => {
+  if (!text) return ''
+  
+  // 简单的 Markdown 转换
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`(.*?)`/g, '<code>$1</code>')
+    .replace(/\n/g, '<br>')
+}
+
+// 获取相似度标签类型
+const getScoreType = (score: number) => {
+  if (score >= 0.8) return 'success'
+  if (score >= 0.6) return 'warning'
+  return 'info'
 }
 </script>
 
@@ -252,185 +463,137 @@ const loadHistoryQuery = (history: QueryResult) => {
   padding: 20px;
 }
 
-.query-header {
-  margin-bottom: 24px;
-}
-
-.query-header h4 {
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  font-weight: bold;
-  color: #303133;
-}
-
-.query-description {
-  margin: 0;
-  font-size: 13px;
-  color: #606266;
-  line-height: 1.5;
-}
-
-.query-input-section {
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
+.query-card {
   margin-bottom: 20px;
 }
 
-.query-result-section {
-  margin-bottom: 20px;
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.result-content {
+.query-form {
+  margin-top: 16px;
+}
+
+.rag-config {
+  margin-top: 16px;
   padding: 16px;
   background: #f8f9fa;
   border-radius: 8px;
 }
 
-.query-info {
+.results-section {
+  margin-top: 20px;
+}
+
+.answer-card {
   margin-bottom: 20px;
 }
 
-.query-info h5 {
-  margin: 0 0 8px 0;
-  font-size: 14px;
-  font-weight: bold;
-  color: #303133;
+.answer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.query-text {
-  margin: 0;
-  padding: 12px;
-  background: white;
-  border-radius: 6px;
-  border-left: 3px solid #409eff;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.answer-section {
-  margin-bottom: 20px;
-}
-
-.answer-section h5 {
-  margin: 0 0 8px 0;
-  font-size: 14px;
-  font-weight: bold;
-  color: #303133;
+.answer-stats {
+  display: flex;
+  gap: 8px;
 }
 
 .answer-content {
-  padding: 12px;
-  background: white;
-  border-radius: 6px;
-  border-left: 3px solid #67c23a;
-  font-size: 13px;
-  line-height: 1.6;
+  min-height: 100px;
 }
 
-.sources-section {
-  margin-bottom: 20px;
+.streaming-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #409eff;
+  margin-bottom: 12px;
 }
 
-.sources-section h5 {
-  margin: 0 0 12px 0;
+.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.answer-text {
   font-size: 14px;
-  font-weight: bold;
+  line-height: 1.8;
   color: #303133;
 }
 
+.answer-text :deep(strong) {
+  font-weight: 600;
+  color: #409eff;
+}
+
+.answer-text :deep(code) {
+  padding: 2px 6px;
+  background: #f5f7fa;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.sources-card {
+  margin-bottom: 20px;
+}
+
 .sources-list {
-  space-y: 12px;
+  max-height: 500px;
+  overflow-y: auto;
 }
 
 .source-item {
-  margin-bottom: 12px;
-  padding: 12px;
-  background: white;
-  border-radius: 6px;
-  border-left: 3px solid #409eff;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #409eff;
+  transition: all 0.3s;
+}
+
+.source-item:hover {
+  background: #ecf5ff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .source-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
-}
-
-.source-index {
-  font-weight: 600;
-  color: #409eff;
-  font-size: 12px;
+  margin-bottom: 12px;
 }
 
 .source-title {
-  flex: 1;
-  margin: 0 12px;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 600;
   color: #303133;
-  font-weight: 500;
 }
 
 .source-content {
   font-size: 13px;
   line-height: 1.6;
-  color: #303133;
+  color: #606266;
   margin-bottom: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .source-meta {
-  font-size: 11px;
+  font-size: 12px;
   color: #909399;
-}
-
-.no-results {
-  text-align: center;
-  padding: 40px;
-}
-
-.timing-info {
-  margin-top: 16px;
-}
-
-.query-history-section {
-  margin-bottom: 20px;
-}
-
-.history-list {
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.history-item {
-  padding: 12px;
-  margin-bottom: 8px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.history-item:hover {
-  background: #e6f7ff;
-}
-
-.history-query {
-  font-size: 13px;
-  color: #303133;
-  margin-bottom: 4px;
-  line-height: 1.4;
-}
-
-.history-meta {
-  font-size: 11px;
-  color: #909399;
-  display: flex;
-  gap: 12px;
-}
-
-.form-actions {
-  margin-top: 30px;
-  text-align: right;
 }
 </style>

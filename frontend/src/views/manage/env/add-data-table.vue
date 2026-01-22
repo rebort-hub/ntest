@@ -1,149 +1,85 @@
 <template>
-  <div class="layout-container">
-
-    <div style="margin: 10px">
-      <el-table
-          :data="tableDataList"
-          style="width: 100%"
-          stripe
-          :height="tableHeight"
-          row-key="id">
-
-        <el-table-column label="排序" width="40" align="center">
-          <template #header>
-            <el-tooltip class="item" effect="dark" placement="top-start">
-              <template #content>
-                <div>可拖拽数据前的图标进行自定义排序</div>
-              </template>
-              <span style="color: #409EFF"><Help></Help></span>
-            </el-tooltip>
-          </template>
-          <template #default="scope">
+  <div class="add-data-container">
+    <div v-for="(item, index) in tableDataList" :key="item.id" class="data-form-item">
+      <div class="data-header">
+        <span class="data-title">{{ addType === 'addr' ? '环境' : '账号' }} {{ index + 1 }}</span>
+        <div class="data-actions">
+          <el-tooltip content="添加" placement="top">
             <el-button
-                text
-                @dragstart="handleDragStart($event, scope.row, scope.$index)"
-                @dragover="handleDragOver($event, scope.$index)"
-                @drop="handleDrop($event, scope.$index)"
-                @dragend="handleDragEnd"
-                draggable="true"
-                class="drag-button"
-                :data-index="scope.$index"
-            >
-              <SortThree></SortThree>
-            </el-button>
-          </template>
-        </el-table-column>
+                v-show="index === 0 || index === tableDataList.length - 1"
+                type="primary"
+                :icon="Plus"
+                circle
+                size="small"
+                @click="addRow(true)"
+            />
+          </el-tooltip>
+          <el-tooltip content="复制" placement="top">
+            <el-button
+                type="info"
+                :icon="Copy"
+                circle
+                size="small"
+                @click="copyRow(item)"
+            />
+          </el-tooltip>
+          <el-tooltip content="删除" placement="top">
+            <el-button
+                v-show="isShowDelButton(index)"
+                type="danger"
+                :icon="Minus"
+                circle
+                size="small"
+                @click="delRow(index)"
+            />
+          </el-tooltip>
+          <el-tooltip content="清除数据" placement="top">
+            <el-button
+                v-show="tableDataList.length === 1"
+                type="warning"
+                :icon="Clear"
+                circle
+                size="small"
+                @click="clearData()"
+            />
+          </el-tooltip>
+        </div>
+      </div>
 
-        <el-table-column label="序号" header-align="center" width="40">
-          <template #default="scope">
-            <div>{{ scope.$index + 1 }}</div>
-          </template>
-        </el-table-column>
+      <el-form label-width="100px" size="small">
+        <el-form-item :label="addType === 'addr' ? '环境名字' : '账号名字'" required>
+          <el-input v-model="item.name" :placeholder="`请输入${addType === 'addr' ? '环境名字' : '账号名字'}`" clearable />
+        </el-form-item>
 
-        <el-table-column show-overflow-tooltip align="center" min-width="20%">
-          <template #header>
-            <span><span style="color: red">*</span>{{ addType === 'addr' ? '环境名字' : '账号名字' }}</span>
-          </template>
-          <template #default="scope">
-            <el-input v-model="scope.row.name" size="small" type="textarea" :rows="1" />
-          </template>
-        </el-table-column>
+        <el-form-item :label="addType === 'addr' ? '域名地址' : '账号'" required>
+          <el-input v-model="item.value" :placeholder="`请输入${addType === 'addr' ? '域名地址' : '账号'}`" clearable />
+        </el-form-item>
 
-        <el-table-column header-align="center" min-width="30%">
-          <template #header>
-            <span><span style="color: red">*</span>{{ addType === 'addr' ? '域名地址' : '账号' }}</span>
-          </template>
-          <template #default="scope">
-            <el-input v-model="scope.row.value" size="small" type="textarea" :rows="1" />
-          </template>
-        </el-table-column>
+        <el-form-item v-if="addType === 'account'" label="密码">
+          <el-input v-model="item.password" type="password" placeholder="请输入密码" clearable show-password />
+        </el-form-item>
 
-        <el-table-column v-if="addType === 'account'" label="密码" header-align="center" min-width="30%">
-          <template #default="scope">
-            <el-input v-model="scope.row.password" size="small" type="textarea" :rows="1" />
-          </template>
-        </el-table-column>
+        <el-form-item label="备注">
+          <el-input 
+              v-model="item.desc" 
+              type="textarea" 
+              :rows="2" 
+              placeholder="请填写备注说明"
+              clearable
+          />
+        </el-form-item>
+      </el-form>
 
-        <el-table-column label="备注" header-align="center" min-width="20%">
-          <template #header>
-            <span>备注</span>
-          </template>
-          <template #default="scope">
-            <el-input v-model="scope.row.desc" size="small" type="textarea" :rows="1" />
-          </template>
-        </el-table-column>
-
-
-        <el-table-column fixed="right" show-overflow-tooltip prop="desc" align="center" label="操作" width="90">
-          <template #default="scope">
-
-            <el-tooltip class="item" effect="dark" placement="top-end" content="添加一行">
-              <el-button
-                  v-show="scope.$index === 0 || scope.$index === tableDataList.length - 1"
-                  type="text"
-                  size="small"
-                  style="margin: 2px; padding: 0"
-                  @click.native="addRow(true)"
-              ><Plus></Plus></el-button>
-            </el-tooltip>
-
-            <el-tooltip class="item" effect="dark" placement="top-end" content="复制当前行">
-              <el-button
-                  type="text"
-                  size="small"
-                  style="margin: 2px; padding: 0"
-                  @click.native="copyRow(scope.row)"
-              ><Copy></Copy></el-button>
-            </el-tooltip>
-
-            <el-tooltip class="item" effect="dark" placement="top-end" content="删除当前行">
-              <el-button
-                  v-show="isShowDelButton(scope.$index)"
-                  type="text"
-                  size="small"
-                  style="color: red;margin: 2px; padding: 0"
-                  @click.native="delRow(scope.$index)"
-              ><Minus></Minus></el-button>
-            </el-tooltip>
-
-            <el-tooltip class="item" effect="dark" placement="top-end" content="清除数据">
-              <el-button
-                  v-show="tableDataList.length === 1"
-                  type="text"
-                  size="small"
-                  style="color: red;margin: 2px; padding: 0"
-                  @click.native="clearData()"
-              ><Clear></Clear></el-button>
-            </el-tooltip>
-          </template>
-        </el-table-column>
-      </el-table>
-
+      <el-divider v-if="index < tableDataList.length - 1" />
     </div>
-
   </div>
 </template>
 
 <script setup lang="ts">
-import {onMounted, ref, onBeforeUnmount, computed} from "vue";
-import {Clear, Copy, Help, Minus, Plus, SortThree} from "@icon-park/vue-next";
+import {ref} from "vue";
+import {Clear, Copy, Minus, Plus} from "@icon-park/vue-next";
 
 const tableDataList = ref([{ id: `${Date.now()}`, name: null, value: null, password: null, desc: null }])
-const tableHeight = ref('10px')
-const oldIndex = ref(); // 当前拖拽项的索引
-const dragRow = ref();   // 当前拖拽的行数据
-
-const setTableHeight = () => {
-  if (window.innerHeight < 800){  // 小屏
-    tableHeight.value = `${window.innerHeight * 0.64}px`
-  }else {  // 大屏
-    tableHeight.value =  `${window.innerHeight * 0.77}px`
-  }
-}
-
-const handleResize = () => {
-  setTableHeight();
-}
 
 const props = defineProps({
   addType: {
@@ -164,7 +100,7 @@ const addRow = (isRow: undefined) => {
   }
 }
 
-const copyRow = (row: {id: string, key: null, value: null, remark: null, data_type: null}) => {
+const copyRow = (row: any) => {
   let newData = JSON.parse(JSON.stringify(row))
   newData.id = `${Date.now()}`
   tableDataList.value.push(newData)
@@ -182,50 +118,42 @@ const clearData = () => {
   tableDataList.value[0] = getNewData()
 }
 
-onMounted(() => {
-  setTableHeight()
-  window.addEventListener('resize', handleResize);
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize);
-})
-
-// 记录拖拽前的数据顺序
-const handleDragStart = (event, row, index) => {
-  oldIndex.value = index;
-  dragRow.value = row;
-  event.dataTransfer.effectAllowed = "move";
-  event.dataTransfer.setData("text/html", event.target);
-  event.target.classList.add('drag-dragging');
-};
-
-const handleDragOver = (event, index) => {
-  event.preventDefault();  // 必须调用这个方法才能使 drop 生效
-};
-
-const handleDragEnd = (event) => {
-  // 恢复拖拽操作的样式
-  event.target.classList.remove('drag-dragging');
-};
-
-const handleDrop = (event, newIndex) => {
-  event.preventDefault();
-  const updatedData = [...tableDataList.value];
-  // // 移除当前拖拽的行数据
-  updatedData.splice(oldIndex.value, 1);
-  // // 插入拖拽的行数据到目标索引位置
-  updatedData.splice(newIndex, 0, dragRow.value);
-  tableDataList.value = updatedData;
-  // 恢复样式
-  event.target.classList.remove('drag-dragging');
-};
-
 defineExpose({
   tableDataList
 })
 </script>
 
 <style scoped lang="scss">
+.add-data-container {
+  padding: 10px 0;
+}
 
+.data-form-item {
+  margin-bottom: 20px;
+  
+  .data-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: #f5f7fa;
+    border-radius: 4px;
+    
+    .data-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: #303133;
+    }
+    
+    .data-actions {
+      display: flex;
+      gap: 8px;
+    }
+  }
+}
+
+.el-divider {
+  margin: 24px 0;
+}
 </style>

@@ -363,9 +363,10 @@ const changeData = (isClose: boolean) => {
 
 
 <style scoped lang="scss">
-// 环境管理弹窗样式
+// 环境管理弹窗样式 - 统一弹窗风格
 :deep(.env-dialog) {
   .el-dialog {
+    border-radius: 8px;
     max-height: 90vh;
     margin-top: 3vh !important;
     margin-bottom: 3vh;
@@ -374,6 +375,8 @@ const changeData = (isClose: boolean) => {
   }
   
   .el-dialog__header {
+    border-bottom: 1px solid #ebeef5;
+    padding: 20px 20px 15px;
     flex-shrink: 0;
   }
   
@@ -381,6 +384,26 @@ const changeData = (isClose: boolean) => {
     flex: 1;
     overflow: hidden;
     padding: 10px 20px;
+    
+    // 自定义滚动条样式
+    .aside_scroll::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    .aside_scroll::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    
+    .aside_scroll::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+      
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
     
     .el-row {
       height: 100%;
@@ -404,13 +427,21 @@ const changeData = (isClose: boolean) => {
   }
   
   .el-dialog__footer {
-    flex-shrink: 0;
     border-top: 1px solid #ebeef5;
     padding: 15px 20px;
+    flex-shrink: 0;
   }
 }
 
+// 底部按钮样式
 .dialog-footer {
+  text-align: right;
+  
+  .el-button {
+    margin-left: 10px;
+    min-width: 80px;
+  }
+  
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: stretch;
@@ -428,6 +459,26 @@ const changeData = (isClose: boolean) => {
       .el-button {
         margin-bottom: 4px;
       }
+    }
+  }
+}
+
+// 表单样式优化
+:deep(.el-form) {
+  .el-form-item__label {
+    font-weight: 500;
+    color: #606266;
+  }
+  
+  .el-input__wrapper {
+    transition: all 0.3s;
+    
+    &:hover {
+      box-shadow: 0 0 0 1px #c0c4cc inset;
+    }
+    
+    &.is-focus {
+      box-shadow: 0 0 0 1px #409eff inset;
     }
   }
 }

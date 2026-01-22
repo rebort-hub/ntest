@@ -66,8 +66,8 @@ router.beforeEach((to, _from, next) => {
 
     to.meta.title ? (changeTitle(to.meta.title)) : "" // 动态title
     
-    // 白名单或者指定路由，直接放行
-    if (whiteList.indexOf(to.path) !== -1 || to.path.indexOf('index') > -1 || to.path.indexOf('report-show') > -1) {
+    // 白名单，直接放行（不包括首页）
+    if (whiteList.indexOf(to.path) !== -1 || to.path.indexOf('report-show') > -1) {
         next()
         return
     }
@@ -103,6 +103,11 @@ router.beforeEach((to, _from, next) => {
             ElMessage.error('没有权限访问此页面')
             next(_from.path || '/aitestrebort/project')
         }
+        return
+    }
+    
+    if (to.path === '/' || to.path === '/index') {
+        next()
         return
     }
     

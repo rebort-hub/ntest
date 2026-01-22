@@ -180,6 +180,16 @@ async def delete_suite(request: Request, form: schema.GetCaseSuiteForm):
     elif request.app.test_type == "ui":
         suite_model, case_model, step_model = UiCaseSuite, UiCase, UiStep
 
+    # 检查用例集下是否有用例
+    case_count = await case_model.filter(suite_id=form.id).count()
+    if case_count > 0:
+        return request.app.fail(msg=f'用例集下还有 {case_count} 个用例，请先删除用例')
+    
+    # 检查用例集下是否有子用例集
+    child_suite_count = await suite_model.filter(parent=form.id).count()
+    if child_suite_count > 0:
+        return request.app.fail(msg=f'用例集下还有 {child_suite_count} 个子用例集，请先删除子用例集')
+
     waite_delete_suite_list, waite_delete_case_list, waite_delete_step_list = [], [], []
     async def get_waite_delete_data(suite_id):
         waite_delete_suite_list.append(suite_id)

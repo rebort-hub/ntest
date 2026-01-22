@@ -84,47 +84,52 @@
         </template>
       </el-table-column>
 
-      <el-table-column  v-if="!isDisabledCol" label="操作" header-align="center" width="90">
+      <el-table-column  v-if="!isDisabledCol" label="操作" header-align="center" width="150">
         <template #default="scope">
+          <div class="action-buttons">
+            <el-tooltip content="添加一行" placement="top">
+              <el-button
+                  v-show="scope.$index === 0 || scope.$index === tempData.length - 1"
+                  type="primary"
+                  :icon="Plus"
+                  circle
+                  size="small"
+                  @click="addRow(true)"
+              />
+            </el-tooltip>
 
-          <el-tooltip class="item" effect="dark" placement="top-end" content="添加一行">
-            <el-button
-                v-show="scope.$index === 0 || scope.$index === tempData.length - 1"
-                type="text"
-                size="small"
-                style="margin: 2px; padding: 0"
-                @click.native="addRow(true)"
-            ><Plus></Plus></el-button>
-          </el-tooltip>
+            <el-tooltip content="复制当前行" placement="top">
+              <el-button
+                  type="info"
+                  :icon="Copy"
+                  circle
+                  size="small"
+                  @click="copyRow(scope.row)"
+              />
+            </el-tooltip>
 
-          <el-tooltip class="item" effect="dark" placement="top-end" content="复制当前行">
-            <el-button
-                type="text"
-                size="small"
-                style="margin: 2px; padding: 0"
-                @click.native="copyRow(scope.row)"
-            ><Copy></Copy></el-button>
-          </el-tooltip>
+            <el-tooltip content="删除当前行" placement="top">
+              <el-button
+                  v-show="isShowDelButton(scope.$index)"
+                  type="danger"
+                  :icon="Minus"
+                  circle
+                  size="small"
+                  @click="delRow(scope.$index)"
+              />
+            </el-tooltip>
 
-          <el-tooltip class="item" effect="dark" placement="top-end" content="删除当前行">
-            <el-button
-                v-show="isShowDelButton(scope.$index)"
-                type="text"
-                size="small"
-                style="color: red;margin: 2px; padding: 0"
-                @click.native="delRow(scope.$index)"
-            ><Minus></Minus></el-button>
-          </el-tooltip>
-
-          <el-tooltip class="item" effect="dark" placement="top-end" content="清除数据">
-            <el-button
-                v-show="tempData.length === 1"
-                type="text"
-                size="small"
-                style="color: red;margin: 2px; padding: 0"
-                @click.native="clearData()"
-            ><Clear></Clear></el-button>
-          </el-tooltip>
+            <el-tooltip content="清除数据" placement="top">
+              <el-button
+                  v-show="tempData.length === 1"
+                  type="warning"
+                  :icon="Clear"
+                  circle
+                  size="small"
+                  @click="clearData()"
+              />
+            </el-tooltip>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -260,6 +265,20 @@ defineExpose({
 
 </script>
 
-<style scoped>
-
+<style scoped lang="scss">
+// 操作按钮样式
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  
+  .el-button {
+    &.is-circle {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+    }
+  }
+}
 </style>

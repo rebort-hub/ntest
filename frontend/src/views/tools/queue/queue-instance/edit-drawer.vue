@@ -1,11 +1,19 @@
 <template>
-  <div>
-    <el-drawer v-model="drawerIsShow" :title="formData.id ? '修改实例' : '新增实例'" size="60%">
-      <el-form
-          ref="ruleFormRef"
-          :model="formData"
-          :rules="formRules"
-          label-width="80px">
+  <el-dialog
+    v-model="drawerIsShow"
+    :title="formData.id ? '修改实例' : '新增实例'"
+    width="600px"
+    :close-on-click-modal="false"
+    destroy-on-close
+    custom-class="queue-instance-dialog"
+  >
+    <el-form
+      ref="ruleFormRef"
+      :model="formData"
+      :rules="formRules"
+      label-width="80px"
+      size="small"
+    >
 
         <el-form-item label="实例类型" prop="queue_type" class="is-required" size="small">
           <el-select
@@ -58,24 +66,22 @@
         <el-form-item label="备注" prop="desc" size="small">
           <el-input v-model="formData.desc" size="small" type="textarea" :rows="1" />
         </el-form-item>
-      </el-form>
+    </el-form>
 
-      <template #footer>
-        <div slot="footer" class="dialog-footer">
-          <el-button size="small" @click="drawerIsShow = false"> {{ '取消' }}</el-button>
-          <el-button
-              type="primary"
-              size="small"
-              :loading="submitButtonIsLoading"
-              @click="submitForm"
-          >
-            {{ '保存' }}
-          </el-button>
-        </div>
-      </template>
-
-    </el-drawer>
-  </div>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button size="small" @click="drawerIsShow = false">取消</el-button>
+        <el-button
+          type="primary"
+          size="small"
+          :loading="submitButtonIsLoading"
+          @click="submitForm"
+        >
+          保存
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
 </template>
 
 <script lang="ts" setup>
@@ -265,5 +271,29 @@ const changeData = () => {
 
 
 <style scoped lang="scss">
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+</style>
 
+<style lang="scss">
+.queue-instance-dialog {
+  border-radius: 8px;
+  
+  .el-dialog__header {
+    border-bottom: 1px solid #ebeef5;
+    padding: 20px 20px 15px;
+  }
+  
+  .el-dialog__body {
+    padding: 20px;
+  }
+  
+  .el-dialog__footer {
+    border-top: 1px solid #ebeef5;
+    padding: 15px 20px;
+  }
+}
 </style>
