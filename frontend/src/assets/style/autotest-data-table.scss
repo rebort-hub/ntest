@@ -1,0 +1,90 @@
+/**
+ * 接口自动化各列表页统一表格：边框、紧凑行高、明显斑马线、表头样式、横向滚动
+ * 用法：在 <el-table> 上加 class="autotest-data-table"，并设置 stripe border size="small"
+ */
+.autotest-data-table {
+  width: 100% !important;
+  flex: none !important;
+
+  .el-table__header-wrapper th.el-table__cell {
+    background: var(--el-fill-color-light) !important;
+    color: var(--el-text-color-primary);
+    font-weight: 600;
+    font-size: 12px;
+    padding: 5px 0 !important;
+  }
+
+  .el-table__header-wrapper th.el-table__cell .cell {
+    white-space: nowrap;
+    line-height: 1.35;
+    word-break: keep-all;
+  }
+
+  .el-table__body-wrapper {
+    overflow-x: auto !important;
+  }
+
+  .el-table__header-wrapper {
+    overflow-x: hidden;
+  }
+
+  .el-table__body .el-table__cell {
+    padding: 4px 0 !important;
+  }
+
+  .el-table .cell {
+    line-height: 1.35;
+    padding-left: 8px;
+    padding-right: 8px;
+    font-size: 12px;
+  }
+
+  .el-table__body tr:not(.el-table__row--striped) > td.el-table__cell {
+    background-color: var(--el-bg-color, #fff) !important;
+  }
+
+  .el-table__body tr.el-table__row--striped > td.el-table__cell {
+    background-color: #f5f7fa !important;
+  }
+
+  .el-table__fixed-body-wrapper .el-table__body tr:not(.el-table__row--striped) > td.el-table__cell,
+  .el-table__fixed-right .el-table__fixed-body-wrapper .el-table__body tr:not(.el-table__row--striped) > td.el-table__cell {
+    background-color: var(--el-bg-color, #fff) !important;
+  }
+
+  .el-table__fixed-body-wrapper .el-table__body tr.el-table__row--striped > td.el-table__cell,
+  .el-table__fixed-right .el-table__fixed-body-wrapper .el-table__body tr.el-table__row--striped > td.el-table__cell {
+    background-color: #f5f7fa !important;
+  }
+
+  .el-table__body tr.hover-row > td.el-table__cell {
+    background-color: #ecf5ff !important;
+  }
+
+  .el-table__border-left-patch {
+    border-color: var(--el-border-color-lighter);
+  }
+
+  .el-table--border .el-table__cell {
+    border-color: var(--el-border-color-lighter);
+  }
+}
+
+[data-theme='dark'] .autotest-data-table {
+  .el-table__body tr.el-table__row--striped > td.el-table__cell {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .el-table__body tr:not(.el-table__row--striped) > td.el-table__cell {
+    background-color: var(--el-bg-color) !important;
+  }
+
+  .el-table__fixed-body-wrapper .el-table__body tr.el-table__row--striped > td.el-table__cell,
+  .el-table__fixed-right .el-table__fixed-body-wrapper .el-table__body tr.el-table__row--striped > td.el-table__cell {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .el-table__body tr.hover-row > td.el-table__cell {
+    background-color: rgba(64, 158, 255, 0.12) !important;
+  }
+}

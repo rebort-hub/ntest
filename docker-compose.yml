@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: test-platform-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: Rebort
+      MYSQL_DATABASE: test_platform
+      MYSQL_USER: test_user
+      MYSQL_PASSWORD: test_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password --max-connections=16384
+    networks:
+      - test-platform-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # PostgreSQL数据库
+  postgres:
+    image: postgres:15
+    container_name: test-platform-postgres
+    environment:
+      POSTGRES_DB: test_platform
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - test-platform-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 后端服务
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: test-platform-backend
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - DB_TYPE=${DB_TYPE:-mysql}
+      - DB_HOST=${DB_HOST:-mysql}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USER=${DB_USER:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-Rebort}
+      - DB_NAME=${DB_NAME:-test_platform}
+      - AUTO_INIT_DB=${AUTO_INIT_DB:-true}
+    ports:
+      - "8018:8018"
+      - "8019:8019"
+    volumes:
+      - ./backend/logs:/app/logs
+      - ./backend/uploads:/app/uploads
+      - ./backend/browser_drivers:/app/browser_drivers
+    depends_on:
+      mysql:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - test-platform-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8018/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # 前端服务
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: test-platform-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - test-platform-network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  postgres_data:
+
+networks:
+  test-platform-network:
+    driver: bridge

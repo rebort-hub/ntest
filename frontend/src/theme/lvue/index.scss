@@ -1,0 +1,27 @@
+@use "./variable.scss" as *;
+@use "./reset.scss";
+@use "./nprogress.scss";
+@use "./element.scss";
+@use "./components.scss";
+
+::-webkit-scrollbar {
+  width: $webkit-scrollbar-width;
+  height: $webkit-scrollbar-height;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: $webkit-scrollbar-color;
+  border-radius: $webkit-scrollbar-border-radius;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: $webkit-scrollbar-hover-color;
+}
+
+* {
+  word-break: break-word;
+}

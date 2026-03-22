@@ -1,0 +1,56 @@
+/**
+ * Tab 标题旁主/次操作按钮（接口管理、用例管理、任务管理等统一风格）
+ */
+.autotest-tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  vertical-align: middle;
+}
+
+.autotest-tab-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--el-text-color-primary);
+}
+
+.autotest-tab-primary-btn {
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(64, 158, 255, 0.22);
+
+  &:hover {
+    box-shadow: 0 2px 6px rgba(64, 158, 255, 0.35);
+  }
+}
+
+.autotest-tab-secondary-btn {
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(64, 158, 255, 0.12);
+
+  &:hover {
+    box-shadow: 0 2px 5px rgba(64, 158, 255, 0.22);
+  }
+}
+
+.autotest-tab-btn__inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.autotest-tab-btn__icon {
+  flex-shrink: 0;
+}
+
+/** 带「标题 + 按钮」的 Tab 头高度与内边距 */
+.autotest-tabs-header-compact .el-tabs__item {
+  height: auto;
+  line-height: 1.4;
+  padding: 10px 16px 8px;
+  align-items: center;
+}

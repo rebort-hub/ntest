@@ -1,0 +1,84 @@
+@import './modules/dark.scss';
+
+:root {
+  // 主题色（默认：即可蓝，与系统设置主题色）
+  --system-primary-color: #20a162;
+  --system-primary-text-color: #fff; // 主题色作为背景色时使用
+
+  // logo颜色相关
+  --system-logo-color: #f1f1f1;
+  --system-logo-background: #111827;
+
+  // 菜单颜色相关
+  --system-menu-text-color: #bfcbd9;
+  --system-menu-background: #111827;
+  --system-menu-children-background: #1f2d3d;
+  --system-menu-submenu-active-color: #fff; 
+  --system-menu-hover-background: #1f2937;
+
+  // header区域
+  --system-header-background: #fff;
+  --system-header-text-color: #303133;
+  --system-header-breadcrumb-text-color: #606266;
+  --system-header-item-hover-color: rgba(0,0,0,.06);
+  --system-header-border-color: #d8dce5;
+  --system-header-tab-background: #fff;
+
+  // contaier区域，父框架
+  --system-container-background: #f0f2f5;
+  --system-container-main-background: #fff;
+
+
+  --system-page-background: #fff; // 主背景
+  --system-page-color: #303133; // 主要的文本颜色
+  --system-page-tip-color: rgba(0, 0, 0, 0.45); // 协助展示的文本颜色
+  --system-page-border-color: #ebeef5; // 通用的边框配置色，便于主题扩展
+  
+
+  --el-color-primary: var(--system-primary-color);
+
+  
+  --el-header-bg-color: var(--system-header-background);
+  --el-header-text-color: var(--system-header-text-color);
+
+  --el-menu-bg-color: var(--system-menu-background);
+  --el-menu-text-color: var(--system-menu-text-color);
+  --el-menu-hover-bg-color: var(--system-menu-hover-background);
+  --el-menu-hover-text-color: #ffffff;
+  --el-menu-active-bg-color: color-mix(in srgb, var(--el-color-primary) 22%, transparent);
+  --el-menu-active-text-color: #ffffff;
+  --el-menu-border-left-color: var(--el-color-primary);
+
+  --el-logo-bg-color: var(--system-logo-background);
+  --el-logo-text-color: var(--system-logo-color);
+}
+
+// 进度条颜色修改为主题色
+body #nprogress .bar {
+  background-color: var(--system-primary-color);
+}
+body #nprogress .peg {
+  box-shadow: 0 0 10px var(--system-primary-color), 0 0 5px var(--system-primary-color);
+}
+body #nprogress .spinner-icon {
+  border-top-color: var(--system-primary-color);
+  border-left-color: var(--system-primary-color);
+}
+
+
+// 全局弹窗样式适用于浅色和深色模式）
+.el-dialog {
+  border-radius: 8px;
+  overflow: hidden; 
+  
+  .el-dialog__header {
+    margin: 0;
+    padding: 16px 20px;
+    border-radius: 8px 8px 0 0; 
+  }
+  
+  .el-dialog__footer {
+    padding: 12px 20px;
+    border-radius: 0 0 8px 8px; 
+  }
+}

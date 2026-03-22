@@ -1,0 +1,830 @@
+<template>
+  <div class="report-table-root">
+    <div class="report-table-toolbar">
+    <el-input
+        v-model="queryItems.name"
+        placeholder="报告名，支持模糊查询"
+        size="small"
+        clearable
+        style="width: 200px; margin-right: 10px"
+    />
+
+    <el-select
+        v-model="queryItems.create_user"
+        placeholder="创建人"
+        filterable
+        default-first-option
+        clearable
+        size="small"
+        style="width: 150px; margin-right: 10px"
+    >
+      <el-option v-for="item in userList" :key="item.id" :label="item.name" :value="item.id"/>
+    </el-select>
+
+    <el-select
+        v-model="queryItems.run_env"
+        style="width: 150px; margin-right: 10px"
+        placeholder="运行环境"
+        size="small"
+        clearable
+        default-first-option
+    >
+      <el-option v-for="item in eventList" :key="item.code" :label="item.name" :value="item.code"/>
+    </el-select>
+
+    <el-select
+        v-model="queryItems.run_type"
+        placeholder="运行维度"
+        size="small"
+        filterable
+        clearable
+        style="width: 100px;margin-right: 10px"
+        default-first-option
+    >
+      <el-option v-for="(value, key) in runTypeDict" :key="key" :label="value" :value="key"/>
+    </el-select>
+
+    <el-select
+        v-model="queryItems.trigger_type"
+        placeholder="触发类型"
+        size="small"
+        filterable
+        clearable
+        style="width: 100px;margin-right: 10px"
+        default-first-option
+    >
+      <el-option v-for="(value, key) in reportTriggerTypeMappingContent" :key="key" :label="value" :value="key"/>
+    </el-select>
+
+    <el-popover :visible="checkDeleteIsShow" placement="top" popper-class="down-popover" width="450px">
+      确定删除所选中的测试报告?
+      <div style="color: red">
+        1、关联了问题记录的测试报告不会被删除 <br>
+        2、触发方式为【定时任务】或者【流水线】的，只有管理员能删除
+      </div>
+      <div style="text-align: right; margin-top: 10px">
+        <el-button size="small" type="text" @click="checkDeleteIsShow = false">取消</el-button>
+        <el-button type="primary" size="small" @click="deleteData(null)">确定</el-button>
+      </div>
+      <template #reference>
+        <el-button
+            :disabled="selectedList.length === 0"
+            type="danger"
+            size="small"
+            style="margin-left: 5px"
+            @click="checkDeleteIsShow = true"
+        >批量删除
+        </el-button>
+      </template>
+    </el-popover>
+
+    <el-button type="primary" @click="getTableDataList">查询</el-button>
+    </div>
+
+    <div class="report-table-body">
+    <el-table
+        v-loading="tableIsLoading"
+        class="report-data-table"
+        element-loading-text="正在获取数据"
+        element-loading-spinner="el-icon-loading"
+        :data="tableDataList"
+        stripe
+        border
+        size="small"
+        @selection-change="clickSelectAll"
+        :height="tableHeight"
+        @row-dblclick="rowDblclick">
+
+      <el-table-column type="selection" width="48"/>
+
+      <el-table-column prop="id" label="序号" align="center" width="56">
+        <template #default="scope">
+          <span> {{ (queryItems.page_no - 1) * queryItems.page_size + scope.$index + 1 }} </span>
+        </template>
+      </el-table-column>
+
+      <el-table-column show-overflow-tooltip prop="id" align="center" label="报告id" min-width="92"/>
+
+      <el-table-column show-overflow-tooltip prop="name" align="center" label="报告名称" min-width="200">
+        <template #default="scope">
+          <el-tag v-show="scope.row.retry_count>0" size="small" style="margin-right: 5px" type="warning">
+            重跑{{ scope.row.retry_count }}次
+          </el-tag>
+          <span>{{ scope.row.name }}</span>
+        </template>
+      </el-table-column>
+
+      <el-table-column show-overflow-tooltip prop="create_time" align="center" label="生成时间"
+                       min-width="168">
+        <template #default="scope">
+          <span> {{ paramsISOTime(scope.row.create_time) }} </span>
+        </template>
+      </el-table-column>
+
+      <el-table-column show-overflow-tooltip prop="env" label="维度" align="center"
+                       min-width="72">
+        <template #default="scope">
+                      <span> {{
+                          scope.row.run_type === 'api' ? '接口' :
+                              scope.row.run_type === 'case' ? '用例' :
+                                  scope.row.run_type === 'suite' ? '用例集' : '任务'
+                        }} </span>
+        </template>
+      </el-table-column>
+
+      <el-table-column show-overflow-tooltip prop="trigger_type" label="触发" align="center"
+                       min-width="88">
+        <template #default="scope">
+          <span> {{ reportTriggerTypeMappingContent[scope.row.trigger_type] }} </span>
+        </template>
+      </el-table-column>
+
+      <el-table-column v-if="testType !== 'app'" show-overflow-tooltip prop="env" label="运行环境"
+                       align="center" min-width="120">
+        <template #default="scope">
+          <span> {{ eventDict[scope.row.env] }} </span>
+        </template>
+      </el-table-column>
+
+      <el-table-column show-overflow-tooltip prop="is_passed" label="是否通过" align="center"
+                       min-width="108">
+        <template #default="scope">
+          <el-tag size="small" :type="reportStatusMappingTagType[scope.row.is_passed]">
+            {{ reportStatusMappingContent[scope.row.is_passed] }}
+          </el-tag>
+        </template>
+      </el-table-column>
+
+      <el-table-column show-overflow-tooltip prop="process" label="是否完成" align="center" min-width="100">
+        <template #default="scope">
+          <el-tag
+              size="small"
+              :type="scope.row.process === 3 && scope.row.status === 2 ? 'success' : 'warning'"
+          >
+            {{ scope.row.process === 3 && scope.row.status === 2 ? '已完成' : '执行中' }}
+          </el-tag>
+        </template>
+      </el-table-column>
+
+      <el-table-column show-overflow-tooltip prop="process" label="是否通知" align="center" min-width="120">
+        <template #header>
+          <span>是否通知</span>
+          <el-tooltip class="item" effect="dark" placement="top-start">
+            <template #content>
+              <div>只有执行任务产生的报告才能触发通知</div>
+            </template>
+            <span style="margin-left:5px;color: #409EFF"><Help></Help></span>
+          </el-tooltip>
+        </template>
+        <template #default="scope">
+          <el-tag size="small" :type="scope.row.notified === true ? 'success' : 'info'" >
+            {{ scope.row.notified === true ? '已通知' : '未通知' }}
+          </el-tag>
+        </template>
+      </el-table-column>
+
+      <el-table-column show-overflow-tooltip prop="create_user" label="创建人" align="center" min-width="88">
+        <template #default="scope">
+          <span> {{ userDict[scope.row.create_user] }} </span>
+        </template>
+      </el-table-column>
+
+      <el-table-column
+          fixed="right"
+          show-overflow-tooltip
+          prop="desc"
+          align="center"
+          label="操作"
+          width="240">
+        <template #default="scope">
+          <div class="action-buttons">
+            <el-popconfirm :title="`停止【${ scope.row.name }】的测试执行?`" @confirm="changeReportStepStatus(scope.row)">
+              <template #reference>
+                <el-button
+                    v-show="!(scope.row.process === 3 && scope.row.status === 2)"
+                    size="small"
+                    type="danger"
+                >停止
+                </el-button>
+              </template>
+            </el-popconfirm>
+
+            <el-button
+                v-show="scope.row.process === 3 && scope.row.status === 2 && scope.row.run_type === 'task' && scope.row.notified === false"
+                size="small"
+                type="warning"
+                @click="showNotifyDialog(scope.row)"
+            >通知
+            </el-button>
+
+            <el-button
+                v-show="scope.row.run_type !== 'api' || isAdmin"
+                size="small"
+                type="primary"
+                @click="showReRunDialog(scope.row)"
+            >重跑
+            </el-button>
+
+            <el-button
+                size="small"
+                type="info"
+                @click="openReportById(scope.row.id)"
+            >查看
+            </el-button>
+            
+            <el-popconfirm :title="`确定删除【${ scope.row.name }】?`" @confirm="deleteData(scope.row)">
+              <template #reference>
+                <el-button
+                    v-show="scope.row.status !== 1"
+                    size="small"
+                    type="danger"
+                >删除
+                </el-button>
+              </template>
+            </el-popconfirm>
+          </div>
+        </template>
+      </el-table-column>
+    </el-table>
+    </div>
+
+    <div class="report-table-footer">
+    <pagination
+        v-show="tableDataTotal > 0"
+        :pageNum="queryItems.page_no"
+        :pageSize="queryItems.page_size"
+        :total="tableDataTotal"
+        @pageFunc="changePagination"
+    />
+    </div>
+
+    <el-dialog
+        v-model="reRunDialogIsShow"
+        title="选择重跑维度"
+        width="500"
+    >
+
+      <div style="margin-bottom: 20px;">
+        <div style="margin-bottom: 5px;">
+          <span style="color: red">1、重跑所有：重跑当前选择的报告下的所有用例</span>
+        </div>
+        <div style="margin-bottom: 5px;">
+          <span style="color: red">2、重跑不通过的：重跑当前选择的报告下结果为不通过的用例</span>
+        </div>
+        <div style="margin-bottom: 5px;">
+          <span style="color: red">3、不管选择的是什么维度的重跑，都会生成一份新的测试报告</span>
+        </div>
+      </div>
+
+      <div style="margin: 10px">
+        <el-radio v-model="reRunOption" label="all">重跑所有</el-radio>
+        <br>
+        <el-radio :disabled="report.is_passed" v-model="reRunOption" label="passed">重跑通过的, 并且<span style="color:red;">【不保存】</span>到当前测试报告下</el-radio>
+        <br>
+        <el-radio :disabled="report.is_passed" v-model="reRunOption" label="failed-not-cover">重跑不通过的, 并且<span style="color:red;">【不保存】</span>到当前测试报告下</el-radio>
+        <br>
+        <el-radio :disabled="report.is_passed" v-model="reRunOption" label="failed-and-cover">重跑不通过的, 并把测试结果<span style="color:red;">【保存】</span>到当前测试报告下</el-radio>
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" size="small" @click="clickReRun()">确定重跑</el-button>
+          <el-button size="small" @click="reRunDialogIsShow = false">取消</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <el-dialog
+        v-model="notifyDialogIsShow"
+        title="选择通知渠道"
+        width="500"
+    >
+      <div style="margin-bottom: 20px;font-size: 20px;text-align: center">{{ report.name }}</div>
+
+      <div style="margin-bottom: 20px;">
+        <div style="margin-bottom: 5px;">
+          <span style="color: red">1、若选择的通知渠道不是“按任务设置”，则默认为“始终发送”</span>
+        </div>
+        <div style="margin-bottom: 5px;">
+          <span style="color: red">2、必须在对应任务的通知渠道设置了通知对象才能成功发送</span>
+        </div>
+      </div>
+
+      <div style="margin: 10px">
+        <el-radio v-model="notifyTo" label="default">按任务设置</el-radio>
+        <el-radio v-model="notifyTo" label="ding_ding">钉钉</el-radio>
+        <el-radio v-model="notifyTo" label="we_chat">企业微信</el-radio>
+        <el-radio v-model="notifyTo" label="fei_shu" disabled>飞书</el-radio>
+        <el-radio v-model="notifyTo" label="email">邮件</el-radio>
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" :loading="notifyIsLoading" size="small" @click="notifyReport()">确定通知</el-button>
+          <el-button size="small" @click="notifyDialogIsShow = false">取消</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+  </div>
+</template>
+
+<script setup lang="ts">
+import {onMounted, ref, onBeforeUnmount, watch, nextTick, computed} from "vue";
+import {useRouter} from "vue-router";
+import Pagination from '@/components/pagination.vue'
+
+import {GetProject, GetProjectList} from "@/api/autotest/project";
+import {bus, busEvent} from "@/utils/bus-events";
+import {ElMessage} from "element-plus";
+import toClipboard from "@/utils/copy-to-memory";
+import {
+  DeleteReport,
+  GetReport,
+  GetReportRerunCaseList,
+  GetReportList, NotifyReport, ChangeReportStepStatus
+} from "@/api/autotest/report";
+import {reportStatusMappingContent, reportStatusMappingTagType, reportTriggerTypeMappingContent} from "../mapping";
+import {GetRunEnvList} from "@/api/config/run-env";
+import {GetConfigByCode} from "@/api/config/config-value";
+import {GetCase, RunCase} from "@/api/autotest/case";
+import {GetServerList} from "@/api/autotest/device-server";
+import {GetPhoneList} from "@/api/autotest/device-phone";
+import {RunTask} from "@/api/autotest/task";
+import {RunCaseSuite} from "@/api/autotest/case-suite";
+import {RunApi} from "@/api/autotest/api";
+import {paramsISOTime} from "@/utils/parse-data";
+import {Help} from "@icon-park/vue-next";
+
+const props = defineProps({
+  testType: {
+    default: '',
+    type: String
+  },
+  userList: {
+    default: [],
+    type: Array
+  },
+  userDict: {
+    default: {},
+    type: Object
+  }
+})
+
+const router = useRouter()
+
+const tableIsLoading = ref(false)
+const checkDeleteIsShow = ref(false)
+const projectBusinessId = ref()
+const report = ref({})
+const eventList = ref([])
+const eventDict = ref({})
+const runTypeDict = ref({})
+const tableDataList = ref([])
+const selectedList = ref([])
+const tableDataTotal = ref(0)
+const queryItems = ref({
+  page_no: 1,
+  page_size: 20,
+  detail: true,
+  project_id: undefined,
+  name: undefined,
+  create_user: undefined,
+  run_env: undefined,
+  run_type: undefined,
+  trigger_type: undefined,
+  trigger_id: undefined
+})
+
+const tableHeight = ref('10px')
+
+const setTableHeight = () => {
+  // 预留：顶栏、Tab、面包屑、页面标题、筛选条、分页等（与报告页 flex 铺满配合）
+  const reserve = 340
+  const h = window.innerHeight - reserve
+  tableHeight.value = `${Math.max(200, h)}px`
+}
+
+const handleResize = () => {
+  setTableHeight();
+}
+
+const isAdmin = localStorage.getItem('permissions').indexOf('admin') !== -1
+const triggerFrom = 'report-index'
+const reRunDialogIsShow = ref(false)
+const reRunIdList = ref([])
+const reRunOption = ref('failed-and-cover')
+const insert_to = ref()
+const notifyTo = ref('default')
+const notifyIsLoading = ref(false)
+const notifyDialogIsShow = ref(false)
+
+
+const rowDblclick = async (row: any, column: any, event: any) => {
+  try {
+    await toClipboard(row[column.property]);
+    ElMessage.success("已复制到粘贴板")
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+
+const changePagination = (pagination: any) => {
+  queryItems.value.page_no = pagination.pageNum
+  queryItems.value.page_size = pagination.pageSize
+  getTableDataList()
+}
+
+const getReportAndSendEvent = () => {
+  GetReport(props.testType, {id: report.value.id}).then(response => {
+    report.value = response.data
+
+    if (report.value.run_type === 'case') {
+      const tempVariables = report.value.temp_variables
+      if (tempVariables) { // 本身就有临时参数
+        sendReRun(tempVariables)
+      } else { // 没有就获取用例的数据
+        if (report.value.trigger_id.length === 1) {
+          GetCase(props.testType, {id: report.value.trigger_id[0]}).then(response => {
+            const case_data = response.data
+            sendReRun({
+              skip_if: case_data.skip_if, variables: case_data.variables,
+              run_times: case_data.run_times, headers: case_data.headers
+            })
+          })
+        } else {
+          sendReRun(null)
+        }
+      }
+    } else {
+      sendReRun(null)
+    }
+  })
+}
+
+const sendReRun = (tempRunArgs: any) => {
+  bus.emit(busEvent.drawerIsShow, {
+    eventType: 'select-run-env',
+    triggerFrom: triggerFrom,
+    showSelectRunModel: ['task', 'suite'].indexOf(report.value.run_type) !== -1,
+    runName: report.value.name,
+    business_id: projectBusinessId.value,
+    runArgs: tempRunArgs,
+    runEnv: report.value.summary.env.code
+  })
+}
+
+const showReRunDialog = (row: {}) => {
+  report.value = row
+  insert_to.value = undefined
+  reRunOption.value = report.value.is_passed ? 'all' : 'failed-and-cover'
+  reRunDialogIsShow.value = true
+}
+
+const showNotifyDialog = (row: {}) => {
+  report.value = row
+  notifyTo.value = 'default'
+  notifyDialogIsShow.value = true
+  notifyIsLoading.value = false
+}
+
+const notifyReport = () => {
+  notifyIsLoading.value = true
+  NotifyReport(props.testType, {id: report.value.id, notify_to: notifyTo.value}).then(response => {
+    notifyIsLoading.value = false
+    notifyDialogIsShow.value = false
+    getTableDataList()
+  })
+}
+
+const changeReportStepStatus = (row: { id: any; }) => {
+  ChangeReportStepStatus(props.testType, {report_id: row.id, status: 'stop'}).then(response => {
+    getTableDataList()
+  })
+}
+
+const clickReRun = async () => {
+  if(reRunOption.value === "all") {
+    reRunIdList.value = report.value.trigger_id
+  }else {
+    if(reRunOption.value === "failed-and-cover") {
+      insert_to.value = report.value.id
+    }else {
+      insert_to.value = undefined
+    }
+    const response = await GetReportRerunCaseList(props.testType, {
+      id: report.value.id,
+      result: reRunOption.value.includes("failed") ? 'failed' : 'passed'
+    })
+    if (response.data.length === 0) {
+      ElMessage.warning('当前报告没有失败的用例')
+    }
+    reRunIdList.value = response.data
+  }
+
+  // 防止接口返回空值导致后端参数校验报错（id_list=[null]）
+  reRunIdList.value = (reRunIdList.value || []).filter((id: any) => id !== null && id !== undefined)
+  if (reRunIdList.value.length === 0) {
+    return
+  }
+
+  if (props.testType === 'app') {
+    if (busEvent.data.runServerList.length < 1) {
+      GetServerList({page_no: 1, page_size: 1000}).then(response => {
+        busEvent.data.runServerList = response.data.data
+      })
+    }
+
+    if (busEvent.data.runPhoneList.length < 1) {
+      GetPhoneList({page_no: 1, page_size: 1000}).then(response => {
+        busEvent.data.runPhoneList = response.data.data
+      })
+    }
+  }
+
+  await getReportAndSendEvent()
+}
+
+const getRunUrl = () => {
+  const run_type = report.value.run_type
+  if (reRunOption.value !== 'all'){
+    return RunCase
+  }
+  return run_type === 'task' ? RunTask
+      : run_type === 'suite' ? RunCaseSuite
+          : run_type === 'case' ? RunCase
+              : RunApi
+}
+
+const reRun = (runConf) => {
+  const runUrl = getRunUrl()
+  runUrl(props.testType, {
+    id_list: reRunIdList.value, // report.value.trigger_id,
+    env_list: runConf.runEnv,
+    is_async: runConf.runType,
+    browser: runConf.browser,
+    server_id: runConf.runServer,
+    phone_id: runConf.runPhone,
+    no_reset: runConf.noReset,
+    temp_variables: runConf.temp_variables,
+    insert_to: insert_to.value,
+    'trigger_type': 'page',
+    extend: {}  // 添加必需的 extend 字段
+  }).then(response => {
+    if (response && response.data) {
+      bus.emit(busEvent.drawerIsShow, {
+        eventType: 'run-process',
+        batch_id: response.data.batch_id,
+        report_id: response.data.report_id
+      })
+    } else {
+      console.error('重跑失败：响应数据为空', response)
+    }
+  })
+  reRunDialogIsShow.value = false
+}
+
+
+const openReportById = (reportId: any) => {
+  // 使用路由跳转替代新窗口打开
+  router.push(`/${props.testType}-test/report-show?id=${reportId}`)
+}
+
+const clickSelectAll = (val: never[]) => {
+  selectedList.value = val
+}
+
+const getSubmitId = (row: any) => {
+  let selectedIdList: any[] = []
+  if (row) {
+    selectedIdList = [row.id]
+  } else {
+    selectedList.value.forEach(item => {
+      selectedIdList.push(item.id)
+    })
+  }
+  return selectedIdList
+}
+
+const deleteData = (row: { id: any; }) => {
+  tableIsLoading.value = true
+  DeleteReport(props.testType, {id_list: getSubmitId(row)}).then(response => {
+    checkDeleteIsShow.value = false
+    tableIsLoading.value = false
+    if (response) {
+      getTableDataList()
+    }
+  })
+}
+
+const getTableDataList = () => {
+  tableIsLoading.value = true
+  GetReportList(props.testType, queryItems.value).then((response: object) => {
+    tableIsLoading.value = false
+    tableDataList.value = response.data.data
+    tableDataTotal.value = response.data.total
+  })
+}
+
+const getRunEnvList = (businessId) => {
+  GetRunEnvList({business_id: businessId}).then(response => {
+    eventList.value = response.data.data
+    eventList.value.forEach(env => {
+      eventDict.value[env.code] = env.name
+    })
+  })
+}
+
+
+const getRunTypeDict = () => {
+  GetConfigByCode({code: 'run_type'}).then(response => {
+    runTypeDict.value = response.data
+  })
+}
+
+onMounted(() => {
+  getRunTypeDict()
+  bus.on(busEvent.drawerIsCommit, drawerIsCommit);
+  bus.on(busEvent.drawerIsShow, selectProject);
+  setTableHeight()
+  window.addEventListener('resize', handleResize);
+})
+
+onBeforeUnmount(() => {
+  bus.off(busEvent.drawerIsCommit, drawerIsCommit);
+  bus.off(busEvent.drawerIsShow, selectProject);
+  window.removeEventListener('resize', handleResize);
+})
+
+const drawerIsCommit = (message: any) => {
+  if (message.eventType === 'select-run-env' && message.triggerFrom === triggerFrom) {
+    reRun(message)
+  }
+}
+
+const selectProject = (message: any) => {
+  if (message.eventType === 'show-report-table') {
+    queryItems.value.project_id = message.projectId
+    queryItems.value.run_type = message.runType
+    queryItems.value.trigger_id = message.triggerId
+    if (message.businessId){
+      projectBusinessId.value = message.businessId
+      getRunEnvList(projectBusinessId.value)
+    }else {
+      getProjectAndRunEnvList(message.projectId)
+    }
+    getTableDataList()
+  }
+}
+
+const getProjectAndRunEnvList = (projectId: number) => {
+  GetProject(props.testType, {id: projectId}).then(response => {
+    getRunEnvList(response.data.business_id)
+  })
+}
+
+</script>
+
+<style scoped lang="scss">
+.report-table-root {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.report-table-toolbar {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-bottom: 12px;
+}
+
+.report-table-body {
+  flex: 1 1 auto;
+  min-height: 200px;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+.report-table-footer {
+  flex-shrink: 0;
+  margin-top: 12px;
+  padding-bottom: 4px;
+}
+
+/* 网格线表格 + 明显斑马线（与接口服务列表页一致思路） */
+.report-data-table {
+  /* 列 min-width 为 px 且总和大于容器时，由 EP 表体内部横向滚动（与 fixed 列同步） */
+  width: 100% !important;
+  flex: none !important; /* 覆盖全局 .el-table { flex:1 }，避免在 flex 列里被异常拉伸 */
+
+  :deep(.el-table__header-wrapper th.el-table__cell) {
+    background: var(--el-fill-color-light) !important;
+    color: var(--el-text-color-primary);
+    font-weight: 600;
+    font-size: 12px;
+    padding: 5px 0 !important;
+  }
+
+  :deep(.el-table__header-wrapper th.el-table__cell .cell) {
+    white-space: nowrap;
+    line-height: 1.35;
+    word-break: keep-all;
+  }
+
+  /* 确保出现横向滚动条（部分主题下默认 overflow 偏保守） */
+  :deep(.el-table__body-wrapper) {
+    overflow-x: auto !important;
+  }
+
+  :deep(.el-table__header-wrapper) {
+    overflow-x: hidden;
+  }
+
+  :deep(.el-table__body .el-table__cell) {
+    padding: 4px 0 !important;
+  }
+
+  :deep(.el-table .cell) {
+    line-height: 1.35;
+    padding-left: 8px;
+    padding-right: 8px;
+    font-size: 12px;
+  }
+
+  :deep(.el-table__body tr:not(.el-table__row--striped) > td.el-table__cell) {
+    background-color: var(--el-bg-color, #fff) !important;
+  }
+
+  :deep(.el-table__body tr.el-table__row--striped > td.el-table__cell) {
+    background-color: #f5f7fa !important;
+  }
+
+  :deep(.el-table__fixed-body-wrapper .el-table__body tr:not(.el-table__row--striped) > td.el-table__cell),
+  :deep(.el-table__fixed-right .el-table__fixed-body-wrapper .el-table__body tr:not(.el-table__row--striped) > td.el-table__cell) {
+    background-color: var(--el-bg-color, #fff) !important;
+  }
+
+  :deep(.el-table__fixed-body-wrapper .el-table__body tr.el-table__row--striped > td.el-table__cell),
+  :deep(.el-table__fixed-right .el-table__fixed-body-wrapper .el-table__body tr.el-table__row--striped > td.el-table__cell) {
+    background-color: #f5f7fa !important;
+  }
+
+  :deep(.el-table__body tr.hover-row > td.el-table__cell) {
+    background-color: #ecf5ff !important;
+  }
+
+  :deep(.el-table--border .el-table__cell) {
+    border-color: var(--el-border-color-lighter);
+  }
+}
+
+[data-theme='dark'] .report-data-table {
+  :deep(.el-table__body tr.el-table__row--striped > td.el-table__cell) {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+  }
+
+  :deep(.el-table__body tr:not(.el-table__row--striped) > td.el-table__cell) {
+    background-color: var(--el-bg-color) !important;
+  }
+
+  :deep(.el-table__fixed-body-wrapper .el-table__body tr.el-table__row--striped > td.el-table__cell),
+  :deep(.el-table__fixed-right .el-table__fixed-body-wrapper .el-table__body tr.el-table__row--striped > td.el-table__cell) {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+  }
+
+  :deep(.el-table__body tr.hover-row > td.el-table__cell) {
+    background-color: rgba(64, 158, 255, 0.12) !important;
+  }
+}
+
+// 操作按钮样式
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  
+  .el-button {
+    margin: 0;
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+}
+
+//.first-col {
+//  width: 20% !important;
+//}
+//
+//.second-col {
+//  width: 79% !important;
+//}
+
+</style>

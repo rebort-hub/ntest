@@ -1,0 +1,29 @@
+{
+  "name": "n-tester-mcp",
+  "version": "2.0.0",
+  "description": "N-Tester MCP Enhanced with Official Playwright MCP Integration",
+  "main": "src/integrations/playwright/http_bridge.js",
+  "scripts": {
+    "start": "node src/integrations/playwright/http_bridge.js",
+    "start:bridge": "node src/integrations/playwright/http_bridge.js",
+    "test:bridge": "node scripts/test/test_bridge_service.js",
+    "test:direct": "node scripts/test/test_playwright_mcp_direct.js"
+  },
+  "keywords": [
+    "mcp",
+    "playwright",
+    "testing",
+    "automation",
+    "n-tester"
+  ],
+  "author": "N-Tester Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

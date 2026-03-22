@@ -1,0 +1,70 @@
+# Python缓存和编译文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.Python
+pip-log.txt
+
+# 虚拟环境
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+.pyenv/
+
+# IDE和编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Git
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# 文档
+README.md
+docs/
+*.md
+LICENSE
+
+# 测试
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+pytest_cache/
+test_*.py
+*_test.py
+tests/
+
+# 日志
+*.log
+logs/
+
+# Docker相关
+Dockerfile
+Dockerfile.*
+.dockerignore
+docker-compose*.yml
+
+# 临时文件
+*.tmp
+*.bak
+.cache/
+.temp/
+
+# 本地数据
+*.sqlite
+*.db

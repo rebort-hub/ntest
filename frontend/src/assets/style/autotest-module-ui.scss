@@ -1,0 +1,80 @@
+// 自动化测试「项目 / 用例集 / 报告」统一视觉壳，仅作用于 .autotest-module-shell
+
+.autotest-module-shell {
+  .autotest-module-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .autotest-module-table-wrap {
+    flex: 1;
+    min-height: 0;
+    padding: 0 16px 16px;
+    margin: 0 !important;
+
+    .el-table {
+      border-radius: 8px;
+    }
+  }
+
+  .autotest-module-split-row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 0 12px 16px;
+    flex: 1;
+    min-height: 0;
+    align-items: stretch !important;
+    gap: 12px;
+  }
+
+  .autotest-split-sidebar {
+    border: 1px solid var(--el-border-color-light, var(--system-page-border-color, #ebeef5));
+    border-radius: 10px;
+    background: var(--el-bg-color, var(--system-container-main-background, #fff));
+    padding: 10px 10px 12px;
+    box-sizing: border-box;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  }
+
+  .autotest-split-main {
+    border: 1px solid var(--el-border-color-light, var(--system-page-border-color, #ebeef5));
+    border-radius: 10px;
+    background: var(--el-bg-color, var(--system-container-main-background, #fff));
+    padding: 10px;
+    box-sizing: border-box;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+    min-width: 0;
+  }
+
+  .autotest-split-main-inner {
+    margin-left: 0 !important;
+    height: 100%;
+    min-height: 0;
+  }
+
+  // 用例集页：固定侧栏比例 + 主区自适应（勿用于报告页，避免覆盖响应式栅格）
+  .autotest-module-split-row.autotest-suite-split > .autotest-split-sidebar.el-col {
+    flex: 0 0 22%;
+    width: 22% !important;
+    max-width: 360px;
+    min-width: 200px;
+  }
+
+  .autotest-module-split-row.autotest-suite-split > .autotest-split-main.el-col {
+    flex: 1;
+    width: auto !important;
+  }
+
+  .autotest-report-tabs {
+    margin-left: 0 !important;
+  }
+}
+
+[data-theme='dark'] .autotest-module-shell {
+  .autotest-split-sidebar,
+  .autotest-split-main {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  }
+}

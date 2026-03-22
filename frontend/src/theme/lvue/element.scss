@@ -1,0 +1,38 @@
+@use "./variable.scss" as *;
+
+:root {
+  --el-menu-sub-item-height: #{$aside-menu-height} !important;
+}
+
+.main-maximize {
+  .el-aside,
+  .el-header,
+  .tabs-box {
+    display: none !important;
+  }
+}
+
+.koi-icon {
+  color: var(--system-header-text-color);
+  outline: none;
+
+  &:hover {
+    color: var(--el-color-primary);
+    cursor: pointer;
+  }
+}
+
+.el-table {
+  flex: 1;
+
+  table {
+    width: 100%;
+  }
+
+  .el-table__empty-block {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+}

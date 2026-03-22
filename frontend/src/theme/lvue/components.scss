@@ -1,0 +1,21 @@
+.layout-container {
+  border: 1px solid var(--system-page-border-color);
+  box-shadow: 0 2px 8px #1d23290d;
+}
+
+.layout-container-form {
+  .el-form-item__label {
+    color: var(--system-page-color);
+    font-weight: 500;
+  }
+}
+
+.layout-container-table {
+  .el-table th.el-table__cell {
+    background: color-mix(in srgb, var(--system-page-background) 92%, #000 8%);
+  }
+}
+
+.el-card {
+  border-color: var(--system-page-border-color);
+}
