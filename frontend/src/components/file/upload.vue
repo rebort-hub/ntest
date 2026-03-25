@@ -113,11 +113,12 @@ const submitUpload = () => {
 
   // 上传form到服务器
   dialogIsLoading.value = true
+  const fileNameList = tempFileList.value.map((f: any) => f.name).filter(Boolean)
   PostFile(form).then((response) => {
     dialogIsLoading.value = false
     if (response){
       tempFileList.value = []
-      bus.emit(busEvent.drawerIsCommit, {eventType: 'uploadFile'})
+      bus.emit(busEvent.drawerIsCommit, {eventType: 'uploadFile', content: {fileNameList}})
       dialogIsShow.value = false
     }
   }

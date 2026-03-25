@@ -59,11 +59,23 @@
                   default-first-option
               >
                 <el-option
-                    v-for="(item) in busEvent.data.executeTypeList"
+                    v-for="(item) in executeTypeList"
                     :key="item.value"
-                    :label="item.label"
+                    :label="getMappingLabel(item)"
                     :value="item.value"
-                />
+                >
+                  <div class="mapping-option-row">
+                    <span>{{ getMappingLabel(item) }}</span>
+                    <el-tooltip
+                        v-if="showKeyTip(item)"
+                        effect="dark"
+                        placement="right"
+                        :content="`编码：${getMappingKey(item)}`"
+                    >
+                      <span class="mapping-key-help">?</span>
+                    </el-tooltip>
+                  </div>
+                </el-option>
               </el-select>
             </el-form-item>
 
@@ -82,7 +94,7 @@
                 </el-col>
 
                 <el-col :span="4">
-                  <el-button type="primary" size="small" @click.native="openFileUploadDialog">上传文件</el-button>
+                  <el-button type="primary" size="small" @click="openFileUploadDialog">上传文件</el-button>
                 </el-col>
               </el-row>
             </el-form-item>
@@ -330,7 +342,7 @@ import jsonEditorView from '@/components/editor/json-editor.vue'
 import oneColumnRow from "@/components/input/one-column-row.vue";
 
 import {ChangeElementById, GetElement, GetElementFrom, GetElementList} from "@/api/autotest/element";
-import {GetKeyBoardCodeMappingList, GetStep, PostStep, PutStep} from "@/api/autotest/step";
+import {GetExecuteMappingList, GetKeyBoardCodeMappingList, GetStep, PostStep, PutStep} from "@/api/autotest/step";
 import {GetConfigByCode} from "@/api/config/config-value";
 
 const props = defineProps({
@@ -351,6 +363,7 @@ const props = defineProps({
 onMounted(() => {
   // getExecuteMappingList()
   getKeyboardKeyCodeList()
+  ensureExecuteTypeList()
   bus.on(busEvent.drawerIsShow, onShowDrawerEvent);
   bus.on(busEvent.drawerIsCommit, onDrawerIsCommit);
 })
@@ -374,7 +387,10 @@ const onShowDrawerEvent = (message: any) => {
 
 const onDrawerIsCommit = (message: any) => {
   if (message.eventType === 'uploadFile') {
-    formData.value.send_keys = message.content.fileNameList[0]
+    const fileNameList = message?.content?.fileNameList || []
+    if (fileNameList.length > 0) {
+      formData.value.send_keys = fileNameList[0]
+    }
   }else if (message.eventType === 'change-step-element') {
     formData.value.element_id = message.elementId
     getElement(formData.value.element_id)
@@ -394,6 +410,81 @@ const dataDriverViewRef = ref(null)
 const elementList = ref([])
 const placeholder1 = '{"x1": 0.2, "y1": 0.7, "x2": 0.1, "y2": 0.4}，从当前中心坐标往4个方向移动的百分比' // 滑动屏幕的描述
 const placeholder2 = '{"x1": 500, "y1": 1000, "x2": 600, "y2": 1024}，坐标的具体值' // 滑动屏幕的描述
+const tokenZhMap: Record<string, string> = {
+  click: '点击',
+  clear: '清空',
+  send: '输入',
+  keys: '按键',
+  input: '输入',
+  text: '文本',
+  value: '值',
+  title: '标题',
+  cookie: 'Cookie',
+  local: '本地',
+  session: '会话',
+  storage: '存储',
+  attribute: '属性',
+  exist: '存在',
+  selected: '选中',
+  equal: '等于',
+  larger: '大于',
+  smaller: '小于',
+  true: '真',
+  false: '假',
+  null: '空',
+  alert: '弹窗',
+  accept: '确认',
+  dismiss: '取消',
+  position: '坐标',
+  element: '元素'
+}
+
+const executeTypeList = ref<any[]>([])
+
+const ensureExecuteTypeList = async () => {
+  const type = props.testType as 'ui' | 'app'
+  const cache = busEvent.data.executeTypeListByType?.[type] || []
+  if (cache.length > 0) {
+    executeTypeList.value = cache
+    return
+  }
+  const resp: any = await GetExecuteMappingList(type)
+  const list = resp?.data || []
+  busEvent.data.executeTypeListByType[type] = list
+  const dict: any = {}
+  list.forEach((item: any) => {
+    dict[item.value] = item.label
+  })
+  busEvent.data.executeTypeDictByType[type] = dict
+  executeTypeList.value = list
+}
+
+const isRawMappingCode = (text: string) => /^(action|extract|assert)(?:_\d+)+_/.test(text)
+
+const buildZhHint = (value: string) => {
+  const phrase = value.replace(/^(action|extract|assert)(?:_\d+)+_/, '')
+  if (!phrase) return ''
+  const words = phrase.split('_').filter(Boolean)
+  const mapped = words.map((word) => tokenZhMap[word.toLowerCase()] || '')
+  const zhHint = mapped.filter(Boolean).join('')
+  return zhHint
+}
+
+const getMappingLabel = (item: { label?: string; value?: string }) => {
+  const rawLabel = (item.label || '').trim()
+  if (rawLabel) return rawLabel
+  return (item.value || '').trim()
+}
+
+const getMappingKey = (item: { label?: string; value?: string }) => (item.value || '').trim()
+
+const showKeyTip = (item: { label?: string; value?: string }) => {
+  const key = getMappingKey(item)
+  const label = (item.label || '').trim()
+  // 只有当后端没有提供 label，或 label 退化为编码时才显示
+  return !!key && (!label || label === key)
+}
+
 const formData = ref({
   id: undefined,
   status: 1,
@@ -531,7 +622,9 @@ const showAddStepDrawer = () => {
 }
 
 const openFileUploadDialog = () => {
-  bus.emit(busEvent.drawerIsShow, 'uploadFile')
+  // 打开上传文件弹窗：upload.vue 监听 drawerIsShow.eventType === 'uploadFile'
+  // UI 自动化上传文件应落到 ui_case 文件夹
+  bus.emit(busEvent.drawerIsShow, {eventType: 'uploadFile', content: 'ui_case'})
 }
 
 const addData = () => {
@@ -583,5 +676,27 @@ const getDataToCommit = () => {
 <style scoped lang="scss">
 .input-with-select .el-input-group__prepend {
   background-color: var(--el-fill-color-blank);
+}
+
+.mapping-option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.mapping-key-help {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--el-text-color-secondary);
+  border: 1px solid var(--el-border-color);
+  cursor: help;
+  flex-shrink: 0;
 }
 </style>

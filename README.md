@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # N-Tester AI测试平台
 
 <div align="center">
@@ -384,7 +383,7 @@ chmod +x deploy.sh
 #### Windows
 ```bash
 cd backend
-deploy.bat
+./deploy.bat
 ```
 
 ---

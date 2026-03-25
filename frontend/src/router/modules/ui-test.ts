@@ -8,7 +8,7 @@ const route: Route[] = [
     component: Layout,
     redirect: '/ui-test/project',
     hideMenu: false,
-    meta: { title: 'UI自动化', icon: 'bookOpen' },
+    meta: { title: 'WEB自动化', icon: 'bookOpen' },
     children: [
       {
         path: 'project',

@@ -8,7 +8,7 @@ const route: Route[] = [
     component: Layout,
     redirect: '/app-test/project',
     hideMenu: false,
-    meta: { title: 'App自动化', icon: 'android' },
+    meta: { title: 'APP自动化', icon: 'android' },
     children: [
       {
         path: 'device',
@@ -18,7 +18,7 @@ const route: Route[] = [
       {
         path: 'project',
         component: createNameComponent(() => import('@/views/app-test/project/index.vue')),
-        meta: { title: 'App管理', icon: 'android' }
+        meta: { title: 'APP管理', icon: 'android' }
       },
       {
         path: 'page',

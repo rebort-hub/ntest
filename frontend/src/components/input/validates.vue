@@ -246,9 +246,21 @@
             <el-option
                 v-for="(item) in busEvent.data.apiAssertMapping"
                 :key="item.value"
-                :label="item.value"
+                :label="getMappingLabel(item)"
                 :value="item.value"
-            />
+            >
+              <div class="mapping-option-row">
+                <span>{{ getMappingLabel(item) }}</span>
+                <el-tooltip
+                    v-if="showKeyTip(item)"
+                    effect="dark"
+                    placement="right"
+                    :content="`编码：${getMappingKey(item)}`"
+                >
+                  <span class="mapping-key-help">?</span>
+                </el-tooltip>
+              </div>
+            </el-option>
           </el-select>
           <el-select
               v-if="scope.row.validate_type !== 'data'"
@@ -263,9 +275,21 @@
             <el-option
                 v-for="(item) in busEvent.data.uiAssertMapping"
                 :key="item.value"
-                :label="item.value"
+                :label="getMappingLabel(item)"
                 :value="item.value"
-            />
+            >
+              <div class="mapping-option-row">
+                <span>{{ getMappingLabel(item) }}</span>
+                <el-tooltip
+                    v-if="showKeyTip(item)"
+                    effect="dark"
+                    placement="right"
+                    :content="`编码：${getMappingKey(item)}`"
+                >
+                  <span class="mapping-key-help">?</span>
+                </el-tooltip>
+              </div>
+            </el-option>
           </el-select>
         </template>
       </el-table-column>
@@ -279,7 +303,7 @@
             <el-select
                 v-model="scope.row.data_type"
                 placeholder="选择预期结果数据类型"
-                :disabled="disabledAssertType.indexOf(scope.row.validate_method) !== -1"
+                :disabled="disabledAssertType.indexOf(getAssertLabelByValue(scope.row.validate_method)) !== -1"
                 style="width: 100%"
                 filterable
                 clearable
@@ -300,11 +324,11 @@
                 v-model="scope.row.value"
                 size="small"
                 type="textarea"
-                :disabled="assertOne.indexOf(scope.row.validate_method) !== -1 || scope.row.disabled"
+                :disabled="assertOne.indexOf(getAssertLabelByValue(scope.row.validate_method)) !== -1 || scope.row.disabled"
                 :rows="scope.row.value ? 2 : 1"
                 :placeholder="
-                assertBatch.indexOf(scope.row.validate_method) !== -1 ? `请填写具体字段，如: ['key1', 'key2']` :
-                scope.row.validate_method === '契约校验' ?
+                assertBatch.indexOf(getAssertLabelByValue(scope.row.validate_method)) !== -1 ? `请填写具体字段，如: ['key1', 'key2']` :
+                getAssertLabelByValue(scope.row.validate_method) === '契约校验' ?
                   '详见：https://pypi.org/project/pactverify/，注：契约校验标识符改用@':
                   '预期结果'
               "
@@ -484,9 +508,57 @@ const disabledAssertType = [
   '批量判断字段值均为false', '批量判断字段值均不为false',
   '批量判断字段值均为null', '批量判断字段值均不为null'
 ]
+
+// validate_method 可能是“中文断言描述”（历史数据/UI）也可能是“函数key”（APP 新映射）
+// 这里把二者统一映射为中文描述，用于 disabled/placeholder/自动填充逻辑。
+const getAssertLabelByValue = (value: string) => {
+  if (!value) return value
+  const hit = busEvent.data.uiAssertMapping?.find((item: any) => item.value === value) || null
+  return hit?.label || value
+}
 const validateDataTableRef = ref(null)
 const oldIndex = ref(); // 当前拖拽项的索引
 const dragRow = ref();   // 当前拖拽的行数据
+const tokenZhMap: Record<string, string> = {
+  str: '字符串',
+  int: '整数',
+  value: '值',
+  element: '元素',
+  selected: '选中',
+  equal: '等于',
+  larger: '大于',
+  smaller: '小于',
+  true: '真',
+  false: '假',
+  null: '空',
+  contain: '包含',
+  not: '不',
+  be: '为'
+}
+
+const isRawMappingCode = (text: string) => /^(action|extract|assert)(?:_\d+)+_/.test(text)
+
+const buildZhHint = (value: string) => {
+  const phrase = value.replace(/^(action|extract|assert)(?:_\d+)+_/, '')
+  if (!phrase) return ''
+  const words = phrase.split('_').filter(Boolean)
+  const mapped = words.map((word) => tokenZhMap[word.toLowerCase()] || '')
+  return mapped.filter(Boolean).join('')
+}
+
+const getMappingLabel = (item: { label?: string; value?: string }) => {
+  const rawLabel = (item.label || '').trim()
+  if (rawLabel) return rawLabel
+  return (item.value || '').trim()
+}
+
+const getMappingKey = (item: { label?: string; value?: string }) => (item.value || '').trim()
+
+const showKeyTip = (item: { label?: string; value?: string }) => {
+  const key = getMappingKey(item)
+  const label = (item.label || '').trim()
+  return !!key && (!label || label === key)
+}
 
 const showAddValidator = ref(false);
 const addValidatorLabel = ref('');
@@ -545,31 +617,32 @@ const selectValidateType = (data: { validate_type: string; }, row: any) => {
 }
 
 const selectValidateMethod = (data: string | string[], row: any) => {
-  if (['值为真', '值为true'].indexOf(data) !== -1) {
+  const methodLabel = typeof data === 'string' ? getAssertLabelByValue(data) : data
+  if (['值为真', '值为true'].indexOf(methodLabel as string) !== -1) {
     row.data_type = 'str'
     row.value = 'True'
     return true
-  } else if (['值为假', '值为false'].indexOf(data) !== -1) {
+  } else if (['值为假', '值为false'].indexOf(methodLabel as string) !== -1) {
     row.data_type = 'str'
     row.value = 'False'
     return true
-  } else if (data === '值为null') {
+  } else if (methodLabel === '值为null') {
     row.data_type = 'str'
     row.value = 'null'
     return true
-  } else if (data === '值不为null') {
+  } else if (methodLabel === '值不为null') {
     row.data_type = 'str'
     row.value = 'not null'
     return true
-  } else if (data === '值不为true') {
+  } else if (methodLabel === '值不为true') {
     row.data_type = 'str'
     row.value = 'not true'
     return true
-  } else if (data === '值不为false') {
+  } else if (methodLabel === '值不为false') {
     row.data_type = 'str'
     row.value = 'not false'
     return true
-  } else if (data.indexOf('批量') !== -1) {
+  } else if ((methodLabel as string).indexOf('批量') !== -1) {
     row.data_type = 'list'
     row.value = '["key1", "key2"]'
     return true
@@ -704,5 +777,26 @@ defineExpose({
 </script>
 
 <style scoped>
+.mapping-option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.mapping-key-help {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--el-text-color-secondary);
+  border: 1px solid var(--el-border-color);
+  cursor: help;
+  flex-shrink: 0;
+}
 
 </style>

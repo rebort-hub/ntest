@@ -1,14 +1,10 @@
 <template>
-  <div class="layout-container">
+  <div class="layout-container autotest-module-shell">
 
     <div class="layout-container-form flex space-between">
-      <div class="layout-container-form-handle">
-        <el-button type="primary" @click="showEditDrawer('add', undefined)"> 新增脚本</el-button>
-      </div>
-
       <div class="layout-container-form-search">
         <el-select
-            style="margin-right: 10px; width: 100%"
+            style="margin-right: 10px; width: 200px"
             v-model="queryItems.script_type"
             placeholder="选择脚本类型"
             filterable
@@ -20,7 +16,7 @@
         </el-select>
 
         <el-input
-            style="margin-right: 10px"
+            style="margin-right: 10px; width: 200px"
             v-model="queryItems.file_name"
             class="input-with-select"
             placeholder="脚本名，支持模糊搜索"
@@ -29,7 +25,7 @@
         />
 
         <el-select
-            style="margin-right: 10px; width: 100%"
+            style="margin-right: 10px; width: 200px"
             v-model="queryItems.create_user"
             :placeholder="'选择创建人'"
             filterable
@@ -43,17 +39,25 @@
 
         <el-button type="primary" @click="getTableDataList()"> 搜索</el-button>
       </div>
+
+      <div class="layout-container-form-handle">
+        <el-button type="primary" @click="showEditDrawer('add', undefined)"> 新增脚本</el-button>
+      </div>
     </div>
 
-    <div style="margin: 10px">
+    <div class="autotest-module-table-wrap script-table-page">
+      <div class="script-table-panel">
       <el-table
           v-loading="tableIsLoading"
+          class="script-service-table"
           row-key="id"
           element-loading-text="正在获取数据"
           element-loading-spinner="el-icon-loading"
           :data="tableDataList"
           style="width: 100%"
           stripe
+          border
+          size="small"
           :height="tableHeight"
           @cell-dblclick="cellDblclick">
 
@@ -119,27 +123,39 @@
           </template>
         </el-table-column>
 
-        <el-table-column show-overflow-tooltip align="center" label="操作" width="180">
+        <el-table-column show-overflow-tooltip align="center" label="操作" width="260">
           <template #default="scope">
-            <el-button type="text" size="small" style="margin: 0; padding: 2px" @click.native="showEditDrawer('edit', scope.row)">修改</el-button>
-            <el-button type="text" size="small" style="margin: 0; padding: 2px" @click.native="showEditDrawer('copy', scope.row)">复制</el-button>
-            <el-button type="text" size="small" v-show="scope.row.script_type == 'mock'" style="margin: 0; padding: 2px" @click.native="showRecordDrawer(scope.row.name)">调用记录</el-button>
-            <el-popconfirm :title="`确定删除【${ scope.row.name }】?`" @confirm="deleteData(scope.row)">
-              <template #reference>
-                <el-button style="margin: 0; padding: 2px; color: red" type="text" size="small">删除</el-button>
-              </template>
-            </el-popconfirm>
+            <div class="action-buttons">
+              <el-button class="action-btn edit-btn" type="warning" size="small" @click="showEditDrawer('edit', scope.row)">修改</el-button>
+              <el-button class="action-btn copy-btn" type="success" size="small" @click="showEditDrawer('copy', scope.row)">复制</el-button>
+              <el-button
+                  v-show="scope.row.script_type == 'mock'"
+                  class="action-btn record-btn"
+                  type="primary"
+                  size="small"
+                  @click="showRecordDrawer(scope.row.name)"
+              >
+                调用记录
+              </el-button>
+              <el-popconfirm :title="`确定删除【${ scope.row.name }】?`" @confirm="deleteData(scope.row)">
+                <template #reference>
+                  <el-button class="action-btn delete-btn" type="danger" size="small">删除</el-button>
+                </template>
+              </el-popconfirm>
+            </div>
           </template>
         </el-table-column>
       </el-table>
-
-      <pagination
-          v-show="tableDataTotal > 0"
-          :pageNum="queryItems.page_no"
-          :pageSize="queryItems.page_size"
-          :total="tableDataTotal"
-          @pageFunc="changePagination"
-      />
+      <div class="script-table-pagination">
+        <pagination
+            v-show="tableDataTotal > 0"
+            :pageNum="queryItems.page_no"
+            :pageSize="queryItems.page_size"
+            :total="tableDataTotal"
+            @pageFunc="changePagination"
+        />
+      </div>
+      </div>
     </div>
 
     <EditDrawer :script-type-dict="scriptTypeDict"></EditDrawer>
@@ -312,5 +328,75 @@ const drawerIsCommit = (message: any) => {
 </script>
 
 <style scoped lang="scss">
+.layout-container > .layout-container-form {
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+}
 
+.layout-container.autotest-module-shell > .autotest-module-table-wrap.script-table-page {
+  padding: 12px 15px 16px;
+}
+
+.script-table-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin-top: 8px;
+}
+
+.script-table-panel {
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.script-table-pagination {
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--el-border-color-lighter, var(--system-page-border-color, #ebeef5));
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  background: transparent;
+}
+
+.script-service-table {
+  :deep(.el-table__header-wrapper th.el-table__cell) {
+    background: var(--el-fill-color-light) !important;
+    color: var(--el-text-color-primary);
+    font-weight: 600;
+    font-size: 12px;
+    padding: 5px 0 !important;
+  }
+
+  :deep(.el-table__body .el-table__cell) {
+    padding: 4px 0 !important;
+  }
+
+  :deep(.el-table .cell) {
+    line-height: 1.35;
+    padding-left: 8px;
+    padding-right: 8px;
+    font-size: 12px;
+  }
+}
+
+.action-buttons {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+
+  .action-btn {
+    min-width: 36px;
+    height: 24px;
+    padding: 2px 6px;
+    font-size: 12px;
+    border-radius: 4px;
+    font-weight: 500;
+    margin: 0;
+    border: 1px solid;
+    transition: all 0.2s ease;
+  }
+}
 </style>

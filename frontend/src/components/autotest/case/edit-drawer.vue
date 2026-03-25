@@ -213,13 +213,19 @@ onMounted(() => {
     getFindElementOption(props.testType)
     // getExtractMappingList(props.testType)
 
-    if (busEvent.data.executeTypeList.length < 1){
+    const execCache = busEvent.data.executeTypeListByType?.[props.testType] || []
+    if (execCache.length < 1){
       GetExecuteMappingList(props.testType).then(response => {
-        busEvent.data.executeTypeList = response.data
-        busEvent.data.executeTypeDict = {}
-        busEvent.data.executeTypeList.forEach(item => {
-          busEvent.data.executeTypeDict[item.value] = item.label
+        busEvent.data.executeTypeListByType[props.testType] = response.data
+        const dict: any = {}
+        response.data.forEach((item: any) => {
+          dict[item.value] = item.label
         })
+        busEvent.data.executeTypeDictByType[props.testType] = dict
+
+        // 兼容旧字段（保持为当前 testType 的数据）
+        busEvent.data.executeTypeList = response.data
+        busEvent.data.executeTypeDict = dict
       })
     }
 

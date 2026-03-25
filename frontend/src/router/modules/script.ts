@@ -13,7 +13,7 @@ const route: Route[] = [
       {
         path: 'python',
         component: createNameComponent(() => import('@/views/assist/script/index.vue')),
-        meta: { title: '脚本管理中心', icon: 'code' }
+        meta: { title: '脚本管理', icon: 'code' }
       }
     ]
   }

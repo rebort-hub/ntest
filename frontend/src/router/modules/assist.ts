@@ -8,7 +8,7 @@ const route: Route[] = [
     component: Layout,
     redirect: '/assist/hit',
     hideMenu: false,
-    meta: { title: '自动化辅助中心', icon: 'branchTwo' },
+    meta: { title: '辅助管理', icon: 'branchTwo' },
     children: [
       {
         path: 'call-back',

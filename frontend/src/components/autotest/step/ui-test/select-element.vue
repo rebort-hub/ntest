@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <el-form label-width="60px">
 
@@ -92,7 +92,7 @@
 
         <el-table-column align="center" label="操作" min-width="10%">
           <template #default="scope">
-            <el-button type="primary" size="small" @click.native="elementToStep(scope.row)">转步骤</el-button>
+            <el-button type="primary" size="small" @click="elementToStep(scope.row)">转步骤</el-button>
           </template>
         </el-table-column>
       </el-table>

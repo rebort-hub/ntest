@@ -330,9 +330,21 @@
               <el-option
                   v-for="(item) in busEvent.data.uiExtractMappingList"
                   :key="item.value"
-                  :label="item.label"
+                  :label="getMappingLabel(item)"
                   :value="item.value"
-              />
+              >
+                <div class="mapping-option-row">
+                  <span>{{ getMappingLabel(item) }}</span>
+                  <el-tooltip
+                      v-if="showKeyTip(item)"
+                      effect="dark"
+                      placement="right"
+                      :content="`编码：${getMappingKey(item)}`"
+                  >
+                    <span class="mapping-key-help">?</span>
+                  </el-tooltip>
+                </div>
+              </el-option>
             </el-select>
           </el-row>
         </template>
@@ -476,6 +488,44 @@ const extractDataTableRef = ref(null)
 const oldIndex = ref(); // 当前拖拽项的索引
 const dragRow = ref();   // 当前拖拽的行数据
 const newList = ref([])
+const tokenZhMap: Record<string, string> = {
+  text: '文本',
+  value: '值',
+  title: '标题',
+  cookie: 'Cookie',
+  local: '本地',
+  session: '会话',
+  storage: '存储',
+  attribute: '属性',
+  input: '输入框',
+  const: '常量',
+  func: '函数',
+  variable: '变量'
+}
+
+const isRawMappingCode = (text: string) => /^(action|extract|assert)(?:_\d+)+_/.test(text)
+
+const buildZhHint = (value: string) => {
+  const phrase = value.replace(/^(action|extract|assert)(?:_\d+)+_/, '')
+  if (!phrase) return ''
+  const words = phrase.split('_').filter(Boolean)
+  const mapped = words.map((word) => tokenZhMap[word.toLowerCase()] || '')
+  return mapped.filter(Boolean).join('')
+}
+
+const getMappingLabel = (item: { label?: string; value?: string }) => {
+  const rawLabel = (item.label || '').trim()
+  if (rawLabel) return rawLabel
+  return (item.value || '').trim()
+}
+
+const getMappingKey = (item: { label?: string; value?: string }) => (item.value || '').trim()
+
+const showKeyTip = (item: { label?: string; value?: string }) => {
+  const key = getMappingKey(item)
+  const label = (item.label || '').trim()
+  return !!key && (!label || label === key)
+}
 
 const initTempData = (data: string | any[] | undefined) => {
   if (data && data.length > 0) { // 有数据
@@ -601,5 +651,26 @@ defineExpose({
 </script>
 
 <style scoped>
+.mapping-option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.mapping-key-help {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--el-text-color-secondary);
+  border: 1px solid var(--el-border-color);
+  cursor: help;
+  flex-shrink: 0;
+}
 
 </style>

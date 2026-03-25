@@ -3,7 +3,14 @@ from selenium.webdriver.common.keys import Keys
 
 from ...models.autotest.model_factory import ApiCase, ApiStep, AppCase, AppStep, UiCase, UiStep
 from ...schemas.autotest import step as schema
-from app.configs.config import ui_action_mapping_list, ui_assert_mapping_list, ui_extract_mapping_list
+from app.configs.config import (
+    ui_action_mapping_list,
+    ui_assert_mapping_list,
+    ui_extract_mapping_list,
+    app_action_mapping_list,
+    app_assert_mapping_list,
+    app_extract_mapping_list,
+)
 
 async def get_step_list(request: Request, form: schema.GetStepListForm = Depends()):
     case_model, step_model = ApiCase, ApiStep
@@ -18,12 +25,18 @@ async def get_step_list(request: Request, form: schema.GetStepListForm = Depends
 
 
 def get_step_execute_mapping(request: Request):
+    if request.app.test_type == "app":
+        return request.app.get_success(app_action_mapping_list)
     return request.app.get_success(ui_action_mapping_list)
 
 def get_step_extract_mapping(request: Request):
+    if request.app.test_type == "app":
+        return request.app.get_success(app_extract_mapping_list)
     return request.app.get_success(ui_extract_mapping_list)
 
 def get_step_assert_mapping(request: Request):
+    if request.app.test_type == "app":
+        return request.app.get_success(app_assert_mapping_list)
     return request.app.get_success(ui_assert_mapping_list)
 
 def get_step_key_board_code(request: Request):

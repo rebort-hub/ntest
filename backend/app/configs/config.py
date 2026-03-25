@@ -66,6 +66,20 @@ app_action_mapping = Actions.get_action_mapping()
 app_action_mapping_dict, app_action_mapping_list = app_action_mapping["mapping_dict"], app_action_mapping["mapping_list"]
 app_action_mapping_reverse = dict(zip(app_action_mapping_dict.values(), app_action_mapping_dict.keys()))
 
+# APP自动化的数据提取事件
+app_extract_mapping = Actions.get_extract_mapping()
+app_extract_mapping_dict, app_extract_mapping_list = app_extract_mapping["mapping_dict"], app_extract_mapping["mapping_list"]
+app_extract_mapping.setdefault("自定义函数", "func")
+app_extract_mapping_list.extend([
+    {"label": "常量", "value": "const"},
+    {"label": "自定义变量", "value": "variable"},
+    {"label": "自定义函数", "value": "func"},
+])
+
+# APP自动化的断言事件
+app_assert_mapping = Actions.get_assert_mapping()
+app_assert_mapping_dict, app_assert_mapping_list = app_assert_mapping["mapping_dict"], app_assert_mapping["mapping_list"]
+
 # 跳过条件判断类型映射
 skip_if_type_mapping = [
     {"label": "且", "value": "and"},

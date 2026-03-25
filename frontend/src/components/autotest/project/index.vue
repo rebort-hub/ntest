@@ -2,10 +2,6 @@
   <div class="layout-container autotest-module-shell">
 
     <div class="layout-container-form flex space-between">
-      <div class="layout-container-form-handle">
-        <el-button type="primary" @click="showEditDrawer(undefined, 'project')"> 添加 </el-button>
-      </div>
-
       <div class="layout-container-form-search">
         <el-input
             v-model="queryItems.name"
@@ -46,6 +42,10 @@
         </el-select>
 
         <el-button type="primary" @click="getTableDataList"> 搜索</el-button>
+      </div>
+
+      <div class="layout-container-form-handle">
+        <el-button type="primary" @click="showEditDrawer(undefined, 'project')"> 添加 </el-button>
       </div>
     </div>
 

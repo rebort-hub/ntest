@@ -9,7 +9,6 @@ import subprocess
 from functools import partial
 from unittest.case import SkipTest
 from concurrent.futures import ThreadPoolExecutor
-
 from appium import webdriver as appium_webdriver
 from appium.webdriver.common.touch_action import TouchAction
 from appium.webdriver.mobilecommand import MobileCommand
@@ -20,7 +19,6 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
-
 from .utils import get_dict_data
 
 
@@ -33,6 +31,35 @@ class Actions:
     def __init__(self, driver):
         self.driver = driver
         self.wait_time_out = 5  # 默认超时的时间设置
+
+    # APP 端业务化中文文案（优先级最高）
+    DISPLAY_LABEL_OVERRIDES = {
+        "action_01_02_click_if_has_element": "元素存在时点击（不存在则跳过）",
+        "action_01_05_click_alert_dismiss": "按坐标点击（APP）",
+        "action_03_01_select_all": "全选下拉项",
+        "action_03_02_deselect_all": "取消全选下拉项",
+        "action_03_06_deselect_by_index_is_input": "下拉取消选择（按索引）",
+        "action_03_07_select_first": "下拉选择首项",
+        "action_04_03_move_by_offset_is_input": "按偏移量滑动",
+        "action_04_04_app_scroll_coordinate_is_input1": "按百分比坐标滑动",
+        "action_04_05_app_scroll_coordinate_is_input2": "按绝对坐标滑动",
+        "action_04_06_app_scroll_coordinate_end": "向下滑动到页面底部",
+        "action_04_07_app_scroll_coordinate_end": "向上滑动到页面顶部",
+        "action_04_08_app_scroll_coordinate_end_is_input": "按次数向下滑动",
+        "action_04_09_app_scroll_coordinate_end": "向左滑动",
+        "action_04_10_app_scroll_coordinate_end_is_input": "按次数向左滑动",
+        "action_04_07_move_to_element": "滑动到指定元素",
+        "action_05_04_switch_iframe": "切换到 iframe",
+        "action_05_05_switch_to_h5": "切换到 H5 上下文",
+        "action_05_06_switch_to_app": "切换到 APP 上下文",
+        "action_09_01_app_upload_file_is_upload": "APP 上传文件（push）",
+        "action_09_02_upload_file_by_input_is_upload": "输入框上传文件",
+        "action_09_03_upload_file_by_perform_is_upload": "文件选择器上传文件",
+        "action_11_03_reboot_app": "重启 APP",
+        "action_11_03_01_close_app": "关闭 APP",
+        "action_11_03_02_quit": "退出驱动会话",
+        "action_11_04_reboot_device": "重启设备",
+    }
 
     @property
     def width(self):
@@ -49,14 +76,42 @@ class Actions:
         return size_height
 
     @classmethod
+    def _build_fallback_label(cls, func_name: str, startswith: str) -> str:
+        import re
+
+        token_map = {
+            "click": "点击", "clear": "清空", "send": "输入", "keys": "按键", "keyboard": "键盘",
+            "input": "输入框", "text": "文本", "value": "值", "title": "标题", "cookie": "Cookie",
+            "local": "本地", "session": "会话", "storage": "存储", "attribute": "属性", "exist": "存在",
+            "selected": "选中", "equal": "等于", "larger": "大于", "smaller": "小于", "contain": "包含",
+            "not": "不", "be": "为", "alert": "弹窗", "accept": "确认", "dismiss": "取消",
+            "coordinate": "坐标", "scroll": "滑动", "window": "窗口", "switch": "切换", "iframe": "框架",
+            "upload": "上传", "file": "文件", "sleep": "等待", "nothing": "空操作", "reboot": "重启",
+            "device": "设备", "app": "APP", "h5": "H5", "js": "JS", "execute": "执行",
+        }
+        phrase = re.sub(rf"^{startswith}(?:\d+_)+", "", func_name)
+        words = [word for word in phrase.split("_") if word]
+        zh = "".join(token_map.get(word.lower(), "") for word in words)
+        return zh or func_name
+
+    @classmethod
     def get_class_property(cls, startswith: str, *args, **kwargs):
         """ 获取类属性，startswith：方法的开头 """
         mapping_dict, mapping_list = {}, []
         for func_name in dir(cls):
             if func_name.startswith(startswith):
-                doc = getattr(cls, func_name).__doc__.strip().split('，')[0]  # 函数注释
+                func = getattr(cls, func_name)
+                raw_doc = getattr(func, "__doc__", None)
+                doc = cls.DISPLAY_LABEL_OVERRIDES.get(func_name) or (
+                    raw_doc.strip().split('，')[0] if raw_doc else cls._build_fallback_label(func_name, startswith)
+                )
                 mapping_dict.setdefault(doc, func_name)
-                mapping_list.append({'value': doc} if startswith == 'assert_' else {'label': doc, 'value': func_name})
+                mapping_dict.setdefault(func_name, func_name)
+                if startswith == 'assert_':
+                    # validate_method 最终用于执行器：需要函数key（assert_xxx）
+                    mapping_list.append({'label': doc, 'value': func_name})
+                else:
+                    mapping_list.append({'label': doc, 'value': func_name})
         return {"mapping_dict": mapping_dict, "mapping_list": mapping_list}
 
     @classmethod

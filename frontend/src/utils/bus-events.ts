@@ -18,8 +18,10 @@ const busEvent = {
         skipIfTypeMappingList: [], // 跳过类型枚举
         caseSkipIfDataSourceMapping: [], // 跳过数据源枚举 - 用例
         runEnvList: [], // 运行环境
-        executeTypeList: [], // ui测试动作执行方式
-        executeTypeDict: {}, // ui自动化执行类型
+        executeTypeList: [], // 兼容旧逻辑（不再推荐使用）
+        executeTypeDict: {}, // 兼容旧逻辑（不再推荐使用）
+        executeTypeListByType: { ui: [], app: [] }, // 按测试类型缓存执行方式
+        executeTypeDictByType: { ui: {}, app: {} }, // 按测试类型缓存执行方式字典
         uiExtractMappingList: [], // ui自动化数据提取方法映射
         findElementOptionList: [], // ui自动化的定位方式
         findElementOptionDict: {}, // ui自动化的定位方式

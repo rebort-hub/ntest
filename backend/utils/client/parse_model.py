@@ -141,7 +141,15 @@ class FormatModel(JsonUtil):
                 else:  # 页面校验
                     if data_source and validate_method and data_type and value:
                         # 根据执行方法文字描述替换成具体的执行方法
-                        validate["validate_method"] = ui_assert_mapping_dict[validate_method]
+                        if validate_method in ui_assert_mapping_dict:
+                            # validate_method 为“中文断言描述”时：映射到实际 assert_ 方法key
+                            validate["validate_method"] = ui_assert_mapping_dict[validate_method]
+                        elif isinstance(validate_method, str) and validate_method.startswith("assert_"):
+                            # validate_method 为“函数key（assert_xxx）”时：保持不变
+                            validate["validate_method"] = validate_method
+                        else:
+                            # 兜底：尽量不让解析直接崩溃，交给后续执行器报更明确的错误
+                            validate["validate_method"] = ui_assert_mapping_dict.get(validate_method, validate_method)
                         parsed_validate.append(validate)
 
         return parsed_validate

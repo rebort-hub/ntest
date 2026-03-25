@@ -13,7 +13,7 @@ const route: Route[] = [
       {
         path: 'project',
         component: createNameComponent(() => import('@/views/api-test/project/index.vue')),
-        meta: { title: '接口服务管理', icon: 'folderOpen' }
+        meta: { title: '接口项目', icon: 'folderOpen' }
       },
       {
         path: 'api',
@@ -23,7 +23,7 @@ const route: Route[] = [
       {
         path: 'case',
         component: createNameComponent(() => import('@/views/api-test/case-suite/index.vue')),
-        meta: { title: '用例管理', icon: 'cubeFive' }
+        meta: { title: '接口用例', icon: 'cubeFive' }
       },
       {
         path: 'task',
