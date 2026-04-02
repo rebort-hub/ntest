@@ -145,10 +145,10 @@
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" width="180" />
-        <el-table-column label="操作" width="350" fixed="right">
+        <el-table-column label="操作" width="420" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="viewDetail(row)">查看详情</el-button>
-            <el-button size="small" type="info" @click="viewExplorationSteps(row)">探索过程</el-button>
+            <el-button size="small" type="info" @click="viewExplorationSteps(row)">查看探索过程</el-button>
             <el-button size="small" type="primary" @click="generateCode(row)">生成代码</el-button>
             <el-button size="small" type="danger" @click="deletePlan(row)">删除</el-button>
           </template>
@@ -421,6 +421,84 @@ const updateStepStatus = (
   }
 }
 
+const normalizeStatus = (status?: string) => {
+  if (!status) return ''
+  const value = String(status).trim().toLowerCase()
+  if (value === 'success') return 'completed'
+  if (value === 'error') return 'failed'
+  if (value === 'running' || value === 'in_progress' || value === 'processing') return 'exploring'
+  return value
+}
+
+const mapActionToStepIndex = (action = '', stepNumber = 1) => {
+  const actionText = action.toLowerCase()
+  // 注意：progressSteps 为 8 个条目（索引 0..7）
+  // - 0: 准备探索
+  // - 1: 增强导航
+  // - 2: 页面快照
+  // - 3: 页面截图
+  // - 4: 网络分析
+  // - 5: 日志检查
+  // - 6: 历史记录
+  // - 7: AI 分析/完成
+  if (actionText.includes('navigate') || actionText.includes('导航')) return 1
+  if (actionText.includes('snapshot') || actionText.includes('快照')) return 2
+  if (actionText.includes('screenshot') || actionText.includes('截图')) return 3
+  if (actionText.includes('network') || actionText.includes('网络')) return 4
+  if (actionText.includes('console') || actionText.includes('日志')) return 5
+  if (actionText.includes('history') || actionText.includes('历史')) return 6
+  if (actionText.includes('ai') || actionText.includes('llm') || actionText.includes('分析')) return 7
+  // 兜底：用 step_number 映射（step_number 通常从 1 开始）
+  return Math.min(Math.max(Number(stepNumber) || 1, 1), 7)
+}
+
+const hydrateProgressFromExplorationSteps = (steps: any[]) => {
+  if (!Array.isArray(steps) || !steps.length) return
+
+  initializeProgressSteps()
+  explorationStatus.value = 'exploring'
+  let maxDoneStep = 0
+  let hasError = false
+
+  for (const rawStep of steps) {
+    const stepIndex = mapActionToStepIndex(rawStep?.action, Number(rawStep?.step_number || 1))
+    const status = normalizeStatus(rawStep?.status)
+    const uiStatus: 'wait' | 'process' | 'success' | 'error' =
+      status === 'failed' ? 'error' : status === 'completed' ? 'success' : 'process'
+
+    updateStepStatus(
+      stepIndex,
+      uiStatus,
+      rawStep?.description || progressSteps.value[stepIndex]?.description,
+      typeof rawStep?.duration === 'number' ? rawStep.duration : undefined,
+      rawStep?.elements_found
+        ? {
+            链接: rawStep.elements_found.links || 0,
+            按钮: rawStep.elements_found.buttons || 0,
+            输入框: rawStep.elements_found.inputs || 0
+          }
+        : undefined,
+      rawStep?.error_message
+    )
+
+    maxDoneStep = Math.max(maxDoneStep, stepIndex)
+    if (uiStatus === 'error') {
+      hasError = true
+    }
+  }
+
+  if (hasError) {
+    explorationStatus.value = 'failed'
+  } else {
+    updateStepStatus(7, 'success', '探索完成！')
+    currentStep.value = 7
+    explorationStatus.value = 'completed'
+  }
+
+  // active 索引从 0 开始，步骤线索引从 1 开始
+  currentStep.value = Math.min(Math.max(maxDoneStep, 0), 7)
+}
+
 const loadLLMConfigs = async () => {
   try {
     console.log('开始加载LLM配置...')
@@ -550,6 +628,18 @@ const startExplore = async () => {
       
       explorationStatus.value = 'completed'
       
+      // 新架构补齐：探索完成后自动拉取后端真实“探索步骤线”
+      if (plan.id) {
+        try {
+          const stepRes = await getExplorationSteps(plan.id)
+          if (stepRes.status === 200 && stepRes.data?.steps?.length) {
+            hydrateProgressFromExplorationSteps(stepRes.data.steps)
+          }
+        } catch (e) {
+          console.warn('加载探索步骤线失败，保留前端默认步骤线', e)
+        }
+      }
+      
       planForm.value.url = ''
       planForm.value.requirements = ''
       loadPlans()
@@ -606,6 +696,9 @@ const viewExplorationSteps = async (row: any) => {
     if (res.status === 200 && res.data) {
       explorationSteps.value = res.data.steps || []
       explorationVisible.value = true
+      if (explorationSteps.value.length) {
+        hydrateProgressFromExplorationSteps(explorationSteps.value)
+      }
       
       if (explorationSteps.value.length === 0) {
         ElMessage.warning('该计划暂无探索步骤记录')
@@ -644,23 +737,25 @@ const deletePlan = async (row: any) => {
 }
 
 const getStatusType = (status: string) => {
+  const normalized = normalizeStatus(status)
   const map: any = {
     pending: 'info',
     exploring: 'warning',
     completed: 'success',
     failed: 'danger'
   }
-  return map[status] || 'info'
+  return map[normalized] || 'info'
 }
 
 const getStatusText = (status: string) => {
+  const normalized = normalizeStatus(status)
   const map: any = {
     pending: '待处理',
     exploring: '探索中',
     completed: '已完成',
     failed: '失败'
   }
-  return map[status] || status
+  return map[normalized] || '未知状态'
 }
 
 const getPriorityText = (priority: string) => {

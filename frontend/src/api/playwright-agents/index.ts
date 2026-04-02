@@ -7,7 +7,9 @@ import request from '@/utils/system/request'
  */
 export const exploreAndPlan = (data: {
   url: string
+  requirements?: string
   llm_config_id?: number
+  mcp_config_id?: number
   max_depth?: number
   timeout?: number
 }) => {
