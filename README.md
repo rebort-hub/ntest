@@ -31,6 +31,7 @@
 ---
 
 新架构版本：https://github.com/rebort-hub/N-Tester
+AI智能体平台：https://github.com/rebort-hub/JNStack
 
 ## 📖 项目介绍
 
