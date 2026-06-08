@@ -29,7 +29,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # 创建必要目录
-RUN mkdir -p logs pids browser_drivers uploads
+RUN mkdir -p var/logs var/pids var/uploads
 
 # 复制并设置启动脚本权限
 COPY docker-entrypoint.sh /usr/local/bin/

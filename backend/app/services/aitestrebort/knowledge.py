@@ -16,6 +16,7 @@ from app.models.aitestrebort.knowledge import (
     aitestrebortKnowledgeConfig
 )
 from app.services.aitestrebort.knowledge_rag import KnowledgeRAGService
+from utils.util.file_util import uploads_path, ensure_dir
 
 
 # 知识库管理
@@ -399,8 +400,8 @@ async def upload_document(
         # 处理文件上传
         if file:
             # 创建上传目录
-            upload_dir = Path(f"uploads/knowledge_bases/{kb_id}/documents")
-            upload_dir.mkdir(parents=True, exist_ok=True)
+            upload_dir = Path(uploads_path("knowledge_bases", str(kb_id), "documents"))
+            ensure_dir(str(upload_dir))
             
             # 保存文件
             file_path = upload_dir / file.filename

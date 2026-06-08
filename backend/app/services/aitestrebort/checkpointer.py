@@ -13,10 +13,12 @@ import sqlite3
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.checkpoint.sqlite import SqliteSaver
 
+from app.configs.config import DATA_DIR
+
 logger = logging.getLogger(__name__)
 
-# 默认的checkpointer数据库路径
-DEFAULT_CHECKPOINT_DB = "chat_history.sqlite"
+# 默认的 checkpointer 数据库路径（位于 var/ 下）
+DEFAULT_CHECKPOINT_DB = str(DATA_DIR / "chat_history.sqlite")
 
 
 def get_checkpoint_db_path() -> str:
@@ -29,10 +31,10 @@ def get_checkpoint_db_path() -> str:
     """
     # 从环境变量获取
     db_path = os.getenv("CHECKPOINT_DB_PATH", DEFAULT_CHECKPOINT_DB)
-    
-    # 确保目录存在
+
     db_file = Path(db_path)
-    db_file.parent.mkdir(parents=True, exist_ok=True)
+    if db_file.parent != Path("."):
+        db_file.parent.mkdir(parents=True, exist_ok=True)
     
     logger.info(f"Using checkpoint database: {db_path}")
     return db_path

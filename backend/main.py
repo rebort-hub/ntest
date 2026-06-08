@@ -1,4 +1,3 @@
-from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.docs import get_swagger_ui_html
 
@@ -6,7 +5,7 @@ from app.routers.base_view import FastAPI
 from app.hooks.error_hook import register_exception_handler
 from app.hooks.request_hook import register_request_hook
 from app.hooks.app_hook import register_app_hook
-from app.configs.config import main_server_port
+from app.configs.config import main_server_port, BACKEND_ROOT
 
 app = FastAPI(
     openapi_version="3.0.0",
@@ -19,9 +18,8 @@ app = FastAPI(
 app.title = "主程序服务"
 
 # 使用绝对路径挂载静态文件目录
-BASE_DIR = Path(__file__).resolve().parent
-STATIC_DIR = BASE_DIR / "static"
-STATIC_DIR.mkdir(exist_ok=True)  # 确保目录存在
+STATIC_DIR = BACKEND_ROOT / "static"
+STATIC_DIR.mkdir(exist_ok=True)
 app.mount('/static', StaticFiles(directory=str(STATIC_DIR)))
 
 # 注册钩子函数

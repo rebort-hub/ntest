@@ -17,6 +17,19 @@
 
 ---
 
+### 在线体验
+
+🌐 **体验地址**: http://106.54.166.76/login
+
+```
+用户名: admin
+密码: 123456
+```
+
+> ⚠️ 注意：请勿修改密码，这是共享的演示账号
+
+---
+
 ## 📖 项目介绍
 
 N-Tester 是一款**AI驱动的智能化测试管理平台**，采用前后端分离架构，融合 Python FastAPI 后端框架和 Vue3 前端框架，提供一站式开箱即用的测试解决方案。
@@ -337,18 +350,6 @@ AI服务层
 - **数据库**: MySQL 8.0+ 或 PostgreSQL 13+
 - **向量数据库**: Qdrant (可选)
 
-### 在线体验
-
-🌐 **体验地址**: http://106.54.166.76/login
-
-```
-用户名: admin
-密码: 123456
-```
-
-> ⚠️ 注意：请勿修改密码，这是共享的演示账号
-
----
 
 ## 📦 部署方式
 
@@ -446,7 +447,7 @@ pip install -r requirements.txt
 cp .env.example .env
 # 编辑 .env 文件，配置数据库连接信息
 
-# 初始化数据库
+# 初始化数据库(依次执行以下三条命令)
 python -m aerich init -t app.configs.config.tortoise_orm_conf
 python -m aerich init-db
 python db_manager.py setup
@@ -786,44 +787,3 @@ server {
 **版本**: 1.0.0
 
 Made with ❤️ by N-Tester Team
-
-</div>
-=======
-# AI全栈测试平台1.0版本
-
-#### 介绍
-基于Fastapi+vue3实现的全栈测试平台，集接口接口自动化，APP自动化，UI自动化
-
-#### 软件架构
-软件架构说明
-
-
-#### 安装教程
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### 使用说明
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### 参与贡献
-
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
-
-
-#### 特技
-
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
->>>>>>> 81c120ed9c7018dafc2928dd6474f6468cb213b9

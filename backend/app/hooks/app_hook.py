@@ -4,12 +4,15 @@ from tortoise.contrib.fastapi import register_tortoise
 from app.configs import config
 from utils.logs.log import logger
 from utils.message.send_report import send_server_status
+from utils.util.file_util import setup_runtime_paths
+
 
 def register_app_hook(app):
     @app.on_event("startup")
     async def startup_event():
         """ 应用启动事件 """
 
+        setup_runtime_paths()
         app.conf, app.logger = config, logger
 
         # 注册orm - 使用 Tortoise.init 确保完全初始化

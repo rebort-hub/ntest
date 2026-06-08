@@ -11,6 +11,7 @@ from app.models.aitestrebort.requirements import (
     RequirementDocument, RequirementModule, Requirement,
     ReviewReport, ReviewIssue, ModuleReviewResult
 )
+from utils.util.file_util import uploads_path, ensure_dir
 from app.schemas.aitestrebort.requirements import (
     RequirementDocumentCreate, RequirementDocumentUpdate,
     RequirementModuleCreate, RequirementModuleUpdate,
@@ -56,8 +57,11 @@ class RequirementService:
         """上传需求文档"""
         try:
             # 保存文件
-            file_path = f"uploads/requirements/{project_id}/{uuid.uuid4()}_{file.filename}"
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            file_path = os.path.join(
+                uploads_path("requirements", str(project_id)),
+                f"{uuid.uuid4()}_{file.filename}"
+            )
+            ensure_dir(os.path.dirname(file_path))
             
             with open(file_path, "wb") as buffer:
                 content = await file.read()

@@ -4,8 +4,7 @@ import os
 from git.repo import Repo
 from git.repo.fun import is_git_dir
 
-GIT_FILE_ADDRESS = os.path.abspath(os.path.join(os.path.abspath("..."), "../../../" + r"/git_files/"))
-print(GIT_FILE_ADDRESS)
+from utils.util.file_util import GIT_FILE_ADDRESS
 
 
 class GitRepository:

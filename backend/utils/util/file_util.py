@@ -5,43 +5,61 @@ import io
 import platform
 import shutil
 
-from app.configs.config import basedir
+from app.configs.config import BACKEND_ROOT, DATA_DIR
 from utils.variables.content_type import CONTENT_TYPE
 
-# 各模块的路径
-LOG_ADDRESS = os.path.abspath(os.path.join(basedir, ".." + r"/logs/"))  # 日志路径
-STATIC_ADDRESS = os.path.abspath(os.path.join(basedir, r"static"))  # 导入模板存放路径
-SCRIPT_ADDRESS = os.path.abspath(os.path.join(basedir, "." + r"/script_list"))  # 自定义函数文件存放地址
-DIFF_RESULT = os.path.abspath(os.path.join(basedir, ".." + r"/diff_result/"))  # yapi接口监控结果存放地址
-CASE_FILE_ADDRESS = os.path.abspath(os.path.join(basedir, ".." + r"/case_files/"))  # 用例数据文件存放地址
-UI_CASE_FILE_ADDRESS = os.path.abspath(os.path.join(basedir, ".." + r"/ui_case_files/"))  # ui用例数据文件存放地址
-MOCK_DATA_ADDRESS = os.path.abspath(os.path.join(basedir, ".." + r"/mock_data/"))  # mock数据文件存放地址
-CALL_BACK_ADDRESS = os.path.abspath(os.path.join(basedir, ".." + r"/call_back/"))  # 回调数据文件存放地址
-TEMP_FILE_ADDRESS = os.path.abspath(os.path.join(basedir, ".." + r"/temp_files/"))  # 临时文件存放地址
-GIT_FILE_ADDRESS = os.path.abspath(os.path.join(basedir, ".." + r"/git_files/"))  # git文件存放地址
-SWAGGER_FILE_ADDRESS = os.path.abspath(os.path.join(basedir, ".." + r"/swagger_files/"))  # swagger文件存放地址
-DB_BACK_UP_ADDRESS = os.path.abspath(os.path.join(basedir, ".." + r"/db_back_up_files/"))  # 数据库备份地址
-BROWSER_DRIVER_ADDRESS = os.path.abspath(os.path.join(basedir, ".." + r"/browser_drivers/"))  # 浏览器驱动文件存放地址
-REPORT_IMG_UI_ADDRESS = os.path.abspath(os.path.join(basedir, ".." + r"/report_img_ui/"))  # 截图存放路径
-REPORT_IMG_APP_ADDRESS = os.path.abspath(os.path.join(basedir, ".." + r"/report_img_app/"))  # 截图存放路径
+
+def _data_path(*parts: str) -> str:
+    return str(DATA_DIR.joinpath(*parts))
 
 
-def _check_file_path(paths):
-    """ 校验各模块的路径是否存在，若不存在则创建 """
-    if isinstance(paths, (list, tuple, set)):
-        for path in paths:
-            if not os.path.exists(path):
-                os.makedirs(path)
-    else:
-        if not os.path.exists(paths):
-            os.makedirs(paths)
+def ensure_dir(path: str) -> str:
+    """按需创建目录，返回原路径"""
+    if path:
+        os.makedirs(path, exist_ok=True)
+    return path
 
 
-_check_file_path([
-    LOG_ADDRESS, SCRIPT_ADDRESS, DIFF_RESULT, CASE_FILE_ADDRESS, UI_CASE_FILE_ADDRESS,
-    MOCK_DATA_ADDRESS, CALL_BACK_ADDRESS, TEMP_FILE_ADDRESS, GIT_FILE_ADDRESS, DB_BACK_UP_ADDRESS, SWAGGER_FILE_ADDRESS,
-    BROWSER_DRIVER_ADDRESS, REPORT_IMG_UI_ADDRESS, REPORT_IMG_APP_ADDRESS
-])
+def setup_runtime_paths() -> None:
+    """将 var/ 加入 sys.path，使 script_list 动态脚本可被 import"""
+    import sys
+    data_dir = str(DATA_DIR)
+    if data_dir not in sys.path:
+        sys.path.insert(0, data_dir)
+
+
+def uploads_path(*parts: str) -> str:
+    """uploads 子目录路径"""
+    return _data_path("uploads", *parts)
+
+
+# 各模块的路径（统一在 backend/var/ 下，static 保留在源码目录）
+LOG_ADDRESS = _data_path("logs")
+STATIC_ADDRESS = str(BACKEND_ROOT / "static")
+SCRIPT_ADDRESS = _data_path("script_list")
+UPLOADS_ADDRESS = _data_path("uploads")
+DIFF_RESULT = _data_path("diff_result")
+CASE_FILE_ADDRESS = _data_path("case_files")
+UI_CASE_FILE_ADDRESS = _data_path("ui_case_files")
+MOCK_DATA_ADDRESS = _data_path("mock_data")
+CALL_BACK_ADDRESS = _data_path("call_back")
+TEMP_FILE_ADDRESS = _data_path("temp_files")
+GIT_FILE_ADDRESS = _data_path("git_files")
+SWAGGER_FILE_ADDRESS = _data_path("swagger_files")
+DB_BACK_UP_ADDRESS = _data_path("db_back_up_files")
+BROWSER_DRIVER_ADDRESS = _data_path("browser_drivers")
+REPORT_IMG_UI_ADDRESS = _data_path("report_img_ui")
+REPORT_IMG_APP_ADDRESS = _data_path("report_img_app")
+SCRIPT_SCREENSHOTS_ADDRESS = _data_path("media", "script_screenshots")
+SCRIPT_VIDEOS_ADDRESS = _data_path("media", "script_videos")
+PIDS_ADDRESS = _data_path("pids")
+
+
+def _ensure_script_package() -> None:
+    ensure_dir(SCRIPT_ADDRESS)
+    init_py = os.path.join(SCRIPT_ADDRESS, "__init__.py")
+    if not os.path.exists(init_py):
+        open(init_py, "a", encoding="utf-8").close()
 
 
 class FileUtil:
@@ -52,20 +70,22 @@ class FileUtil:
         request_file = {}
         for key, value in file_dict.items():
             request_file[key] = (
-                value,  # 文件名
-                open(os.path.join(CASE_FILE_ADDRESS, value), "rb"),  # 文件流
-                CONTENT_TYPE.get(f'.{value.split(".")[-1]}", "text/html')  # content-type，根据文件后缀取，如果没有预设此项，则默认取text
+                value,
+                open(os.path.join(CASE_FILE_ADDRESS, value), "rb"),
+                CONTENT_TYPE.get(f'.{value.split(".")[-1]}', "text/html")
             )
         return request_file
 
     @classmethod
     def save_file(cls, path, content):
         """ 保存文件 """
+        parent = os.path.dirname(path)
+        if parent:
+            ensure_dir(parent)
         with io.open(path, "w", encoding="utf-8", newline='\n') as file:
             if isinstance(content, str):
-                if any(line.strip() for line in content.splitlines()):  # 检查非空内容
-                    file.write(content.rstrip() + '\n')  # 确保末尾有且只有一个换行，否则如果写入的是代码可能会有问题
-                # file.write(content)
+                if any(line.strip() for line in content.splitlines()):
+                    file.write(content.rstrip() + '\n')
             else:
                 json.dump(content, file, ensure_ascii=False, indent=4)
 
@@ -77,12 +97,14 @@ class FileUtil:
     @classmethod
     def save_diff_result(cls, diff_record_id, diff_detail):
         """ 保存对比数据 """
+        ensure_dir(DIFF_RESULT)
         with io.open(os.path.join(DIFF_RESULT, f'{diff_record_id}.json'), "w", encoding="utf-8") as fp:
             json.dump(diff_detail, fp, ensure_ascii=False, indent=4)
 
     @classmethod
     def save_script_data(cls, name, content, env="debug"):
         """ 保存自定义函数数据 """
+        _ensure_script_package()
         content = content or ''
         func_data = "# coding:utf-8\n\n" + f'env = "{env}"\n\n' + content
         cls.save_file(os.path.join(SCRIPT_ADDRESS, f'{name}.py'), func_data)
@@ -90,6 +112,7 @@ class FileUtil:
     @classmethod
     def save_mock_script_data(cls, name, content, path={}, headers={}, query={}, body={}):
         """ 保存mock函数数据 """
+        _ensure_script_package()
         content = content or ''
         func_data = "# coding:utf-8\n\n" + f'path = "{path}"\n\n' + f'headers = {headers}\n\n' + f'query = {query}\n\n' + f'body = {body}\n\n' + content
         cls.save_file(os.path.join(SCRIPT_ADDRESS, f'{name}.py'), func_data)
@@ -117,6 +140,7 @@ class FileUtil:
     @classmethod
     def build_ui_test_file_path(cls, filename):
         """ 拼装UI自动化要上传文件的路径 """
+        ensure_dir(UI_CASE_FILE_ADDRESS)
         return os.path.join(UI_CASE_FILE_ADDRESS, filename)
 
     @classmethod
@@ -137,14 +161,14 @@ class FileUtil:
         """ 根据测试报告id，删除此测试报告下的截图 """
         for report_id in report_id_list:
             report_path = os.path.join(cls.get_report_img_path(report_type), str(report_id))
-            if os.path.exists(report_path):  # 有可能先手动去服务器删了截图，先判断报告目录是否存在
+            if os.path.exists(report_path):
                 shutil.rmtree(report_path)
 
     @classmethod
     def make_img_folder_by_report_id(cls, report_id, report_type='ui'):
         """ 生成存放截图的文件夹 """
         folder_path = os.path.join(cls.get_report_img_path(report_type), str(report_id))
-        os.makedirs(folder_path)
+        ensure_dir(folder_path)
         return folder_path
 
     @classmethod

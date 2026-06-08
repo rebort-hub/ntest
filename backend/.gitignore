@@ -114,9 +114,11 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# 脚本文件
-func_list/
-script_list/
+# 脚本文件（已迁移至 var/script_list/）
+
+# 运行时数据目录（忽略内容，保留目录占位）
+/var/*
+!/var/.gitkeep
 /app.zip
 
 # 数据库迁移产生的文件
@@ -125,5 +127,4 @@ pyproject.toml
 __pycache__
 migrations
 pyproject.toml
-script_list
 venv

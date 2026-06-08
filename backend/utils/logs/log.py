@@ -2,7 +2,9 @@ from pathlib import Path
 
 from loguru import logger
 
-from utils.util.file_util import LOG_ADDRESS
+from utils.util.file_util import LOG_ADDRESS, ensure_dir
+
+ensure_dir(LOG_ADDRESS)
 
 # # job 的日志
 # job_logger = logger.bind(name="job")

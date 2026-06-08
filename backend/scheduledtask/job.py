@@ -6,6 +6,7 @@ from tortoise.contrib.fastapi import register_tortoise
 from pydantic import BaseModel, Field
 from app.configs.config import job_server_port, tortoise_orm_conf
 from utils.util.apscheduler import scheduler, request_run_task_api, logger
+from utils.util.file_util import setup_runtime_paths
 
 job = FastAPI(
     docs_url=None,
@@ -25,6 +26,7 @@ register_tortoise(
 @job.on_event('startup')
 async def init_scheduler_job():
     """ 初始化定时任务 """
+    setup_runtime_paths()
     await Tortoise.init(tortoise_orm_conf, timezone="Asia/Shanghai")  # 数据库链接
     # await Tortoise.generate_schemas(safe=True)
 

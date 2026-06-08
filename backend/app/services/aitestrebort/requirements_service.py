@@ -24,6 +24,7 @@ from app.schemas.aitestrebort.requirements import (
     RequirementSearchRequest, RequirementStatistics,
     ProjectStatistics, DocumentSplitRequest
 )
+from utils.util.file_util import uploads_path, ensure_dir
 
 logger = logging.getLogger(__name__)
 
@@ -218,7 +219,7 @@ class RequirementService:
             from pathlib import Path
             
             # 构建项目文档目录路径
-            upload_dir = f"uploads/requirements/{project_id}"
+            upload_dir = uploads_path("requirements", str(project_id))
             
             if not os.path.exists(upload_dir):
                 logger.info(f"项目 {project_id} 的文档目录不存在: {upload_dir}")
@@ -638,8 +639,8 @@ class RequirementService:
         """保存上传的文件"""
         try:
             # 创建目录
-            upload_dir = f"uploads/requirements/{project_id}"
-            os.makedirs(upload_dir, exist_ok=True)
+            upload_dir = uploads_path("requirements", str(project_id))
+            ensure_dir(upload_dir)
             
             # 生成文件名
             file_extension = os.path.splitext(file.filename)[1]

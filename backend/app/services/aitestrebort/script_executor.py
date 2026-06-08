@@ -17,6 +17,8 @@ import json
 
 from fastapi import HTTPException
 
+from utils.util.file_util import SCRIPT_SCREENSHOTS_ADDRESS, SCRIPT_VIDEOS_ADDRESS, ensure_dir
+
 logger = logging.getLogger(__name__)
 
 
@@ -249,8 +251,8 @@ class ScriptExecutor:
             return screenshots
         
         # 创建持久化目录
-        persist_dir = Path('static/script_screenshots') / datetime.now().strftime('%Y%m%d')
-        persist_dir.mkdir(parents=True, exist_ok=True)
+        persist_dir = Path(SCRIPT_SCREENSHOTS_ADDRESS) / datetime.now().strftime('%Y%m%d')
+        ensure_dir(str(persist_dir))
         
         for temp_path in temp_screenshots:
             # 生成唯一文件名避免冲突
@@ -285,8 +287,8 @@ class ScriptExecutor:
             return videos
         
         # 创建持久化目录
-        persist_dir = Path('static/script_videos') / datetime.now().strftime('%Y%m%d')
-        persist_dir.mkdir(parents=True, exist_ok=True)
+        persist_dir = Path(SCRIPT_VIDEOS_ADDRESS) / datetime.now().strftime('%Y%m%d')
+        ensure_dir(str(persist_dir))
         
         for temp_path in temp_videos:
             # 生成唯一文件名避免冲突

@@ -17,6 +17,7 @@ from app.models.aitestrebort.knowledge import (
 )
 from .vector_store import VectorStoreManager, KnowledgeBaseService, DocumentProcessor
 from utils.logs.log import logger
+from utils.util.file_util import uploads_path, ensure_dir
 
 
 # ==================== 全局配置管理 ====================
@@ -530,8 +531,8 @@ async def upload_document(request: Request, project_id: int, kb_id: str):
                 return request.app.fail(msg=f"不支持的文件类型: {file_ext}")
             
             # 保存文件
-            upload_dir = f"uploads/knowledge/{kb_id}"
-            os.makedirs(upload_dir, exist_ok=True)
+            upload_dir = uploads_path("knowledge", str(kb_id))
+            ensure_dir(upload_dir)
             
             file_path = os.path.join(upload_dir, file.filename)
             file_content = await file.read()

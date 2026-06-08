@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 
 from ...schemas.assist import file as schema
 from utils.util.file_util import CASE_FILE_ADDRESS, CALL_BACK_ADDRESS, TEMP_FILE_ADDRESS, \
-    UI_CASE_FILE_ADDRESS, BROWSER_DRIVER_ADDRESS, FileUtil
+    UI_CASE_FILE_ADDRESS, BROWSER_DRIVER_ADDRESS, FileUtil, ensure_dir
 
 folders = {
     "case": CASE_FILE_ADDRESS,
@@ -32,6 +32,8 @@ def make_pagination(data_list, pag_size, page_no):
 
 async def get_file_list(request: Request, form: schema.GetFileListForm = Depends()):
     addr = folders.get(form.file_type, "case")
+    if not os.path.exists(addr):
+        return request.app.success("获取成功", data={"data": [], "total": 0})
     file_list = os.listdir(addr)
     filter_list = make_pagination(file_list, form.page_size, form.page_no)
 
@@ -67,8 +69,10 @@ async def download_file(request: Request, form: schema.CheckFileIsExistsForm = D
 
 async def batch_upload_file(request: Request, files: List[UploadFile] = File(...), file_type: str = Form()):
     file_name_list = []
+    addr = folders.get(file_type, "case")
+    ensure_dir(addr)
     for file in files:
-        with open(os.path.join(folders.get(file_type, "case"), file.filename), 'wb') as f:
+        with open(os.path.join(addr, file.filename), 'wb') as f:
             f.write(await file.read())
         file_name_list.append(file.filename)
     return request.app.success(msg="上传成功", data=file_name_list)

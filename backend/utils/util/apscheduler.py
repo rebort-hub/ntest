@@ -10,7 +10,9 @@ from loguru import logger as loguru_logger
 
 from app.configs.config import main_server_host
 from utils.parse.parse_cron import parse_cron
-from utils.util.file_util import LOG_ADDRESS
+from utils.util.file_util import LOG_ADDRESS, ensure_dir
+
+ensure_dir(LOG_ADDRESS)
 
 # job 的日志
 logger = loguru_logger.bind(name="job")

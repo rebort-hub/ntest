@@ -15,7 +15,12 @@ from utils.client.test_runner.webdriver_action import Actions
 from utils.client.test_runner.client.ui_client import UIClient
 
 is_linux = platform.platform().startswith("Linux")
-basedir = os.path.abspath(".")
+
+# backend 根目录（不依赖启动时的 cwd）
+BACKEND_ROOT = Path(__file__).resolve().parent.parent.parent
+# 运行时数据目录，可通过环境变量覆盖（Docker 挂载卷）
+DATA_DIR = Path(os.getenv("DATA_DIR", str(BACKEND_ROOT / "var")))
+basedir = str(BACKEND_ROOT)
 
 token_secret_key = "localhost"  # 生成token的加密字符串
 access_token_time_out = 60 * 60  # access_token 有效期，1个小时
