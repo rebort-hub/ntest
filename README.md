@@ -11,7 +11,7 @@
 [![Vue](https://img.shields.io/badge/Vue-3.0+-brightgreen.svg)](https://vuejs.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[在线体验](http://106.54.166.76/login) | [快速开始](#README.md) | [文档](#README.md) | [文末有交流群](#backend/img/weixin/qq.png)
+[在线体验](http://www.ntesterc.com) | [快速开始](#README.md) | [文档](#README.md) | [文末有交流群](#backend/img/weixin/qq.png)
 
 </div>
 
@@ -19,7 +19,7 @@
 
 ### 在线体验
 
-🌐 **体验地址**: http://106.54.166.76/login
+🌐 **体验地址**: http://www.ntesterc.com
 
 ```
 用户名: admin
@@ -31,7 +31,6 @@
 ---
 
 新架构版本：https://github.com/rebort-hub/N-Tester
-AI智能体平台：https://github.com/rebort-hub/JNStack
 
 ## 📖 项目介绍
 
